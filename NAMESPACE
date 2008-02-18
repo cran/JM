@@ -1,0 +1,24 @@
+# Exported functions
+export(anova.jointModel, coef.jointModel, fitted.jointModel, fixef.jointModel, jointModel, plot.jointModel, 
+	 ranef.jointModel, residuals.jointModel)
+
+# Imported functions
+importFrom(nlme, fixed.effects)
+importFrom(nlme, fixef)
+importFrom(nlme, random.effects)
+importFrom(nlme, ranef)
+
+# S3 methods
+S3method(anova, jointModel)
+S3method(coef, jointModel)
+S3method(fitted, jointModel)
+S3method(fixef, jointModel)
+S3method(logLik, jointModel)
+S3method(plot, jointModel)
+S3method(print, aov.jointModel)
+S3method(print, jointModel)
+S3method(print, summary.jointModel)
+S3method(ranef, jointModel)
+S3method(residuals, jointModel)
+S3method(summary, jointModel)
+S3method(vcov, jointModel)
