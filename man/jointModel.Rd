@@ -90,7 +90,7 @@ available. In particular, let \eqn{t_i} denote the time-to-event for the \eqn{i}
 vector of baseline covariates in \code{survObject}, with associated parameter vector \eqn{\gamma}, \eqn{W_i(t)} the value 
 of the longitudinal outcome at time point \eqn{t} (i.e., \eqn{W_i(t)} equals the fixed effects part \code{+} random 
 effects part of the linear mixed effects model for sample unit \eqn{i}), and \eqn{\alpha} the association parameter. Then, 
-for \code{method = "weibull-GH"} a Weibull accelerated failure time model is assumed formulated as: \deqn{\log t_i = 
+for \code{method = "weibull-GH"} a Weibull accelerated failure time model is assumed formulated as: \deqn{\log t = 
 \gamma^T x_i + \alpha W_i(t) + \sigma_t \varepsilon_i,} where \eqn{\varepsilon_i} follows an extreme value distribution. 
 For \code{method = "ch-GH"} and \code{method = "ch-Laplace"} an additive log cumulative hazard model is assumed 
 formulated as: \deqn{\log \Lambda_i(t) = \log \Lambda_0(t) + \gamma^T x_i + \alpha W_i(t),} where \eqn{\Lambda_i(.)} 
@@ -162,9 +162,7 @@ corresponds to the association parameter \eqn{\alpha} (see \bold{Details}).
 \code{method = "ph-GH"} are based on the profile score vector (i.e., given the NPMLE for the unspecified baseline 
 hazard). Hsieh et al. (2006) have noted that these standard errors are underestimated.
 
-6. For more examples of \code{jointModel()} check the following links: 
-\url{http://student.kuleuven.be/~m0390867/R packages & Computing/R Packages/pbc.R}, and 
-\url{http://student.kuleuven.be/~m0390867/R packages & Computing/R Packages/aids.R}.
+6. For more examples of \code{jointModel()} check the following link: \url{http://wiki.r-project.org/rwiki/doku.php?id=packages:cran:jm}.
 }
 
 \seealso{

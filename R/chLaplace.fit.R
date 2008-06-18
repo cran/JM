@@ -118,7 +118,7 @@ function (x, y, id, initial.values, initial.EB = NULL, control) {
         vb.hat <- attr(new.b, "vb") + trc.y2 + trc.y3
         Zb <- rowSums(Z * b.hat[id, ])
         btZtZb <- drop(crossprod(Zb))
-        outer.b.hat <- t(apply(b.hat, 1, function (x) x %o% x))
+        outer.b.hat <- if (ncz == 1) apply(b.hat, 1, function (x) x %o% x) else t(apply(b.hat, 1, function (x) x %o% x))
         tr.tZZvarb <- sum(ZtZ * vb.hat)
         # compute log-likelihood and check convergence
         lgLik[it] <- as.vector(new.b)
@@ -242,10 +242,10 @@ function (x, y, id, initial.values, initial.EB = NULL, control) {
                 trace = 10 * control$verbose), b = b)
         } else {
             nlminb(thetas, LogLik.chLaplace, Score.chLaplace, scale = control$parscale, 
-                control = list(iter.max = control$iter.qN), b = b)
+                control = list(iter.max = control$iter.qN, trace = 1 * control$verbose), b = b)
         }
-        if ((conv <- out$convergence) == 0 || - out$value > lgLik) {
-            lgLik <- - out$value
+        if ((conv <- out$convergence) == 0 || - out[[2]] > lgLik) {
+            lgLik <- - out[[2]]
             thetas <- out$par
             betas <- thetas[1:ncx]
             sigma <- exp(thetas[ncx + 1])

@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.1-0\cr
-Date: \tab 2008-02-18\cr
+Version: \tab 0.2-0\cr
+Date: \tab 2008-06-18\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -59,7 +59,7 @@ modelling of survival and longitudinal data. \emph{Submitted}.
 Tsiatis, A. and Davidian, M. (2004) Joint modeling of longitudinal and time-to-event data: an overview. 
 \emph{Statistica Sinica} \bold{14}, 809--834.
 
-Wulfsohn, M. and Tsiatis, A. (197) A joint model for survival and longitudinal data measured with error. 
+Wulfsohn, M. and Tsiatis, A. (1997) A joint model for survival and longitudinal data measured with error. 
 \emph{Biometrics} \bold{53}, 330--339.
 }
 

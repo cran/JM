@@ -21,8 +21,9 @@ Extracts the random effects estimates from a fitted joint model.
 
 \details{
   For methods \code{"ch-GH"}, \code{"weibull-GH"}, \code{"ph-GH"} the \code{ranef()} method returns the 
-  posterior means (and variance if \code{postVar = TRUE}), whereas for method \code{"ch-Laplace"} it returns the
-  posterior modes (and the inverse of the second-order derivative of the log-posterior if \code{postVar = TRUE}). 
+  posterior means (and posterior variances if \code{postVar = TRUE}), whereas for method \code{"ch-Laplace"} it returns the
+  posterior modes (and the inverse of the negative of the second-order derivative of the log-posterior with respect to the 
+  random effects, if \code{postVar = TRUE}). 
 }
 
 \value{

@@ -1,0 +1,17 @@
+Changes in version: JM_0.2-0
+
+  o the jointModel method for the residuals generic has furhter options: (i) MI residuals for fixed and random visit times for
+    the longitudinal process, and (ii) martingale, Cox-Snell, and AFT residuals for the survival process.
+
+  o Function weibull.frailty() is introduced (along with supporting methods) for fitting multivariate survival data using the Weibull model with
+    Gamma multiplicative frailties under maximum likelihood.
+
+  o several typos have been corrected in .Rd files.
+
+
+==============================
+
+Changes in version: JM_0.1-1
+
+  o corrected some typos in .Rd files.
+

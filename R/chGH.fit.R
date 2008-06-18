@@ -91,7 +91,7 @@ function (x, y, id, initial.values, control) {
         log.p.yb <- rowsum(logNorm, id); dimnames(log.p.yb) <- NULL
         sc <- as.vector(S %*% diff(gammas[1:nk]))
         ew <- - exp(eta.t)
-        log.p.tb <- d * (log(sc) + eta.t + ew - logT) + (1 - d) * ew
+        log.p.tb <- d * (log(sc) + eta.t - logT) + ew
         log.p.b <- if (ncz == 1) {
             dnorm(b, sd = sqrt(D), log = TRUE)
         } else {
@@ -185,10 +185,10 @@ function (x, y, id, initial.values, control) {
                 trace = 10 * control$verbose))
         } else {
             nlminb(thetas, LogLik.chGH, Score.chGH, scale = control$parscale, 
-                control = list(iter.max = control$iter.qN))
+                control = list(iter.max = control$iter.qN, trace = 1 * control$verbose))
         }
-        if ((conv <- out$convergence) == 0 || - out$value > lgLik) {
-            lgLik <- - out$value
+        if ((conv <- out$convergence) == 0 || - out[[2]] > lgLik) {
+            lgLik <- - out[[2]]
             thetas <- out$par
             betas <- thetas[1:ncx]
             sigma <- exp(thetas[ncx + 1])

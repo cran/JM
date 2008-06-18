@@ -9,7 +9,7 @@ function (object, postVar = FALSE, ...) {
         ncz <- ncol(out)
         vars <- vector("list", n)
         for (i in 1:n) {
-            vars[[i]] <- matrix(object$EB$post.vb[i, ], ncz, ncz)
+            vars[[i]] <- matrix(as.matrix(object$EB$post.vb)[i, ], ncz, ncz)
         }
         names(vars) <- rownames(out)
         attr(out, "postVar") <- vars

@@ -173,10 +173,10 @@ function (x, y, id, initial.values, control) {
                 trace = 10 * control$verbose))
         } else {
             nlminb(thetas, LogLik.weibullGH, Score.weibullGH, scale = control$parscale, 
-                control = list(iter.max = control$iter.qN))
+                control = list(iter.max = control$iter.qN, trace = 1 * control$verbose))
         }
-        if ((conv <- out$convergence) == 0 || - out$value > lgLik) {
-            lgLik <- - out$value
+        if ((conv <- out$convergence) == 0 || - out[[2]] > lgLik) {
+            lgLik <- - out[[2]]
             thetas <- out$par
             betas <- thetas[1:ncx]
             sigma <- exp(thetas[ncx + 1])

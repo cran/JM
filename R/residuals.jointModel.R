@@ -1,23 +1,99 @@
 `residuals.jointModel` <-
 function (object, process = c("Longitudinal", "Event"), 
-    type = c("Marginal", "Subject", "stand-Marginal", "stand-Subject"), ...) {
+    type = c("Marginal", "Subject", "stand-Marginal", "stand-Subject", "Martingale", "CoxSnell", "AFT"), MI = FALSE, 
+    M = 50, time.points = NULL, return.data = FALSE, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
     process <- match.arg(process)
     type <- match.arg(type)
     if (process == "Longitudinal") {
-        fits <- if (type == "Marginal" || type == "stand-Marginal") {
-            fitted(object, process = "Longitudinal", type = "Marginal")
+        # Observed data
+        y <- object$y$y
+        X <- object$x$X
+        Z <- object$x$Z
+        ncx <- ncol(X)
+        ncz <- ncol(Z)
+        id <- object$id
+        # Fitted Values
+        fitted.vals <- if (type == "Marginal" || type == "stand-Marginal") {
+            as.vector(X %*% object$coefficients$betas)
         } else {
-            fitted(object, process = "Longitudinal", type = "Subject")
+            as.vector(X %*% object$coefficients$betas + object$EB$Zb)
         }
-        if (type == "Marginal" || type == "Subject") {
-            object$y$y - fits
+        # Residuals
+        resid.vals <- if (type == "Marginal" || type == "Subject") {
+            as.vector(y - fitted.vals)
+        } else if (type == "stand-Subject"){
+            as.vector(y - fitted.vals) / object$coefficients$sigma
         } else {
-            (object$y$y - fits) / object$coefficients$sigma
+            D <- object$coefficients$D
+            unlist(lapply(split(cbind(Z, as.vector(y - fitted.vals)), id), function (x) {
+                M <- matrix(x, ncol = ncz + 1)
+                z <- M[, - (ncz + 1), drop = FALSE]
+                res <- M[, ncz + 1]
+                out <- z %*% D %*% t(z)
+                diag(out) <- diag(out) + object$coefficients$sigma^2
+                solve(chol(out)) %*% res
+            }))
+        }
+        if (!MI) {
+            names(resid.vals) <- names(y)
+            resid.vals
+        } else {
+            logT <- object$y$logT
+            d <- object$y$d
+            Xtime <- object$x$Xtime
+            Ztime <- object$x$Ztime
+            method <- object$method
+            W1 <- object$x$W
+            WW <- if (method == "ph-GH") {
+                stop("multiple-imputation-based residuals are not available for joint models with method = 'ph-GH'.\n")
+            } else if (method == "weibull-GH") {
+                if (is.null(W1)) as.matrix(rep(1, length(logT))) else cbind(1, W1)
+            } else {
+                W2 <- splineDesign(object$knots, logT, ord = object$control$ord)
+                nk <- ncol(W2) 
+                if (is.null(W1)) W2 else cbind(W2, W1)
+            }
+            ncww <- ncol(WW)
+            n <- length(logT)
+            ni <- as.vector(tapply(id, id, length))
+            obs.times <- if (!object$timeVar %in% colnames(X)) {
+                if (is.null(ot <- attr(time.points, "obs.times")))
+                    stop("could not extract observed times from either the design matrix for the longitudinal measurements or\n\tthe 'time.points' argument.\n")
+                else
+                    ot
+            } else { 
+                X[, object$timeVar]
+            }
+            environment(MI.fixed.times) <- environment(MI.random.times) <- environment()
+            if (inherits(time.points, "weibull.frailty")) {
+                MI.random.times(time.points)
+            } else {
+                MI.fixed.times(time.points)
+            }
         }
     } else {
-        cat("the residuals() method is not currently implemented for the Event process.\n")
+        if (type == "AFT") {
+            if (object$method == "weibull-GH") {
+                fitted(object, process = "Event", type = "Subject", scale = "log-cumulative-Hazard")
+            } else {
+                warning("AFT residuals are only calculated for the Weibull model; martingale residuals are calculated instead.\n")
+                fits <- fitted(object, process = "Event", type = "Subject", scale = "cumulative-Hazard")
+                object$y$d - fits                
+            }
+        } else if (type == "CoxSnell") {
+            if (object$method %in% c("weibull-GH", "ch-GH", "ch-Laplace")) {
+                fitted(object, process = "Event", type = "Subject", scale = "cumulative-Hazard")
+            } else {
+                warning("CoxSnell residuals are only calculated for the parametric survival models; martingale residuals are calculated instead.\n")
+                fits <- fitted(object, process = "Event", type = "Subject", scale = "cumulative-Hazard")
+                object$y$d - fits                
+            }
+        } else {
+            fits <- fitted(object, process = "Event", type = "Subject", scale = "cumulative-Hazard")
+            object$y$d - fits
+        }
     }
 }
 
