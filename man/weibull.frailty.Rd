@@ -68,7 +68,7 @@ weibull.frailty(formula = formula(data), data = parent.frame(),
   \item{call}{the matched call.}
 }
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \examples{
 weibull.frailty(Surv(time, status) ~ age + sex, kidney)

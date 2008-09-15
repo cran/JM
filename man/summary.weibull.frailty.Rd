@@ -18,7 +18,7 @@
   \item{\dots}{ additional arguments; currently none is used.}
 }
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \seealso{\code{\link{weibull.frailty}}}
 

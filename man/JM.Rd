@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.2-0\cr
-Date: \tab 2008-06-18\cr
+Version: \tab 0.2-1\cr
+Date: \tab 2008-09-15\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -46,7 +46,7 @@ integration technique; available options are:
 \author{
 Dimitris Rizopoulos
 
-Maintainer: Dimitris Rizopoulos <dimitris.rizopoulos@med.kuleuven.be>
+Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 }
 
 \references{

@@ -66,7 +66,7 @@ The multiple-imputation-based residuals are not available for joint models with 
     values for the longitudinal outcome, for each of the multiple imputations.}    
 }
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \references{
 Cox, D. and Snell, E. (1968) A general definition of residuals. \emph{Journal of the Royal Statistical Society, 

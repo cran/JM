@@ -68,7 +68,7 @@ joint model for longitudinal and time-to-event data. Objects of this class have 
   \item{call}{the matched call.}
 }
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 
 \seealso{

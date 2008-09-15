@@ -1,3 +1,10 @@
+Changes in version: JM_0.2-1
+
+  o changes in e-mail addresses.
+
+
+==============================
+
 Changes in version: JM_0.2-0
 
   o the jointModel method for the residuals generic has furhter options: (i) MI residuals for fixed and random visit times for

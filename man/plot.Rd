@@ -45,7 +45,7 @@
   been fitted using \code{method = "ph-GH"}.
 }
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \seealso{\code{\link{jointModel}}}
 

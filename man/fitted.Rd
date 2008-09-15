@@ -43,7 +43,7 @@ type = c("Marginal", "Subject"), scale = c("survival",
   a numeric vector of fitted values.
 }
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \seealso{\code{\link{residuals.jointModel}}}
 

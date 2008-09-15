@@ -32,7 +32,7 @@
 
 \value{A numeric vector or a matrix of the estimated parameters for the fitted model.}
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 
 \seealso{\code{\link{ranef.jointModel}}}

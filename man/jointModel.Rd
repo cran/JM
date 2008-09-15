@@ -139,7 +139,7 @@ Wulfsohn, M. and Tsiatis, A. (1997) A joint model for survival and longitudinal 
 \emph{Biometrics} \bold{53}, 330--339.
 }
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \note{
 1. The \code{lmeObject} should represent a linear mixed model with a simple random effects structure, i.e., only the 

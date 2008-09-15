@@ -31,7 +31,7 @@ Extracts the random effects estimates from a fitted joint model.
   If \code{postVar = TRUE}, the numeric matrix has an extra attribute ``postVar".
 }
 
-\author{Dimitris Rizopoulos \email{dimitris.rizopoulos@med.kuleuven.be}}
+\author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \seealso{\code{\link{coef.jointModel}}, \code{\link{fixef.jointModel}}}
 
