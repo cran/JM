@@ -129,8 +129,8 @@ Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal 
 Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and longitudinal data: Likelihood 
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
-Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2008) Fully exponential Laplace approximation for the joint
-modelling of survival and longitudinal data. \emph{Submitted}.
+Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
+modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B}, to appear.
 
 Tsiatis, A. and Davidian, M. (2004) Joint modeling of longitudinal and time-to-event data: an overview. 
 \emph{Statistica Sinica} \bold{14}, 809--834.

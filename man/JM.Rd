@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.2-1\cr
-Date: \tab 2008-09-15\cr
+Version: \tab 0.2-2\cr
+Date: \tab 2008-12-15\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -53,8 +53,8 @@ Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal measurements and event time data.
 \emph{Biostatistics} \bold{1}, 465--480.
 
-Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2008) Fully exponential Laplace approximation for the joint
-modelling of survival and longitudinal data. \emph{Submitted}.
+Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
+modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B}, to appear.
 
 Tsiatis, A. and Davidian, M. (2004) Joint modeling of longitudinal and time-to-event data: an overview. 
 \emph{Statistica Sinica} \bold{14}, 809--834.
