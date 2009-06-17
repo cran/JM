@@ -1,4 +1,4 @@
-`fitted.jointModel` <-
+fitted.jointModel <-
 function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Subject"), 
     scale = c("survival", "cumulative-Hazard", "log-cumulative-Hazard"), M = 200, ...) {
     if (!inherits(object, "jointModel"))
@@ -36,22 +36,91 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
         logT <- object$y$logT
         fitT <- if (method == "ph-GH") {
             indT <- object$indexes$indT
-            ind.lambda <- object$indexes$ind.lambda
             lambda0 <- object$coefficients$lambda0[, "basehaz"]
-            eta.t2 <- if (is.null(W1)) alpha * Y else as.vector(W1 %*% gammas)[indT] + alpha * Y
-            ew <- exp(eta.t2)
-            S <- exp(- rowsum(lambda0[ind.lambda] * ew, indT))
+            eta.tw <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, )
+            Ztime2b <- if (type == "Marginal") {
+                object$x$Ztime2 %*% t(b)
+            } else {
+                rowSums(object$x$Ztime2 * object$EB$post.b[indT, ])
+            }
+            Y2 <- c(object$x$Xtime2 %*% object$coefficients$betas) + Ztime2b
+            eta.s <- object$coefficients$alpha * Y2
+            if (type == "Marginal") {
+                S <- matrix(0, length(logT), ncol(eta.s))
+                S[unique(indT), ] <- rowsum(lambda0[object$indexes$ind.L1] * exp(eta.s), indT, reorder = FALSE)
+            } else {
+                S <- numeric(length(logT))
+                S[unique(indT)] <- tapply(lambda0[object$indexes$ind.L1] * exp(eta.s), indT, sum)
+            }
+            Haz <- exp(eta.tw) * S
             switch(scale,
-                "survival" = S,
-                "cumulative-Hazard" = - log(S),
-                "log-cumulative-Hazard" = log(- log(S)))
-        } else if (method == "weibull-GH") {
+                "survival" = exp(- Haz),
+                "cumulative-Hazard" = Haz,
+                "log-cumulative-Hazard" = log(Haz))
+        } else if (method == "weibull-PH-GH") {
             WW <- if (is.null(W1)) as.matrix(rep(1, length(logT))) else cbind(1, W1)
-            eta <- c(WW %*% gammas) + Y * alpha
+            eta.tw <- as.vector(WW %*% gammas)
+            sigma.t <- object$coefficients$sigma.t
+            P <- object$x$P
+            log.st <- log(object$x$st)
+            wk <- rep(object$x$wk, length(logT))
+            id.GK <- rep(seq_along(logT), each = object$control$GKk)
+            Zsb <- if (type == "Marginal") {
+                object$x$Zs %*% t(b)
+            } else {
+                rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+            }
+            Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
+            eta.s <- object$coefficients$alpha * Ys
+            Haz <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), id.GK, reorder = FALSE)
             switch(scale,
-                "survival" = exp(- exp((logT - eta) / object$coefficients$sigma.t)),
-                "cumulative-Hazard" = exp((logT - eta) / object$coefficients$sigma.t),
-                "log-cumulative-Hazard" = (logT - eta) / object$coefficients$sigma.t)
+                "survival" = exp(- Haz),
+                "cumulative-Hazard" = Haz,
+                "log-cumulative-Hazard" = log(Haz))
+        } else if (method == "weibull-AFT-GH") {
+            WW <- if (is.null(W1)) as.matrix(rep(1, length(logT))) else cbind(1, W1)
+            eta.tw <- as.vector(WW %*% gammas)
+            sigma.t <- object$coefficients$sigma.t
+            P <- object$x$P
+            log.st <- log(object$x$st)
+            wk <- rep(object$x$wk, length(logT))
+            id.GK <- rep(seq_along(logT), each = object$control$GKk)
+            Zsb <- if (type == "Marginal") {
+                object$x$Zs %*% t(b)
+            } else {
+                rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+            }
+            Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
+            eta.s <- object$coefficients$alpha * Ys
+            Vi <- exp(eta.tw) * P * rowsum(wk * exp(eta.s), id.GK, reorder = FALSE); dimnames(Vi) <- NULL            
+            Haz <- Vi^sigma.t
+            switch(scale,
+                "survival" = exp(- Haz),
+                "cumulative-Hazard" = Haz,
+                "log-cumulative-Hazard" = log(Haz))
+        } else if (method == "piecewise-PH-GH") {
+            WW <- W1
+            eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0
+            xi <- object$coefficients$xi
+            nk <- object$control$GKk
+            id.GK <- object$x$id.GK
+            ind.K <- rep(unlist(lapply(object$y$ind.D, seq_len)), each = nk)
+            wk <- unlist(lapply(object$y$ind.D, function (n) rep(object$x$wk, n)))
+            P <- c(t(object$x$P))
+            wkP <- wk * rep(P[!is.na(P)], each = nk)
+            Zsb <- if (type == "Marginal") {
+                object$x$Zs %*% t(b)
+            } else {
+                rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+            }
+            Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
+            eta.s <- object$coefficients$alpha * Ys
+            Haz <- exp(eta.tw) * rowsum(xi[ind.K] * wkP * exp(eta.s), id.GK, reorder = FALSE)
+            switch(scale,
+                "survival" = exp(- Haz),
+                "cumulative-Hazard" = Haz,
+                "log-cumulative-Hazard" = log(Haz))
+        
         } else {
             W2 <- splineDesign(object$knots, logT, ord = object$control$ord)
             WW <- if (is.null(W1)) W2 else cbind(W2, W1)

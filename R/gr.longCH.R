@@ -1,4 +1,4 @@
-`gr.longCH` <-
+gr.longCH <-
 function (betas) {
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)

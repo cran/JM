@@ -1,4 +1,4 @@
-`predict.b` <-
+predict.b <-
 function (method, y, X, Xtime, Z, Ztime, betas, sigma, Time, W1, gammas, alpha, sigma.t, D, 
     id, control, knots) {
     WW <- if (method == "ph-GH") {

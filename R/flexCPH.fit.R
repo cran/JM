@@ -1,4 +1,4 @@
-`flexCPH.fit` <-
+flexCPH.fit <-
 function (logT, d, X, init.thetas = NULL, control) {
     lgLwph <- function (thetas) {
         gamas <- thetas[1:nk]

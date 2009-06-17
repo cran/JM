@@ -1,4 +1,4 @@
-`ScsurvCH` <-
+ScsurvCH <-
 function (thetas) {
     gamas <- thetas[-(ncww + 1)]
     alpha <- thetas[ncww + 1]

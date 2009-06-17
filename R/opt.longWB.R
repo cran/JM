@@ -1,15 +1,17 @@
-`opt.longWB` <-
+opt.longWB <-
 function (betas) {
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)
     Y <- eta.yxT + Ztime.b
+    Ys <- as.vector(Xs %*% betas) + Zsb
     eta.t <- eta.tw + alpha * Y
+    eta.s <- alpha * Ys
     mu.y <- eta.yx + Ztb
     logNorm <- dnorm(y, mu.y, sigma, TRUE)
     log.p.yb <- rowsum(logNorm, id)
-    w <- (logT - eta.t) / sigma.t
-    ew <- - exp(w)
-    log.p.tb <- d * (w - log(sigma.t)) + ew
+    log.hazard <- log(sigma.t) + (sigma.t - 1) * logT + eta.t
+    log.survival <- - exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), id.GK, reorder = FALSE)
+    log.p.tb <- d * log.hazard + log.survival
     p.bytn <- p.byt * (log.p.yb + log.p.tb)
     -sum(p.bytn %*% wGH, na.rm = TRUE)
 }

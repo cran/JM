@@ -1,4 +1,4 @@
-`vcov.jointModel` <-
+vcov.jointModel <-
 function (object, ...) {
     out <- try(solve(object$Hessian), silent = TRUE)
     if (!inherits(out, "try-error"))

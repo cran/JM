@@ -1,9 +1,11 @@
-`anova.jointModel` <-
+anova.jointModel <-
 function (object, object2, test = TRUE, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
     if (!inherits(object2, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
+    if (object$method != object2$method)
+        stop("You compare joint models with different survival submodels.\n")
     L0 <- logLik(object)
     L1 <- logLik(object2)
     nb0 <- attr(L0, "df")

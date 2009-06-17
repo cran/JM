@@ -1,4 +1,4 @@
-`LogLik.weibullGH` <-
+LogLik.weibullGH <-
 function (thetas) {
     betas <- thetas[1:ncx]
     sigma <- exp(thetas[ncx + 1])
@@ -6,18 +6,21 @@ function (thetas) {
     alpha <- thetas[ncx + ncww + 2]
     sigma.t <- exp(thetas[ncx + ncww + 3])
     D <- thetas[seq(ncx + ncww + 4, length(thetas))]
-    D <- if (diag.D) exp(D) else chol.transf(D)
+    D <- if (diag.D) exp(D) else chol.transf(D)    
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)
     eta.tw <- as.vector(WW %*% gammas)
     Y <- eta.yxT + Ztime.b
+    Ys <- as.vector(Xs %*% betas) + Zsb
     eta.t <- eta.tw + alpha * Y
+    eta.s <- alpha * Ys
     mu.y <- eta.yx + Ztb
     logNorm <- dnorm(y, mu.y, sigma, TRUE)
-    log.p.yb <- rowsum(logNorm, id)
-    w <- (logT - eta.t) / sigma.t
-    ew <- - exp(w)
-    log.p.tb <- d * (w - log(sigma.t)) + ew
+    log.p.yb <- rowsum(logNorm, id)    
+    log.hazard <- log(sigma.t) + (sigma.t - 1) * logT + eta.t
+    log.survival <- - exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), id.GK, reorder = FALSE)
+    dimnames(log.survival) <- NULL
+    log.p.tb <- d * log.hazard + log.survival
     log.p.b <- if (ncz == 1) {
         dnorm(b, sd = sqrt(D), log = TRUE)
     } else {

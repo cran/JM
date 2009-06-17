@@ -1,4 +1,4 @@
-`dmvt` <-
+dmvt <-
 function (x, mu, Sigma, df, log = FALSE) {
     if (!is.numeric(x))
         stop("'x' must be a numeric matrix or vector")

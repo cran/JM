@@ -1,14 +1,37 @@
-`posterior.b` <-
+posterior.b <-
 function (b) {
     Y <- eta.yxT + rowSums(Ztime.missO * b)
     eta.t <- eta.tw + alpha.new * Y
     mu.y <- eta.yx + rowSums(Z.missO * b[id3.miss, , drop = FALSE])
     logNorm <- dnorm(y.missO, mu.y, sigma.new, TRUE)
     log.p.yb <- as.vector(tapply(logNorm, id.miss, sum))
-    log.p.tb <- if (method == "weibull-GH") {
-        w <- (logT.missO - eta.t) / sigma.t.new
-        ew <- - exp(w)
-        d.missO * (w - log(sigma.t.new)) + ew
+    log.p.tb <- if (method == "weibull-PH-GH") {
+        id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
+        Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+        eta.s <- alpha.new * Ys.new
+        wk <- rep(wk, n.missO)
+        log.hazard <- log(sigma.t.new) + (sigma.t.new - 1) * logT.missO + eta.t
+        Vi <- exp(log(sigma.t.new) + (sigma.t.new - 1) * log.st.missO + eta.s)
+        log.survival <- - exp(eta.tw) * P.missO * as.vector(tapply(wk * Vi, id.GK3, sum))
+        d.missO * log.hazard + log.survival
+    } else if (method == "weibull-AFT-GH") {
+        id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
+        Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+        eta.s <- alpha.new * Ys.new
+        wk <- rep(wk, n.missO)
+        Vi <- exp(eta.tw) * P.missO * as.vector(tapply(wk * exp(eta.s), id.GK3, sum))
+        log.hazard <- log(sigma.t.new) + (sigma.t.new - 1) * log(Vi) + eta.t
+        log.survival <- - Vi^sigma.t.new
+        d.missO * log.hazard + log.survival
+    } else if (method == "piecewise-PH-GH") {
+        id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
+        Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+        eta.s <- alpha.new * Ys.new
+        wkP <- rep(wk, n.missO) # <<<<<<<<<
+        log.hazard <- log(xi[ind.D.missO]) + eta.t# <<<<<<<<<
+        Vi <- xi[] * wkP * exp(eta.s)# <<<<<<<<<
+        log.survival <- - exp(eta.tw) * as.vector(tapply(wk * Vi, id.GK3, sum))# <<<<<<<<<
+        d.missO * log.hazard + log.survival
     } else {
         kn <- object$knots
         ord <- object$control$ord

@@ -1,4 +1,4 @@
-`gr.b` <-
+gr.b <-
 function (bb) {
     gr.ybi <- - crossprod(Z.ind.i, Z.ind.i %*% bb - yi.eta.yxi) / sigma^2
     eta.ti <- eta.twi + alpha * (eta.yxT[i] + sum(Ztime.i * bb))

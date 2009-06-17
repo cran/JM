@@ -1,4 +1,4 @@
-`jacobian2` <-
+jacobian2 <-
 function (L, ncz) {
     ind <- which(lower.tri(matrix(0, ncz, ncz), TRUE), arr.ind = TRUE)
     dimnames(ind) <- NULL

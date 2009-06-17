@@ -1,4 +1,4 @@
-`dmvnorm` <-
+dmvnorm <-
 function (x, mu, Sigma, log = FALSE) {
     if (!is.matrix(x))
         x <- rbind(x)

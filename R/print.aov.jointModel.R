@@ -1,4 +1,4 @@
-`print.aov.jointModel` <-
+print.aov.jointModel <-
 function (x, ...) {
     if (!inherits(x, "aov.jointModel"))
         stop("Use only with 'aov.jointModel' objects.\n")

@@ -1,4 +1,4 @@
-`vcov.flexCPH` <-
+vcov.flexCPH <-
 function (object, ...) {
     ginv(object$Hessian)
 }

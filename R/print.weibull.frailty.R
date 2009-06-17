@@ -1,4 +1,4 @@
-`print.weibull.frailty` <-
+print.weibull.frailty <-
 function (x, digits = max(4, getOption("digits") - 4), ...) {
    cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n", sep = "")
    cat("\nFrailty distribution: Gamma")

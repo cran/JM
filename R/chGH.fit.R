@@ -1,4 +1,4 @@
-`chGH.fit` <-
+chGH.fit <-
 function (x, y, id, initial.values, control) {
     # response vectors
     logT <- as.vector(y$logT)

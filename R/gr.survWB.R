@@ -1,16 +1,19 @@
-`gr.survWB` <-
+gr.survWB <-
 function (thetas) {
     gammas <- thetas[1:ncww]
     alpha <- thetas[ncww + 1]
     sigma.t <- exp(thetas[ncww + 2])
-    eta <- c(WW %*% gammas) + Y * alpha
-    w <- (logT - eta) / sigma.t
-    ki <- exp(w) - d
-    kmi <- w * ki
+    eta.tw <- as.vector(WW %*% gammas)
+    eta.t <- eta.tw + alpha * Y
+    eta.s <- alpha * Ys
+    exp.eta.tw.P <- exp(eta.tw) * P
+    Int <- wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s)
+    ki <- exp.eta.tw.P * rowsum(Int, id.GK, reorder = FALSE)
     kii <- c((p.byt * ki) %*% wGH)
-    scgammas <- - colSums(WW * kii, na.rm = TRUE) / sigma.t
-    scalpha <- - sum((p.byt * Y * ki) %*% wGH, na.rm = TRUE) / sigma.t
-    scsigmat <- - sigma.t * sum(c((p.byt * kmi) %*% wGH) - d, na.rm = TRUE) / sigma.t
+    scgammas <- - colSums(WW * (d - kii), na.rm = TRUE)
+    scalpha <- - sum((p.byt * (d * Y - exp.eta.tw.P * rowsum(Int * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)    
+    Int2 <- st^(sigma.t - 1) * (1 + sigma.t * log.st) * exp(eta.s)
+    scsigmat <- - sigma.t * sum((p.byt * (d * (1/sigma.t + logT) - exp.eta.tw.P * rowsum(wk * Int2, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
     c(scgammas, scalpha, scsigmat)
 }
 

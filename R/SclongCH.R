@@ -1,4 +1,4 @@
-`SclongCH` <-
+SclongCH <-
 function (betas) {
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)

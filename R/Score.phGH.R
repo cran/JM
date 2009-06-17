@@ -1,4 +1,4 @@
-`Score.phGH` <-
+Score.phGH <-
 function (thetas) {
     betas <- thetas[1:ncx]
     sigma <- exp(thetas[ncx + 1])
@@ -11,17 +11,22 @@ function (thetas) {
     eta.yxT2 <- as.vector(Xtime2 %*% betas)
     Y <- eta.yxT + Ztime.b
     Y2 <- eta.yxT2 + Ztime2.b
-    eta.t <- if (is.null(WW)) alpha * Y else as.vector(WW %*% gammas) + alpha * Y
-    eta.t2 <- if (is.null(WW)) alpha * Y2 else as.vector(WW %*% gammas)[indT] + alpha * Y2    
-    lambda0T <- d * lambda0[ind.T0]
-    lambda0T[is.na(lambda0T)] <- 0
+    eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else rep(0, n)
+    eta.t <- eta.tw + alpha * Y
+    eta.s <- alpha * Y2
+    exp.eta.s <- exp(eta.s)
+    exp.eta.tw <- exp(eta.tw)
     mu.y <- eta.yx + Ztb
     logNorm <- dnorm(y, mu.y, sigma, TRUE)
-    log.p.yb <- rowsum(logNorm, id)
-    ew <- exp(eta.t2)
-    log.p.tb <- d * (log(lambda0T) + eta.t)
-    log.p.tb[ind0, ] <- 0
-    log.p.tb[ind.lenN0, ] <- log.p.tb[ind.lenN0, ] - rowsum(lambda0[ind.lambda] * ew, indT)
+    log.p.yb <- rowsum(logNorm, id); dimnames(log.p.yb) <- NULL
+    log.lambda0T <- log(lambda0[ind.T0])
+    log.lambda0T[is.na(log.lambda0T)] <- 0
+    log.hazard <- log.lambda0T + eta.t
+    Int <- lambda0[ind.L1] * exp.eta.s
+    S <- matrix(0, n, k)
+    S[unq.indT, ] <- rowsum(Int, indT, reorder = FALSE)
+    log.survival <- - exp.eta.tw * S
+    log.p.tb <- d * log.hazard + log.survival
     log.p.b <- if (ncz == 1) {
         dnorm(b, sd = sqrt(D), log = TRUE)
     } else {
@@ -31,7 +36,8 @@ function (thetas) {
             dmvnorm(b, rep(0, ncz), D, TRUE)
         }
     }
-    p.ytb <- exp((log.p.yb + log.p.tb) + rep(log.p.b, each = n)); dimnames(p.ytb) <- NULL
+    p.ytb <- exp((log.p.yb + log.p.tb) + rep(log.p.b, each = n))
+    dimnames(p.ytb) <- NULL
     p.yt <- c(p.ytb %*% wGH)
     p.byt <- p.ytb / p.yt
     post.b <- p.byt %*% (b * wGH)
@@ -43,23 +49,25 @@ function (thetas) {
     Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
     mu <- y - eta.yx
     tr.tZZvarb <- sum(ZtZ * post.vb, na.rm = TRUE)
-    WX <- if (is.null(WW)) alpha * Xtime else cbind(WW, alpha * Xtime)
-    WX2 <- if (is.null(WW)) alpha * Xtime2 else cbind(WW[indT, , drop = FALSE], alpha * Xtime2)
-    nn <- ncol(WX)
-    res <- numeric(nn)
-    for (i in 1:nn) {
-        p <- rowsum(lambda0[ind.lambda] * WX2[, i] * ew, indT)
-        res[i] <- sum((p * p.byt[ind.lenN0, ]) %*% wGH)
+    sc1 <- - crossprod(X, y - eta.yx - Zb) / sigma^2
+    Int.alpha <- Int * alpha
+    sc2 <- numeric(ncx)
+    for (i in 1:ncx) {
+        S1 <- matrix(0, n, k)
+        S1[unq.indT, ] <- rowsum(Int.alpha * Xtime2[, i], indT, reorder = FALSE)
+        ki <- exp.eta.tw * S1
+        kii <- c((p.byt * ki) %*% wGH)
+        sc2[i] <- - sum(d * alpha * Xtime[, i] - kii, na.rm = TRUE)
     }
-    sc <- crossprod(WX, d) - res
-    sc.gammas <- if (is.null(WW)) NULL else sc[1:ncww]
-    sc.betas <- if (is.null(WW)) sc else sc[seq(ncww + 1, nn)]
-    p1 <- sum(d * c((Y * p.byt) %*% wGH))
-    p2 <- rowsum(lambda0[ind.lambda] * Y2 * ew, indT)
-    sc.alpha <- p1 - sum((p2 * p.byt[ind.lenN0, ]) %*% wGH, na.rm = TRUE)
-    score.t <- - c(sc.gammas, sc.alpha)
-    score.y <- - c(crossprod(X, mu - Zb) / sigma^2 + sc.betas, 
-        sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
+    score.y <- c(c(sc1 + sc2), 
+        - sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
+    sc.gammas <- if (!is.null(WW))
+        - colSums(WW * (d - c((p.byt * (exp.eta.tw * S)) %*% wGH)), na.rm = TRUE)
+    else 
+        NULL
+    S1[unq.indT, ] <- rowsum(Int * Y2, indT, reorder = FALSE)
+    sc.alpha <- - sum((p.byt * (d * Y - exp.eta.tw * S1)) %*% wGH, na.rm = TRUE)
+    score.t <- c(sc.gammas, sc.alpha)
     score.b <- if (diag.D) {
         svD <- 1 / D
         svD2 <- svD^2

@@ -1,4 +1,4 @@
-`gr.survCH` <-
+gr.survCH <-
 function (thetas) {
     gammas <- thetas[1:ncww]
     alpha <- thetas[ncww + 1]

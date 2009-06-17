@@ -1,4 +1,4 @@
-`vcov.weibull.frailty` <-
+vcov.weibull.frailty <-
 function (object, sand.se = FALSE, ...) {
     inv.H <- solve(object$hessian)
     betas <- object$coefficients$betas

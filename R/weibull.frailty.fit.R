@@ -1,4 +1,4 @@
-`weibull.frailty.fit` <-
+weibull.frailty.fit <-
 function (logT, d, X, id, init.thetas, control = list()) {
     Time <- exp(logT)
     p <- ncol(X)

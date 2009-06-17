@@ -1,4 +1,4 @@
-`jacobian` <-
+jacobian <-
 function (theta) {
     k <- length(theta)
     etheta <- exp(theta)

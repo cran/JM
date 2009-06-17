@@ -1,17 +1,18 @@
-`opt.survPH` <-
+opt.survPH <-
 function (thetas) {
-     if (is.null(WW)) {
-        eta.t <- thetas * Y
-        eta.t2 <- thetas * Y2
-    } else {
-        nth <- length(thetas)
-        eta.t <- as.vector(WW %*% thetas[-nth]) + thetas[nth] * Y
-        eta.t2 <- as.vector(WW %*% thetas[-nth])[indT] + thetas[nth] * Y2
-    }
-    ew <- exp(eta.t2)
-    log.p.tb <- d * (log(lambda0T) + eta.t)
-    log.p.tb[ind0, ] <- 0
-    log.p.tb[ind.lenN0, ] <- log.p.tb[ind.lenN0, ] - rowsum(lambda0[ind.lambda] * ew, indT)
+    gammas <- thetas[seq_len(ncww)]
+    alpha <- thetas[ncww + 1]
+    eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else rep(0, n)
+    eta.t <- eta.tw + alpha * Y
+    eta.s <- alpha * Y2
+    exp.eta.s <- exp(eta.s)
+    log.lambda0T <- log(lambda0[ind.T0])
+    log.lambda0T[is.na(log.lambda0T)] <- 0
+    log.hazard <- log.lambda0T + eta.t
+    S <- matrix(0, n, k)
+    S[unq.indT, ] <- rowsum(lambda0[ind.L1] * exp.eta.s, indT)
+    log.survival <- - exp(eta.tw) * S
+    log.p.tb <- d * log.hazard + log.survival
     p.bytn <- p.byt * log.p.tb
     -sum(p.bytn %*% wGH, na.rm = TRUE)
 }

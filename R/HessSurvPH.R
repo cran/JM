@@ -1,4 +1,4 @@
-`HessSurvPH` <-
+HessSurvPH <-
 function (WW, Y, Y2, ew) {
     WY <- if (is.null(WW)) Y2 else cbind(WW[indT, , drop = FALSE], Y2)
     ncwy <- ncol(WY)

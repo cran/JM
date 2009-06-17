@@ -1,4 +1,4 @@
-`predict.jointModel` <-
+predict.jointModel <-
 function (object, newdata, b = NULL, id.var = "id", process = c("Longitudinal", "Event"), 
     type = c("Marginal", "Subject"), scale = c("survival", "cumulative-Hazard", 
     "log-cumulative-Hazard", "expected-future-lifetime"), survTimes = NULL, M = 1000, ...) {

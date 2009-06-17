@@ -1,4 +1,4 @@
-`summary.jointModel` <-
+summary.jointModel <-
 function (object, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
@@ -11,9 +11,18 @@ function (object, ...) {
     if (object$method == "ph-GH") {
         gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha))
         indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
-    } else if (object$method == "weibull-GH") {
+    } else if (object$method == "weibull-PH-GH") {
         gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
             "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
+        indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
+    } else if (object$method == "weibull-AFT-GH") {
+        gammas <- c(-object$coefficients$gammas, "Assoct" = -as.vector(object$coefficients$alpha),
+            "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
+        indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
+    } else if (object$method == "piecewise-PH-GH") {
+        gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
+            log(as.vector(object$coefficients$xi)))
+        names(gammas)[seq(length(gammas) - object$x$Q + 1, length(gammas))] <- paste("log(xi.", seq_len(object$x$Q), ")", sep = "")
         indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
     } else {
         gms <- object$coefficients$gammas

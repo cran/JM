@@ -1,4 +1,4 @@
-`chLaplace.fit` <-
+chLaplace.fit <-
 function (x, y, id, initial.values, initial.EB = NULL, control) {
     # response vectors
     logT <- as.vector(y$logT)

@@ -1,4 +1,4 @@
-`gauher` <-
+gauher <-
 function (n) {
     EPS <- 3e-14
     PIM4 <- 0.751125544464943

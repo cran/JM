@@ -1,4 +1,4 @@
-`flexCPH` <-
+flexCPH <-
 function (formula = formula(data), data = parent.frame(), subset, na.action, init, control = list()) {
     call <- match.call()
     m <- match.call(expand.dots = FALSE)

@@ -1,4 +1,4 @@
-`ranef.jointModel` <-
+ranef.jointModel <-
 function (object, postVar = FALSE, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")

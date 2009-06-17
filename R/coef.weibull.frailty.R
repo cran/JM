@@ -1,4 +1,4 @@
-`coef.weibull.frailty` <-
+coef.weibull.frailty <-
 function (object, ...) {
     object$coefficients$betas
 }

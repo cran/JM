@@ -1,4 +1,4 @@
-`fd.vec` <-
+fd.vec <-
 function (x, f, ..., eps = 1e-05) {
     n <- length(x)
     res <- matrix(0, n, n)

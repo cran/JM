@@ -1,4 +1,4 @@
-`logLik.jointModel` <-
+logLik.jointModel <-
 function (object, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")

@@ -1,4 +1,4 @@
-`weibullGH.fit` <-
+weibullAFTGH.fit <-
 function (x, y, id, initial.values, control) {
     # response vectors
     logT <- as.vector(y$logT)
@@ -7,13 +7,15 @@ function (x, y, id, initial.values, control) {
     # design matrices
     X <- x$X
     Xtime <- x$Xtime
+    Xs <- x$Xs
     Z <- x$Z
     Ztime <- x$Ztime
+    Zs <- x$Zs
     W1 <- x$W
     WW <- if (is.null(W1)) as.matrix(rep(1, length(logT))) else cbind(1, W1)
-    dimnames(X) <- dimnames(Xtime) <- dimnames(Z) <- dimnames(Ztime) <- dimnames(WW) <- NULL
+    dimnames(X) <- dimnames(Xtime) <- dimnames(Xs) <- dimnames(Z) <- dimnames(Ztime) <- dimnames(Zs) <- dimnames(WW) <- NULL
     attr(X, "assign") <- attr(X, "contrasts") <- attr(Xtime, "assign") <- attr(Xtime, "contrasts") <- NULL
-    attr(Z, "assign") <- attr(Ztime, "assign") <- NULL
+    attr(Xs, "assign") <- attr(Xs, "contrasts") <- attr(Zs, "assign") <- attr(Zs, "contrasts") <- attr(Z, "assign") <- attr(Ztime, "assign") <- NULL
     # sample size settings
     ncx <- ncol(X)
     ncz <- ncol(Z)
@@ -37,6 +39,13 @@ function (x, y, id, initial.values, control) {
     b2 <- if (ncz == 1) b * b else t(apply(b, 1, function (x) x %o% x))
     Ztb <- Z %*% t(b)
     Ztime.b <- Ztime %*% t(b)
+    Zsb <- Zs %*% t(b)
+    # Gauss-Kronrod rule
+    st <- x$st
+    log.st <- log(st)
+    wk <- rep(x$wk, length(logT))
+    P <- as.vector(x$P)
+    id.GK <- rep(seq_along(logT), each = control$GKk)
     # initial values
     betas <- as.vector(initial.values$betas)
     sigma <- initial.values$sigma
@@ -47,9 +56,9 @@ function (x, y, id, initial.values, control) {
     diag.D <- !is.matrix(D)
     if (!diag.D) dimnames(D) <- NULL else names(D) <- NULL
     # fix environments for functions
-    environment(opt.survWB) <- environment(gr.survWB) <- environment()
-    environment(opt.longWB) <- environment(gr.longWB) <- environment()
-    environment(LogLik.weibullGH) <- environment(Score.weibullGH) <- environment()
+    environment(opt.survAFTWB) <- environment(gr.survAFTWB) <- environment()
+    environment(opt.longAFTWB) <- environment(gr.longAFTWB) <- environment()
+    environment(LogLik.weibullAFTGH) <- environment(Score.weibullAFTGH) <- environment()
     old <- options(warn = (-1))
     on.exit(options(old))
     # EM iterations
@@ -70,15 +79,18 @@ function (x, y, id, initial.values, control) {
         eta.yxT <- as.vector(Xtime %*% betas)
         eta.tw <- as.vector(WW %*% gammas)
         Y <- eta.yxT + Ztime.b
+        Ys <- as.vector(Xs %*% betas) + Zsb
         eta.t <- eta.tw + alpha * Y
+        eta.s <- alpha * Ys
         
         # E-step
         mu.y <- eta.yx + Ztb
         logNorm <- dnorm(y, mu.y, sigma, TRUE)
-        log.p.yb <- rowsum(logNorm, id); dimnames(log.p.yb) <- NULL
-        w <- (logT - eta.t) / sigma.t
-        ew <- - exp(w)
-        log.p.tb <- d * (w - log(sigma.t)) + ew
+        log.p.yb <- rowsum(logNorm, id, reorder = FALSE); dimnames(log.p.yb) <- NULL
+        Vi <- exp(eta.tw) * P * rowsum(wk * exp(eta.s), id.GK, reorder = FALSE); dimnames(Vi) <- NULL
+        log.hazard <- log(sigma.t) + (sigma.t - 1) * log(Vi) + eta.t
+        log.survival <- - Vi^sigma.t
+        log.p.tb <- d * log.hazard + log.survival
         log.p.b <- if (ncz == 1) {
             dnorm(b, sd = sqrt(D), log = TRUE)
         } else {
@@ -98,31 +110,9 @@ function (x, y, id, initial.values, control) {
             (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
         }
         
-        # compute log-likelihood and check convergence
+        # compute log-likelihood
         log.p.yt <- log(p.yt)
         lgLik[it] <- sum(log.p.yt[is.finite(log.p.yt)], na.rm = TRUE)
-        if (it > 5) {
-            if (lgLik[it] < lgLik[it - 1]) {
-                betas <- Y.mat[it - 1, 1:ncx]
-                sigma <- Y.mat[it - 1, ncx + 1]
-                gammas <- T.mat[it - 1, 1:ncww]
-                alpha <- T.mat[it - 1, ncww + 1]
-                sigma.t <- T.mat[it - 1, ncww + 2]
-                D <- B.mat[it - 1,  ]
-                if (!diag.D) dim(D) <- c(ncz, ncz)
-                break
-            } else {
-                thets1 <- c(Y.mat[it - 1, ], T.mat[it - 1, ], B.mat[it - 1, ])
-                thets2 <- c(Y.mat[it, ], T.mat[it, ], B.mat[it, ])
-                check1 <- max(abs(thets2 - thets1) / (abs(thets1) + control$tol1)) < control$tol2
-                check2 <- (lgLik[it] - lgLik[it - 1]) < control$tol3 * (abs(lgLik[it - 1]) + control$tol3)
-                if (check1 || check2) {
-                    conv <- TRUE
-                    if (control$verbose) cat("\n\nconverged!\n")
-                    break
-                }
-            }
-        }
         
         # print results if verbose
         if (control$verbose) {
@@ -130,12 +120,26 @@ function (x, y, id, initial.values, control) {
             cat("log-likelihood:", lgLik[it], "\n")
             cat("betas:", round(betas, 4), "\n")
             cat("sigma:", round(sigma, 4), "\n")
-            cat("gammas:", round(gammas, 4), "\n")
-            cat("alpha:", round(alpha, 4), "\n")
+            cat("gammas:", -round(gammas, 4), "\n")
+            cat("alpha:", -round(alpha, 4), "\n")
             cat("sigma.t:", round(sigma.t, 4), "\n")
             cat("D:", if (!diag.D) round(D[lower.tri(D, TRUE)], 4) else round(D, 4), "\n")
         }
         
+        # check convergence
+        if (it > 5 && lgLik[it] > lgLik[it - 1]) {
+            thets1 <- c(Y.mat[it - 1, ], T.mat[it - 1, ], B.mat[it - 1, ])
+            thets2 <- c(Y.mat[it, ], T.mat[it, ], B.mat[it, ])
+            check1 <- max(abs(thets2 - thets1) / (abs(thets1) + control$tol1)) < control$tol2
+            check2 <- (lgLik[it] - lgLik[it - 1]) < control$tol3 * (abs(lgLik[it - 1]) + control$tol3)
+            if (check1 || check2) {
+                conv <- TRUE
+                if (control$verbose)
+                    cat("\n\nconverged!\ncalculating Hessian...\n")
+                break
+            }
+        }
+                
         # M-step
         Zb <- rowSums(Z * post.b[id, ], na.rm = TRUE)
         mu <- y - eta.yx
@@ -143,12 +147,13 @@ function (x, y, id, initial.values, control) {
         sigman <- sqrt(c(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / N)
         Dn <- matrix(colMeans(p.byt %*% (b2 * wGH), na.rm = TRUE), ncz, ncz)
         Dn <- if (diag.D) diag(Dn) else 0.5 * (Dn + t(Dn))
-        Hbetas <- nearPD(fd.vec(betas, gr.longWB))
-        scbetas <- gr.longWB(betas)
+        Hbetas <- nearPD(fd.vec(betas, gr.longAFTWB))
+        scbetas <- gr.longAFTWB(betas)
         betasn <- betas - c(solve(Hbetas, scbetas))
         thetas <- c(gammas, alpha, log(sigma.t))
-        optz.surv <- optim(thetas, opt.survWB, gr.survWB, method = "BFGS", 
-            control = list(maxit = 3, parscale = rep(0.1, length(thetas))))
+        optz.surv <- optim(thetas, opt.survAFTWB, gr.survAFTWB, method = "BFGS", 
+            control = list(maxit = if (it < 5) 20 else 5, 
+                parscale = if (it < 10) rep(0.01, length(thetas)) else rep(0.1, length(thetas))))
         thetasn <- optz.surv$par
 
         # update parameter values
@@ -160,7 +165,7 @@ function (x, y, id, initial.values, control) {
         sigma.t <- exp(thetasn[ncww + 2])
     }
     thetas <- c(betas, log(sigma), gammas, alpha, log(sigma.t), if (diag.D) log(D) else chol.transf(D))
-    lgLik <- - LogLik.weibullGH(thetas)    
+    lgLik <- - LogLik.weibullAFTGH(thetas)    
     # if not converged, start quasi-Newton iterations
     if (!conv && !control$only.EM) {
         if (is.null(control$parscale))
@@ -168,11 +173,11 @@ function (x, y, id, initial.values, control) {
         if (control$verbose)
             cat("\n\nquasi-Newton iterations start.\n\n")
         out <- if (control$optimizer == "optim") {
-            optim(thetas, LogLik.weibullGH, Score.weibullGH, method = "BFGS",
+            optim(thetas, LogLik.weibullAFTGH, Score.weibullAFTGH, method = "BFGS",
                 control = list(maxit = control$iter.qN, parscale = control$parscale, 
                 trace = 10 * control$verbose))
         } else {
-            nlminb(thetas, LogLik.weibullGH, Score.weibullGH, scale = control$parscale, 
+            nlminb(thetas, LogLik.weibullAFTGH, Score.weibullAFTGH, scale = control$parscale, 
                 control = list(iter.max = control$iter.qN, trace = 1 * control$verbose))
         }
         if ((conv <- out$convergence) == 0 || - out[[2]] > lgLik) {
@@ -190,14 +195,18 @@ function (x, y, id, initial.values, control) {
             eta.yx <- as.vector(X %*% betas)
             eta.yxT <- as.vector(Xtime %*% betas)
             eta.tw <- as.vector(WW %*% gammas)
+            exp.eta.tw <- exp(eta.tw)
             Y <- eta.yxT + Ztime.b
-            eta.t <- eta.tw + alpha * Y    
+            Ys <- as.vector(Xs %*% betas) + Zsb
+            eta.t <- eta.tw + alpha * Y
+            eta.s <- alpha * Ys
             mu.y <- eta.yx + Ztb
             logNorm <- dnorm(y, mu.y, sigma, TRUE)
             log.p.yb <- rowsum(logNorm, id)
-            w <- (logT - eta.t) / sigma.t
-            ew <- - exp(w)
-            log.p.tb <- d * (w + ew - log(sigma.t)) + (1 - d) * ew
+            Vi <- exp(eta.tw) * P * rowsum(wk * exp(eta.s), id.GK, reorder = FALSE); dimnames(Vi) <- NULL
+            log.hazard <- log(sigma.t) + (sigma.t - 1) * log(Vi) + eta.t
+            log.survival <- - Vi^sigma.t
+            log.p.tb <- d * log.hazard + log.survival            
             log.p.b <- if (ncz == 1) {
                 dnorm(b, sd = sqrt(D), log = TRUE)
             } else {
@@ -222,9 +231,9 @@ function (x, y, id, initial.values, control) {
     }
     # calculate Hessian matrix
     Hessian <- if (control$numeriDeriv == "fd") {
-        fd.vec(thetas, Score.weibullGH, eps = control$eps.Hes)
+        fd.vec(thetas, Score.weibullAFTGH, eps = control$eps.Hes)
     } else { 
-        cd.vec(thetas, Score.weibullGH, eps = control$eps.Hes)
+        cd.vec(thetas, Score.weibullAFTGH, eps = control$eps.Hes)
     }
     names(betas) <- names(initial.values$betas)
     if (!diag.D) dimnames(D) <- dimnames(initial.values$D) else names(D) <- names(initial.values$D)

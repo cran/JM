@@ -1,4 +1,4 @@
-`Score.weibullGH` <-
+Score.weibullGH <-
 function (thetas) {
     betas <- thetas[1:ncx]
     sigma <- exp(thetas[ncx + 1])
@@ -10,14 +10,20 @@ function (thetas) {
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)
     eta.tw <- as.vector(WW %*% gammas)
+    exp.eta.tw <- exp(eta.tw)
     Y <- eta.yxT + Ztime.b
+    Ys <- as.vector(Xs %*% betas) + Zsb
     eta.t <- eta.tw + alpha * Y
+    eta.s <- alpha * Ys
+    exp.eta.tw.P <- exp.eta.tw * P
     mu.y <- eta.yx + Ztb
     logNorm <- dnorm(y, mu.y, sigma, TRUE)
     log.p.yb <- rowsum(logNorm, id)
-    w <- (logT - eta.t) / sigma.t
-    ew <- - exp(w)
-    log.p.tb <- d * (w + ew - log(sigma.t)) + (1 - d) * ew
+    log.hazard <- log(sigma.t) + (sigma.t - 1) * logT + eta.t
+    Int <- wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s)
+    log.survival <- - exp.eta.tw * P * rowsum(Int, id.GK, reorder = FALSE)
+    dimnames(log.survival) <- NULL
+    log.p.tb <- d * log.hazard + log.survival
     log.p.b <- if (ncz == 1) {
         dnorm(b, sd = sqrt(D), log = TRUE)
     } else {
@@ -39,13 +45,22 @@ function (thetas) {
     Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
     mu <- y - eta.yx
     tr.tZZvarb <- sum(ZtZ * post.vb, na.rm = TRUE)
-    ki <- - ew - d
-    kmi <- w * ki
+    sc1 <- - crossprod(X, y - eta.yx - Zb) / sigma^2
+    exp.eta.tw.P <- exp.eta.tw * P
+    sc2 <- numeric(ncx)
+    for (i in 1:ncx) {
+        ki <- exp.eta.tw.P * rowsum(Int * alpha * Xs[, i], id.GK, reorder = FALSE)
+        kii <- c((p.byt * ki) %*% wGH)
+        sc2[i] <- - sum(d * alpha * Xtime[, i] - kii, na.rm = TRUE)
+    }    
+    score.y <- c(sc1 + sc2, - sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
+    ki <- P * rowsum(Int, id.GK, reorder = FALSE)
     kii <- c((p.byt * ki) %*% wGH)
-    score.t <- - c(colSums(WW * kii, na.rm = TRUE), sum((p.byt * Y * ki) %*% wGH, na.rm = TRUE), 
-        sigma.t * sum(c((p.byt * kmi) %*% wGH) - d, na.rm = TRUE)) / sigma.t
-    score.y <- - c(crossprod(X, mu - Zb) / sigma^2 + colSums((alpha * Xtime) * kii, na.rm = TRUE) / sigma.t, 
-        sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
+    scgammas <- - colSums(WW * (d - exp.eta.tw * kii), na.rm = TRUE)
+    scalpha <- - sum((p.byt * (d * Y - exp.eta.tw.P * rowsum(Int * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)    
+    Int2 <- st^(sigma.t - 1) * (1 + sigma.t * log.st) * exp(eta.s)
+    scsigmat <- - sigma.t * sum((p.byt * (d * (1/sigma.t + logT) - exp.eta.tw.P * rowsum(wk * Int2, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+    score.t <- c(scgammas, scalpha, scsigmat)
     score.b <- if (diag.D) {
         svD <- 1 / D
         svD2 <- svD^2

@@ -1,4 +1,4 @@
-`fn.b` <-
+fn.b <-
 function (bb) {
     eta.yi <- eta.yxi + rowSums(Z.ind.i * rep(bb, each = ni[i]))
     log.p.ybi <- sum(dnorm(yi, eta.yi, sigma, log = TRUE))

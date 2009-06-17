@@ -42,7 +42,7 @@
   fixed and random effects design matrices, respectively, and \eqn{\beta} and \eqn{b_i} denote the fixed effects 
   and random effects components. If \code{type = "stand-Marginal"} or \code{type = "stand-Subject"}, the above defined 
   residuals are divided by the estimated standard deviation of the corresponding error term. If \code{MI = TRUE}, multiple-imputation-based 
-  residuals are calculated for the longitudinal process; for more information regarding these residuals, check Rizopoulos et al. (2008).
+  residuals are calculated for the longitudinal process; for more information regarding these residuals, check Rizopoulos et al. (2009).
   
   When \code{process = "Event"}, residuals are calculated for the survival outcome. Martingale residuals are available 
   for all options for the survival submodel (for the different options of survival submodel, check the \code{method} 
@@ -72,8 +72,8 @@ The multiple-imputation-based residuals are not available for joint models with 
 Cox, D. and Snell, E. (1968) A general definition of residuals. \emph{Journal of the Royal Statistical Society, 
 Series B} \bold{30}, 248--275.
 
-Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2008) Multiple-imputation-based residuals and diagnostic 
-plots for joint models of longitudinal and survival outcomes. \emph{Submitted} (available upon request from the first author).
+Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2009) Multiple-imputation-based residuals and diagnostic plots 
+for joint models of longitudinal and survival outcomes. \emph{Biometrics}, to appear (doi: 10.1111/j.1541-0420.2009.01273.x).
 }
 
 \seealso{\code{\link{fitted.jointModel}}}

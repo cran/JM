@@ -1,4 +1,4 @@
-`LogLik.chGH` <-
+LogLik.chGH <-
 function (thetas) {
     betas <- thetas[1:ncx]
     sigma <- exp(thetas[ncx + 1])

@@ -1,4 +1,4 @@
-`print.summary.jointModel` <-
+print.summary.jointModel <-
 function (x, digits = max(4, getOption("digits") - 4), ...) {
     if (!inherits(x, "summary.jointModel"))
         stop("Use only with 'summary.jointModel' objects.\n")
@@ -12,9 +12,14 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
     cat("\nLongitudinal Process: linear mixed effects model")
     cat("\nEvent Process: ")
     if (x$method == "ph-GH") {
-        cat("unspecified baseline hazard\n\n")
-    } else if (x$method == "weibull-GH") {
+        cat("Relative risk model with unspecified baseline risk function\n\n")
+    } else if (x$method == "weibull-AFT-GH") {
         cat("Weibull accelerated failure time model\n\n")
+    } else if (x$method == "weibull-PH-GH") {
+        cat("Weibull relative risk model\n\n")
+    } else if (x$method == "piecewise-PH-GH") {
+        cat("Relative risk model with piecewise-constant baseline risk function (knots at: ", 
+            paste(round(x$control$knots, 1), collapse = ", "), ")\n\n", sep = "")
     } else {
         cat("log cumulative baseline hazard with B-splines (internal knots at: ", 
             paste(round(exp(x$knots[-c(1, length(x$knots))]), 2), collapse = ", "), ")\n\n", sep = "")
@@ -60,11 +65,16 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
     ind <- out$"p-value" == 0
     out$"p-value" <- sprintf(paste("%.", digits, "f", sep = ""), out$"p-value")
     out$"p-value"[ind] <- paste("<0.", paste(rep("0", digits - 1), collapse = ""), "1", sep = "")
+    if (x$method == "piecewise-PH-GH") {
+        Q <- length(x$control$knots) + 1
+        ind.xi <- row.names(out) %in% paste("log(xi.", 1:Q, ")", sep = "")
+        out$"p-value"[ind.xi] <- " "
+    }
     print(out)
-    if(x$method == "weibull-GH")
+    if(x$method == "weibull-PH-GH" || x$method == "weibull-AFT-GH")
         cat("\nScale:", round(exp(x$"CoefTable-Event"[nrow(x$"CoefTable-Event"), 1]), digits), "\n")
     cat("\nIntegration:\n")
-    GH <- x$method %in% c("ch-GH", "ph-GH", "weibull-GH")
+    GH <- x$method %in% c("ch-GH", "ph-GH", "weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH")
     cat("method:", if (GH) "Gauss-Hermite" else "Laplace")
     if (GH) cat("\nquadrature points:", x$control$GHk, "\n") else cat("\n")
     cat("\nOptimization:\n")

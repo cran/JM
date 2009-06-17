@@ -1,4 +1,4 @@
-`HessLongPH` <-
+HessLongPH <-
 function (X, Xtime, Xtime2, ew) {
     H1 <- - XtX / sigma^2
     H2 <- matrix(0, ncx, ncx)

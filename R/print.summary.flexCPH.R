@@ -1,4 +1,4 @@
-`print.summary.flexCPH` <-
+print.summary.flexCPH <-
 function (x, digits = max(4, getOption("digits") - 4), ...) {
    cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
    cat("Data Descriptives:\n")

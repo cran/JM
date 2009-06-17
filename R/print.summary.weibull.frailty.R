@@ -1,4 +1,4 @@
-`print.summary.weibull.frailty` <-
+print.summary.weibull.frailty <-
 function (x, digits = max(4, getOption("digits") - 4), ...) {
     cat("\n\tWeibull Relative Risk Model with Gamma Frailty\n")
     cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")

@@ -1,4 +1,4 @@
-`Score.chLaplace` <-
+Score.chLaplace <-
 function (thetas, b) {
     betas <- thetas[1:ncx]
     sigma <- exp(thetas[ncx + 1])

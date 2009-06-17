@@ -1,4 +1,4 @@
-`plot.jointModel` <-
+plot.jointModel <-
 function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marginal Survival", 
     "Marginal Cumulative Hazard", "Marginal log Cumulative Hazard", "Baseline Hazard", "Cumulative Baseline Hazard", 
     "Subject-specific Survival", "Subject-specific Cumulative Hazard", "Subject-specific log Cumulative Hazard"), 
@@ -19,7 +19,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
         if (is.null(ids))
             ids <- seq_along(x$y$logT)
         if (is.null(survTimes) || !is.numeric(survTimes))
-            survTimes <- seq(min(exp(x$y$logT)), max(exp(x$y$logT)), length.out = 15)
+            survTimes <- seq(min(exp(x$y$logT)), max(exp(x$y$logT)), length.out = 31)
         log.survTimes <- log(survTimes)
         nt <- length(survTimes)
         n <- x$n
@@ -29,37 +29,122 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
         fitT <- if (method == "ph-GH") {
             lambda0 <- x$coefficients$lambda0[, "basehaz"]
             unqT <- x$coefficients$lambda0[, "time"]
-            times <- lapply(survTimes, function (t) unqT[t >= unqT])
-            ind.lambda <- unlist(sapply(sapply(times, length), function (x) {
-                if (x > 0) seq(1, x) else NULL
-            }), use.names = FALSE)
-            indL <- rep(seq_along(survTimes), sapply(times, length))
-            times <- unlist(times, use.names = FALSE)            
-            indT <- rep(1:x$n, each = length(times))
-            data.id2 <- x$data.id[indT, ]
-            data.id2[x$timeVar] <- unlist(times, use.names = FALSE)
-            mf <- model.frame(x$termsY, data = data.id2)
-            Xtime2 <- model.matrix(x$formYx, mf)
-            Ztime2 <- model.matrix(x$formYz, mf)
-            Y <- c(Xtime2 %*% x$coefficients$betas + rowSums(Ztime2 * x$EB$post.b[indT, ]))
-            eta <- if (is.null(W1)) alpha * Y else as.vector(W1 %*% gammas)[indT] + alpha * Y
-            ew <- exp(eta)
-            indL <- rep(indL, x$n)
-            ind.lambda <- rep(ind.lambda, x$n)
-            ff <- paste(indL, "\t", indT)
-            H <- rowsum(lambda0[ind.lambda] * ew, ff, reorder = FALSE)            
-            dim(H) <- c(nt, n)
-            H <- t(H)
-            list("survival" = exp(- H), "cumulative-Hazard" = H, "log-cumulative-Hazard" = log(H))
-        } else if (method == "weibull-GH") {
+            T.mat <- matrix(exp(log.survTimes), nrow = n, ncol = nt, byrow = TRUE)
+            eta.tw <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, n)
+            Haz <- matrix(0, n, nt)
+            for (i in 1:nt) {
+                times <- lapply(T.mat[, i], function (t) unqT[t >= unqT])
+                ind.len <- sapply(times, length)
+                indT <- rep(1:nrow(x$data.id), ind.len)
+                data.id2 <- x$data.id[indT, ]
+                data.id2[x$timeVar] <- unlist(times, use.names = FALSE)
+                mf <- model.frame(x$termsY, data = data.id2)
+                Xtime2 <- model.matrix(x$formYx, mf)
+                Ztime2 <- model.matrix(x$formYz, mf)
+                nk <- as.vector(sapply(split(indT, indT), length))
+                ind.L1 <- unlist(lapply(nk, seq, from = 1))
+                Y2 <- c(Xtime2 %*% x$coefficients$betas + rowSums(Ztime2 * x$EB$post.b[indT, ]))
+                eta.s <- alpha * Y2
+                S <- numeric(n)
+                S[unique(indT)] <- tapply(lambda0[ind.L1] * exp(eta.s), indT, sum)
+                Haz[, i] <- exp(eta.tw) * S
+            }
+            list("survival" = exp(- Haz), "cumulative-Hazard" = Haz, "log-cumulative-Hazard" = log(Haz))
+        } else if (method == "weibull-PH-GH") {
+            T.mat <- matrix(exp(log.survTimes), nrow = n, ncol = nt, byrow = TRUE)
             WW <- if (is.null(W1)) as.matrix(rep(1, n)) else cbind(1, W1)
-            Y <- c(x$x$Xtime %*% x$coefficients$betas + x$EB$Ztimeb)
-            eta <- c(WW %*% gammas) + Y * alpha
-            logT.mat <- matrix(log.survTimes, nrow = n, ncol = nt, byrow = TRUE)
+            eta.tw <- as.vector(WW %*% gammas)
             sigma.t <- x$coefficients$sigma.t
-            list("survival" = exp(- exp((logT.mat - eta) / sigma.t)),
-                 "cumulative-Hazard" = exp((logT.mat - eta) / sigma.t),
-                 "log-cumulative-Hazard" = (logT.mat - eta) / sigma.t)
+            b <- x$EB$post.b
+            wk <- gaussKronrod()$wk
+            sk <- gaussKronrod()$sk
+            id.GK <- rep(seq_len(n), each = x$control$GKk)
+            Haz <- matrix(0, n, nt)
+            for (i in 1:nt) {
+                P <- T.mat[, i] / 2
+                st <- outer(P, sk + 1)
+                data.id <- x$data.id[id.GK, ]
+                data.id[x$timeVar] <- c(t(st))
+                mf <- model.frame(x$termsY, data = data.id)
+                Xs <- model.matrix(x$formYx, mf)
+                Zs <- model.matrix(x$formYz, mf)
+                log.st <- log(c(t(st)))
+                Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
+                eta.s <- alpha * Ys
+                Haz[, i] <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), id.GK, reorder = FALSE)
+            }
+            list("survival" = exp(- Haz),
+                 "cumulative-Hazard" = Haz,
+                 "log-cumulative-Hazard" = log(Haz))
+        } else if (method == "weibull-AFT-GH") {
+            T.mat <- matrix(exp(log.survTimes), nrow = n, ncol = nt, byrow = TRUE)
+            WW <- if (is.null(W1)) as.matrix(rep(1, n)) else cbind(1, W1)
+            eta.tw <- as.vector(WW %*% gammas)
+            sigma.t <- x$coefficients$sigma.t
+            b <- x$EB$post.b
+            wk <- gaussKronrod()$wk
+            sk <- gaussKronrod()$sk
+            id.GK <- rep(seq_len(n), each = x$control$GKk)
+            Haz <- matrix(0, n, nt)
+            for (i in 1:nt) {
+                P <- T.mat[, i] / 2
+                st <- outer(P, sk + 1)
+                data.id <- x$data.id[id.GK, ]
+                data.id[x$timeVar] <- c(t(st))
+                mf <- model.frame(x$termsY, data = data.id)
+                Xs <- model.matrix(x$formYx, mf)
+                Zs <- model.matrix(x$formYz, mf)
+                log.st <- log(c(t(st)))
+                Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
+                eta.s <- alpha * Ys
+                Vi <- exp(eta.tw) * P * rowsum(wk * exp(eta.s), id.GK, reorder = FALSE); dimnames(Vi) <- NULL
+                Haz[, i] <- Vi^sigma.t
+            }
+            list("survival" = exp(- Haz),
+                 "cumulative-Hazard" = Haz,
+                 "log-cumulative-Hazard" = log(Haz))
+        } else if (method == "piecewise-PH-GH") {
+            T.mat <- matrix(exp(log.survTimes), nrow = n, ncol = nt, byrow = TRUE)
+            Q <- x$x$Q
+            qs <- c(0, x$control$knots, max(exp(x$y$logT)) + 1)
+            WW <- W1
+            eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0
+            xi <- x$coefficients$xi
+            b <- x$EB$post.b
+            sk <- gaussKronrod(x$control$GKk)$sk
+            nk <- length(sk)
+            Haz <- matrix(0, n, nt)
+            for (i in 1:nt) {
+                ind.D <- findInterval(T.mat[, i], qs, rightmost.closed = TRUE)
+                Tiq <- outer(T.mat[, i], qs, pmin)
+                Lo <- Tiq[, 1:Q]
+                Up <- Tiq[, 2:(Q+1)]
+                T <- Up - Lo
+                P <- T / 2
+                P[P < x$control$tol3] <- as.numeric(NA)
+                P1 <- (Up + Lo) / 2
+                st <- matrix(0, n, nk*Q)
+                skQ <- rep(sk, Q)
+                for (ii in 1:n) {
+                    st[ii, ] <- rep(P[ii, ], each = nk) * skQ + rep(P1[ii, ], each = nk)
+                }
+                data.id2 <- x$data.id[rep(1:n, each = nk*Q), ]
+                data.id2[x$timeVar] <- c(t(st))
+                mf <- model.frame(x$termsY, data = data.id2)
+                Xs <- model.matrix(x$formYx, mf)
+                Zs <- model.matrix(x$formYz, mf)
+                id.GK <- rep(1:n, rowSums(!is.na(st)))
+                Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
+                eta.s <- alpha * Ys
+                ind.K <- rep(unlist(lapply(ind.D, seq_len)), each = nk)
+                wk <- unlist(lapply(ind.D, function (n) rep(gaussKronrod(x$control$GKk)$wk, n)))
+                P <- c(t(P))
+                wkP <- wk * rep(P[!is.na(P)], each = nk)
+                Haz[, i] <- exp(eta.tw) * rowsum(xi[ind.K] * wkP * exp(eta.s), id.GK, reorder = FALSE)
+            }
+            list("survival" = exp(- Haz),
+                 "cumulative-Hazard" = Haz,
+                 "log-cumulative-Hazard" = log(Haz))
         } else {
             W2 <- splineDesign(x$knots, log.survTimes, ord = x$control$ord)
             Y <- c(x$x$Xtime %*% x$coefficients$betas + x$EB$Ztimeb)

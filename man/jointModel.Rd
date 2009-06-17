@@ -11,8 +11,8 @@ data under a maximum likelihood approach. Various options for the survival model
 
 \usage{
 jointModel(lmeObject, survObject, timeVar, 
-    method = c("weibull-GH", "ch-GH", "ph-GH", "ch-Laplace"), 
-    init = NULL, control = list())
+    method = c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", "ch-GH", "ph-GH", "ch-Laplace"), 
+    init = NULL, control = list(), \dots)
 }
 
 \arguments{
@@ -32,7 +32,7 @@ jointModel(lmeObject, survObject, timeVar,
             coefficients used to model the log cumulative baseline hazard.}
         \item{alpha}{the association parameter.}
         \item{sigma.t}{the scale parameter for the Weibull survival model; required only when 
-            \code{method = "weibull-GH"}.}
+            \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}.}
         \item{lambda0}{a vector of the baseline hazard values at the sorted unique event times; required only when 
             \code{method = "ph-GH"}.}
     }
@@ -44,9 +44,9 @@ jointModel(lmeObject, survObject, timeVar,
         \item{only.EM}{logical; if \code{TRUE} only the EM algorithm is used in the optimization, otherwise if 
             convergence has not been achieved a quasi-Newton algorithm is initiated. Default is \code{FALSE} except for 
             \code{method = "ph-GH"} for which only the EM algorithm is available.}
-        \item{iter.EM}{the number of EM iterations. Default is 150 except for \code{method = "ph-GH"} for which
+        \item{iter.EM}{the number of EM iterations. Default is 50 except for \code{method = "ph-GH"} for which
             the default is 200.}
-        \item{iter.qN}{the number of quasi-Newton iterations. Default is 100.}
+        \item{iter.qN}{the number of quasi-Newton iterations. Default is 150.}
         \item{optimizer}{a character string indicating which optimizer to use; options are "optim" (default) and
             "nlminb".}
         \item{tol1}{tolerance value for convergence in the parameters; see \bold{Details}. Default is 1e-03.}
@@ -65,22 +65,27 @@ jointModel(lmeObject, survObject, timeVar,
             parameters of the survival submodel for \code{method = "ch-Laplace"}. Default is 0.1.}
         \item{backtrackSteps}{the number of backtrack steps to use when updating the parameters of the survival submodel
             under \code{method = "ch-Laplace"}.}
-        \item{knots}{a numeric vector of the knots positions for the log times used in the B-splines approximation of 
-            the log cumulative baseline hazard; relevant only when \code{method = "ch-GH"} or 
-            \code{method = "ch-Laplace"}. Default is to place \code{lng.in.kn} knots (see below) at the quantiles of the 
-            uncensored log survival times.}
-        \item{lng.in.kn}{the number of internal knots to use in the B-splines approximation of the log cumulative 
-            baseline hazard; relevant only when \code{method = "ch-GH"} or \code{method = "ch-Laplace"}. Default is 3.}
+        \item{knots}{a numeric vector of the knots positions for the piecewise constant baseline risk function of for 
+            the log times used in the B-splines approximation of the log cumulative baseline hazard; therefore, this argument 
+            is relevant only when \code{method = "piecewise-PH-GH"} or when \code{method = "ch-GH"} or \code{method = "ch-Laplace"}. 
+            For \code{method = "piecewise-PH-GH"} default is to place equally-spaced \code{lng.in.kn} knots (see below) in the
+            quantiles of the observed event times. For \code{method = "ch-GH"} and \code{method = "ch-Laplace"} default is 
+            to place \code{lng.in.kn} knots (see below) at the quantiles of the uncensored log survival times.}
+        \item{lng.in.kn}{the number of internal knots; relevant only when when \code{method = "piecewise-PH-GH"} where it 
+            denotes the number of internal knots for the piecewise constant baseline risk function or when \code{method = "ch-GH"} 
+            or \code{method = "ch-Laplace"} where it denotes the number of internal knots for B-splines approximation of the log cumulative 
+            baseline hazard. Default is 6 when \code{method = "piecewise-PH-GH"} and 3 otherwise.}
         \item{ord}{a positive integer denoting the order of the B-splines used to approximate the log cumulative hazard
             (default is 4); relevant only when \code{method = "ch-GH"} or \code{method = "ch-Laplace"}.}
         \item{GHk}{the number of Gauss-Hermite quadrature points used to approximate the integrals over the random 
-            effects. For \code{method = "weibull-GH"} and \code{method = "ch-GH"} default is 21 for one- or 
+            effects. For \code{method = "weibull-AFT-GH}, \code{method = "weibull-PH-GH} and \code{method = "ch-GH"} default is 21 for one- or 
             two-dimensional integration and 11 otherwise. For \code{method = "ph-GH"} default is 21 for one-dimensional 
-            integration and 11 otherwise.}
+            integration, 11 for two-dimensional integration and 9 otherwise.}
         \item{verbose}{logical; if \code{TRUE} the parameter estimates and the log-likelihood value are printed during
             the optimization procedure. Default is \code{FALSE}.}
     }
   }
+  \item{\dots}{options passed to the \code{control} argument.}
 }
 
 \details{
@@ -90,15 +95,12 @@ available. In particular, let \eqn{t_i} denote the time-to-event for the \eqn{i}
 vector of baseline covariates in \code{survObject}, with associated parameter vector \eqn{\gamma}, \eqn{W_i(t)} the value 
 of the longitudinal outcome at time point \eqn{t} (i.e., \eqn{W_i(t)} equals the fixed effects part \code{+} random 
 effects part of the linear mixed effects model for sample unit \eqn{i}), and \eqn{\alpha} the association parameter. Then, 
-for \code{method = "weibull-GH"} a Weibull accelerated failure time model is assumed formulated as: \deqn{\log t = 
-\gamma^T x_i + \alpha W_i(t) + \sigma_t \varepsilon_i,} where \eqn{\varepsilon_i} follows an extreme value distribution. 
-For \code{method = "ch-GH"} and \code{method = "ch-Laplace"} an additive log cumulative hazard model is assumed 
-formulated as: \deqn{\log \Lambda_i(t) = \log \Lambda_0(t) + \gamma^T x_i + \alpha W_i(t),} where \eqn{\Lambda_i(.)} 
-and \eqn{\Lambda_0(.)} denote the cumulative hazard and cumulative baseline hazard functions, respectively, and 
-\eqn{\log \Lambda_0(t)} is approximated using B-splines (see Rizopoulos et al., 2008 for more info). Finally, for 
-\code{method = "ph-GH"} a time-dependent proportional hazards model is assumed formulated as \deqn{\lambda_i(t) = 
-\lambda_0(t) \exp \{ \gamma^T x_i + \alpha W_i(t) \},} where the baseline hazard \eqn{\lambda_0(t)} is left unspecified 
-(Wulfsohn and Tsiatis, 1997).
+for \code{method = "weibull-AFT-GH"} a time-dependent Weibull model under the accelerated failure time formulation is assumed. For 
+\code{method = "weibull-PH-GH"} a time-dependent relative risk model is postulated with a Weibull baseline risk function. For 
+\code{method = "piecewise-PH-GH"} a time-dependent relative risk model is postulated with a piecewise constant baseline risk function.
+For \code{method = "ch-GH"} and \code{method = "ch-Laplace"} an additive model on the log cumulative hazard scale is assumed 
+(see Rizopoulos et al., 2009 for more info). Finally, for \code{method = "ph-GH"} a time-dependent relative risk model 
+is assumed where the baseline risk function is left unspecified (Wulfsohn and Tsiatis, 1997).
 
 For all survival models except for the time-dependent proportional hazards model, the optimization algorithm starts 
 with EM iterations, and if convergence is not achieved, it switches to quasi-Newton iterations (i.e., BFGS in 
@@ -111,11 +113,11 @@ and previous iterations, respectively, and \eqn{L(.)} is the log-likelihood func
 \eqn{tol_2} and \eqn{tol_3} are specified via the \code{control} argument. During the quasi-Newton iterations, the 
 default convergence criteria of either \code{optim()} or \code{nlminb()} are used.
 
-The required integrals are approximated using the Gauss-Hermite quadrature rule for \code{method = "weibull-GH"}, 
-\code{method = "ch-GH"} and \code{method = "ph-GH"}, whereas for \code{method = "ch-Laplace"} the fully exponential 
-Laplace approximation described in Rizopoulos et al. (2008) is used. This last option is more suitable when 
-high-dimensional random effects vectors are considered (e.g., when modelling nonlinear subject-specific trajectories with 
-splines or high-order polynomials).
+The required integrals are approximated using the Gauss-Hermite quadrature rule for \code{method = "weibull-AFT-GH"}, 
+\code{method = "weibull-PH-GH"}, \code{method = "piecewise-PH-GH"}, \code{method = "ch-GH"} and \code{method = "ph-GH"}, 
+whereas for \code{method = "ch-Laplace"} the fully exponential Laplace approximation described in Rizopoulos et al. (2008) is used. 
+This last option is more suitable when high-dimensional random effects vectors are considered (e.g., when modelling nonlinear 
+subject-specific trajectories with splines or high-order polynomials).
 }
 
 \value{
@@ -130,7 +132,10 @@ Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and lo
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
 Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
-modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B}, to appear.
+modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 637--654.
+
+Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2009) Multiple-imputation-based residuals and diagnostic plots
+for joint models of longitudinal and survival outcomes. \emph{Biometrics}, to appear (doi: 10.1111/j.1541-0420.2009.01273.x).
 
 Tsiatis, A. and Davidian, M. (2004) Joint modeling of longitudinal and time-to-event data: an overview. 
 \emph{Statistica Sinica} \bold{14}, 809--834.

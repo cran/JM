@@ -1,4 +1,4 @@
-`nearPD` <-
+nearPD <-
 function (M, eig.tol = 1e-06, conv.tol = 1e-07, posd.tol = 1e-08, maxits = 100) {
     # based on function nearcor() submitted to R-help by Jens Oehlschlagel on 2007-07-13, and
     # function posdefify() from package `sfsmisc'

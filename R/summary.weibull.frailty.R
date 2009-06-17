@@ -1,4 +1,4 @@
-`summary.weibull.frailty` <-
+summary.weibull.frailty <-
 function (object, sand.se = FALSE, ...) {
     out <- list(logLik = object$logLik, AIC = AIC(object), BIC = AIC(object, k = log(length(unique(object$id)))), 
         id = object$id, d = object$y[, 2], call = object$call)

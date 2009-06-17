@@ -1,4 +1,4 @@
-`update.bCH` <-
+update.bCH <-
 function (b, hes.b, betas, sigma, thetas, D, transformed = FALSE) {
     log.p.yt <- numeric(n)
     eta.yx <- as.vector(X %*% betas)

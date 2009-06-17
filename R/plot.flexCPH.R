@@ -1,4 +1,4 @@
-`plot.flexCPH` <-
+plot.flexCPH <-
 function (x, scale = c("survival", "cumHazard", "log-cumHazard"), survTimes = NULL, X = NULL, 
     xlab, lab, ylab, main, type, plot.it = TRUE, ...) {
     scale <- match.arg(scale)

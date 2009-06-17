@@ -1,5 +1,5 @@
-`phGH.fit` <-
-function (x, y, id, indT, ind.len, initial.values, control) {
+phGH.fit <-
+function (x, y, id, initial.values, control) {
     # response vectors
     logT <- as.vector(y$logT)
     d <- as.vector(y$d)
@@ -33,14 +33,12 @@ function (x, y, id, indT, ind.len, initial.values, control) {
     outer.Ztime <- lapply(1:n, function (x) Ztime[x, ] %o% Ztime[x, ])
     Time <- exp(logT)
     unqT <- sort(unique(Time[d == 1]))
-    ind.lambda <- unlist(sapply(ind.len, function (x) {
-        if (x > 0) seq(1, x) else NULL
-    }), use.names = FALSE)
+    indT <- x$indT
+    unq.indT <- unique(indT)
+    nk <- as.vector(sapply(split(indT, indT), length))
+    ind.L1 <- unlist(lapply(nk, seq, from = 1))
+    ind.L2 <- colSums(d * outer(Time, unqT, "=="))
     ind.T0 <- match(Time, unqT)
-    ind.T0[d == 0] <- NA
-    ind0 <- d == 0
-    ind.lenN0 <- ind.len != 0
-    indL <- colSums(d * outer(Time, unqT, "=="))
     # Gauss-Hermite quadrature rule components
     GH <- gauher(control$GHk)
     b <- as.matrix(expand.grid(lapply(1:ncz, function (k, u) u$x, u = GH)))
@@ -62,8 +60,7 @@ function (x, y, id, indT, ind.len, initial.values, control) {
     diag.D <- !is.matrix(D)
     if (!diag.D) dimnames(D) <- NULL else names(D) <- NULL
     # fix environments for functions
-    environment(gr.survPH) <- environment(gr.longPH) <- environment()
-    environment(HessSurvPH) <- environment(HessLongPH) <- environment()
+    environment(opt.survPH) <- environment(gr.survPH) <- environment(gr.longPH) <- environment()
     environment(LogLik.phGH) <- environment(Score.phGH) <- environment()
     old <- options(warn = (-1))
     on.exit(options(old))
@@ -86,21 +83,22 @@ function (x, y, id, indT, ind.len, initial.values, control) {
         eta.yxT2 <- as.vector(Xtime2 %*% betas)
         Y <- eta.yxT + Ztime.b
         Y2 <- eta.yxT2 + Ztime2.b
-        eta.t <- if (is.null(WW)) alpha * Y else as.vector(WW %*% gammas) + alpha * Y
-        eta.t2 <- if (is.null(WW)) alpha * Y2 else as.vector(WW %*% gammas)[indT] + alpha * Y2
-        
-        # compute lambda0T
-        lambda0T <- lambda0[ind.T0]
-        lambda0T[is.na(lambda0T)] <- 0
-        
+        eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else rep(0, n)
+        eta.t <- eta.tw + alpha * Y
+        eta.s <- alpha * Y2
+        exp.eta.s <- exp(eta.s)
+         
         # E-step
         mu.y <- eta.yx + Ztb
         logNorm <- dnorm(y, mu.y, sigma, TRUE)
         log.p.yb <- rowsum(logNorm, id); dimnames(log.p.yb) <- NULL
-        ew <- exp(eta.t2)
-        log.p.tb <- d * (log(lambda0T) + eta.t)
-        log.p.tb[ind0, ] <- 0
-        log.p.tb[ind.lenN0, ] <- log.p.tb[ind.lenN0, ] - rowsum(lambda0[ind.lambda] * ew, indT)
+        log.lambda0T <- log(lambda0[ind.T0])
+        log.lambda0T[is.na(log.lambda0T)] <- 0
+        log.hazard <- log.lambda0T + eta.t
+        S <- matrix(0, n, k)
+        S[unq.indT, ] <- rowsum(lambda0[ind.L1] * exp.eta.s, indT, reorder = FALSE); dimnames(S) <- NULL
+        log.survival <- - exp(eta.tw) * S
+        log.p.tb <- d * log.hazard + log.survival
         log.p.b <- if (ncz == 1) {
             dnorm(b, sd = sqrt(D), log = TRUE)
         } else {
@@ -119,36 +117,11 @@ function (x, y, id, indT, ind.len, initial.values, control) {
         } else {
             (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
         }
-                
-        # compute log-likelihood and check convergence
+        
+        # compute log-likelihood
         log.p.yt <- log(p.yt)
         lgLik[it] <- sum(log.p.yt[is.finite(log.p.yt)], na.rm = TRUE)
-        if (it > 5) {
-            if (lgLik[it] < lgLik[it - 1]) {
-                betas <- Y.mat[it - 1, 1:ncx]
-                sigma <- Y.mat[it - 1, ncx + 1]
-                gammas <- T.mat[it - 1, 1:ncww]
-                alpha <- T.mat[it - 1, ncww + 1]
-                D <- B.mat[it - 1,  ]
-                if (!diag.D) dim(D) <- c(ncz, ncz)
-                lgLik[it] <- lgLik[it - 1]
-                eta.t2 <- if (is.null(WW)) alpha * Y2 else as.vector(WW %*% gammas)[indT] + alpha * Y2
-                ew <- exp(eta.t2)
-                lambda0 <- lambda0.old
-                break
-            } else {
-                thets1 <- c(Y.mat[it - 1, ], T.mat[it - 1, ], B.mat[it - 1, ])
-                thets2 <- c(Y.mat[it, ], T.mat[it, ], B.mat[it, ])
-                check1 <- max(abs(thets2 - thets1) / (abs(thets1) + control$tol1)) < control$tol2
-                check2 <- (lgLik[it] - lgLik[it - 1]) < control$tol3 * (abs(lgLik[it - 1]) + control$tol3)
-                if (check1 || check2) {
-                    conv <- TRUE
-                    if (control$verbose) cat("\n\nconverged!\n")
-                    break
-                }
-            }
-        }
-        
+                
         # print results if verbose
         if (control$verbose) {
             cat("\n\niter:", it, "\n")
@@ -161,33 +134,78 @@ function (x, y, id, indT, ind.len, initial.values, control) {
             cat("D:", if (!diag.D) round(D[lower.tri(D, TRUE)], 4) else round(D, 4), "\n")
         }
         
+        # check convergence
+        if (it > 5) {
+            if (lgLik[it] > lgLik[it - 1]) {
+                thets1 <- c(Y.mat[it - 1, ], T.mat[it - 1, ], B.mat[it - 1, ])
+                thets2 <- c(Y.mat[it, ], T.mat[it, ], B.mat[it, ])
+                check1 <- max(abs(thets2 - thets1) / (abs(thets1) + control$tol1)) < control$tol2
+                check2 <- (lgLik[it] - lgLik[it - 1]) < control$tol3 * (abs(lgLik[it - 1]) + control$tol3)
+                if (check1 || check2) {
+                    conv <- TRUE
+                    if (control$verbose)
+                        cat("\n\nconverged!\n")
+                    break
+                }
+            } else {
+                lambda0 <- lambda0.old
+                log.lambda0T <- log(lambda0[ind.T0])
+                log.lambda0T[is.na(log.lambda0T)] <- 0
+                log.hazard <- log.lambda0T + eta.t
+                S <- matrix(0, n, k)
+                S[unq.indT, ] <- rowsum(lambda0[ind.L1] * exp.eta.s, indT, reorder = FALSE)
+                log.survival <- - exp(eta.tw) * S
+                log.p.tb <- d * log.hazard + log.survival
+                p.ytb <- exp((log.p.yb + log.p.tb) + rep(log.p.b, each = n))
+                p.yt <- c(p.ytb %*% wGH)
+                p.byt <- p.ytb / p.yt
+                post.b <- p.byt %*% (b * wGH)
+                post.vb <- if (ncz == 1) {
+                    c(p.byt %*% (b2 * wGH)) - c(post.b * post.b)
+                } else {
+                    (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
+                }
+                log.p.yt <- log(p.yt)
+                lgLik[it] <- sum(log.p.yt[is.finite(log.p.yt)], na.rm = TRUE)
+                if (control$verbose) {
+                    cat("\n\niter:", it, "\n")
+                    cat("log-likelihood:", lgLik[it], "\n")
+                    cat("betas:", round(betas, 4), "\n")
+                    cat("sigma:", round(sigma, 4), "\n")
+                    if (!is.null(WW))
+                        cat("gammas:", round(gammas, 4), "\n")
+                    cat("alpha:", round(alpha, 4), "\n")
+                    cat("D:", if (!diag.D) round(D[lower.tri(D, TRUE)], 4) else round(D, 4), "\n")
+                }
+            }
+        }
+                
         # M-step
-        if (it > 1) {
+        if (it > 2) {
             Zb <- rowSums(Z * post.b[id, ], na.rm = TRUE)
             mu <- y - eta.yx
             tr.tZZvarb <- sum(ZtZ * post.vb, na.rm = TRUE)
             sigman <- sqrt(c(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / N)
             Dn <- matrix(colMeans(p.byt %*% (b2 * wGH), na.rm = TRUE), ncz, ncz)
             Dn <- if (diag.D) diag(Dn) else 0.5 * (Dn + t(Dn))
-            lambda0. <- lambda0[ind.lambda]
-            p.byt. <- p.byt[ind.lenN0, ]
-            Hbetas <- nearPD(HessLongPH(X, Xtime, Xtime2, ew))
-            scbetas <- gr.longPH(X, Xtime, Xtime2, ew)
+            Hbetas <- nearPD(fd.vec(betas, gr.longPH))
+            scbetas <- gr.longPH(betas)
             betasn <- betas - c(solve(Hbetas, scbetas))
             thetas <- c(gammas, alpha)
-            Hthetas <- nearPD(HessSurvPH(WW, Y, Y2, ew))
-            scthetas <- gr.survPH(WW, Y, Y2, ew)
+            Hthetas <- nearPD(fd.vec(thetas, gr.survPH))
+            scthetas <- gr.survPH(thetas)
             thetasn <- thetas - c(solve(Hthetas, scthetas))
         }
-        ee <- c((ew * p.byt[indT, ]) %*% wGH)        
-        lambda0n <- indL / as.vector(sapply(split(ee, ind.lambda), sum))        
+        ee <- c((exp.eta.s * exp(eta.tw[indT]) * p.byt[indT, ]) %*% wGH)
+        lambda0n <- ind.L2 / as.vector(tapply(ee, ind.L1, sum, na.rm = TRUE))
         
         # update parameter values
-        if (it > 1) {
+        if (it > 2) {
             betas <- betasn
             sigma <- sigman
             D <- Dn
-            if (is.null(WW)) alpha <- thetasn else { gammas <- thetasn[1:ncww]; alpha <- thetasn[ncww + 1] }
+            gammas <- thetasn[seq_len(ncww)]
+            alpha <- thetasn[ncww + 1]
         }
         lambda0.old <- lambda0
         lambda0 <- lambda0n
@@ -195,6 +213,7 @@ function (x, y, id, indT, ind.len, initial.values, control) {
     thetas <- c(betas, log(sigma), gammas, alpha, if (diag.D) log(D) else chol.transf(D))
     lgLik <- lgLik[it]
     # calculate Hessian matrix
+    if (control$verbose) cat("\ncalculating Hessian...\n")
     Hessian <- if (control$numeriDeriv == "fd") {
         fd.vec(thetas, Score.phGH, eps = control$eps.Hes)
     } else { 
@@ -210,7 +229,7 @@ function (x, y, id, indT, ind.len, initial.values, control) {
     list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, 
         lambda0 = cbind("basehaz" = lambda0, "time" = unqT), D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, 
         EB = list(post.b = post.b, post.vb = post.vb, Zb = Zb, Ztimeb = rowSums(Ztime * post.b), 
-        Ztime2b = rowSums(Ztime2 * post.b[indT, ])), indexes = list(indT = indT, ind.lambda = ind.lambda, indL = indL), 
+        Ztime2b = rowSums(Ztime2 * post.b[indT, ])), indexes = list(indT = indT, ind.L1 = ind.L1), 
         iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
 }
 

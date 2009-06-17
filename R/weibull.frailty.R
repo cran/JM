@@ -1,4 +1,4 @@
-`weibull.frailty` <-
+weibull.frailty <-
 function (formula = formula(data), data = parent.frame(), id = "id", subset, na.action, init, 
         control = list()) {
     call <- match.call()

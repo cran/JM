@@ -1,4 +1,4 @@
-`summary.flexCPH` <-
+summary.flexCPH <-
 function (object, ...) {
     out <- list(logLik = object$logLik, AIC = AIC(object), 
         BIC = AIC(object, k = log(length(object$d))), d = object$d, knots = unique(object$knots), 

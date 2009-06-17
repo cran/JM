@@ -1,4 +1,4 @@
-`MI.fixed.times` <-
+MI.fixed.times <-
 function (time.points) {
     # indexes for missing data
     if (is.null(time.points))
@@ -11,6 +11,7 @@ function (time.points) {
     id2.miss <- rep(seq_along(ni.miss), ni.miss)
     ni <- as.vector(tapply(id.miss, id.miss, length))
     id3.miss <- rep(seq_along(ni), ni)
+    id.GK <- rep(seq_len(n) %in% unq.id.miss, each = object$control$GKk)
     # observed data corresponding to patients with
     # one or more missing values
     y.missO <- y[ind.miss]
@@ -20,6 +21,10 @@ function (time.points) {
     Z.missO <- Z[ind.miss, ]
     Xtime.missO <- Xtime[unq.id.miss, , drop = FALSE]
     Ztime.missO <- Ztime[unq.id.miss, , drop = FALSE]
+    P.missO <- P[unq.id.miss]
+    log.st.missO <- log.st[id.GK]
+    Xs.missO <- Xs[id.GK, , drop = FALSE]
+    Zs.missO <- Zs[id.GK, , drop = FALSE]
     WW.missO <- WW[unq.id.miss, ]
     # observed data corresponding to patients with
     # one or more missing values
@@ -37,10 +42,10 @@ function (time.points) {
     diag.D <- ncz != ncol(D)
     thets <- c(object$coefficients$gammas, object$coefficients$alpha)
     thetas <- c(object$coefficients$betas, log(object$coefficients$sigma),
-        if (object$method == "weibull-GH" || object$method == "ph-GH") thets else {
+        if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "ph-GH")) thets else {
             thets[2:nk] <- log(diff(thets[1:nk]))
             thets
-        }, if (object$method == "weibull-GH") log(object$coefficients$sigma.t) else NULL, 
+        }, if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") log(object$coefficients$sigma.t) else NULL, 
         if (diag.D) log(D) else chol.transf(D))
     V.thetas <- vcov(object)
     EBs <- ranef(object, postVar = TRUE)
@@ -66,7 +71,7 @@ function (time.points) {
         if (object$method == "ch-GH" || object$method == "ch-Laplace")
             gammas.new[1:nk] <- cumsum(c(gammas.new[1], exp(gammas.new[2:nk])))
         alpha.new <- thetas.new[ncx + ncww + 2]
-        if (object$method == "weibull-GH") {
+        if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") {
             sigma.t.new <- exp(thetas.new[ncx + ncww + 3])
             D.new <- thetas.new[seq(ncx + ncww + 4, length(thetas))]
             D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)

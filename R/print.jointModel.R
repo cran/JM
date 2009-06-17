@@ -1,4 +1,4 @@
-`print.jointModel` <-
+print.jointModel <-
 function (x, digits = max(4, getOption("digits") - 4), ...) {
     if (!inherits(x, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
@@ -39,7 +39,7 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
         nw <- ncol(x$x$W)
         gammas <- if (is.null(nw)) NULL else gammas[seq(ng - nw + 1, ng)]
     }
-    gammas <- c(gammas, "Assoct" = as.vector(x$coefficients$alpha))
+    gammas <- c(gammas, "Assoct" = as.vector(x$coefficients$alpha), if (x$method == "piecewise-PH-GH") x$coefficients$xi else NULL)
     print(lapply(list("Longitudinal Process" = x$coefficients$betas, "Event Process" = gammas), 
         round, digits = digits))
     cat("\nlog-Lik:", x$logLik)

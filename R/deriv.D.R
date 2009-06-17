@@ -1,4 +1,4 @@
-`deriv.D` <-
+deriv.D <-
 function (D) {
     ncz <- nrow(D)
     ind <- which(lower.tri(D, TRUE), arr.ind = TRUE)

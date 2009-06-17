@@ -1,4 +1,4 @@
-`logLik.flexCPH` <-
+logLik.flexCPH <-
 function (object, ...) {
     out <- object$logLik
     attr(out, "df") <- length(unlist(object$coefficients))
