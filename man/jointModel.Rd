@@ -11,7 +11,8 @@ data under a maximum likelihood approach. Various options for the survival model
 
 \usage{
 jointModel(lmeObject, survObject, timeVar, 
-    method = c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", "ch-GH", "ph-GH", "ch-Laplace"), 
+    method = c("weibull-AFT-GH", "weibull-PH-GH", 
+    "piecewise-PH-GH", "ch-GH", "ph-GH", "ch-Laplace"), 
     init = NULL, control = list(), \dots)
 }
 
@@ -78,9 +79,12 @@ jointModel(lmeObject, survObject, timeVar,
         \item{ord}{a positive integer denoting the order of the B-splines used to approximate the log cumulative hazard
             (default is 4); relevant only when \code{method = "ch-GH"} or \code{method = "ch-Laplace"}.}
         \item{GHk}{the number of Gauss-Hermite quadrature points used to approximate the integrals over the random 
-            effects. For \code{method = "weibull-AFT-GH}, \code{method = "weibull-PH-GH} and \code{method = "ch-GH"} default is 21 for one- or 
+            effects. For \code{method = "weibull-AFT-GH"}, \code{method = "weibull-PH-GH"} and \code{method = "ch-GH"} default is 21 for one- or 
             two-dimensional integration and 11 otherwise. For \code{method = "ph-GH"} default is 21 for one-dimensional 
             integration, 11 for two-dimensional integration and 9 otherwise.}
+        \item{GKk}{the number of Gauss-Kronrod points used to approximate the integral involved in the calculation of the survival function. Two 
+            options are available, namely 7 or 15. For \code{method = "weibull-PH-GH"} and \code{method = "weibull-AFT-GH"} 15 are used, 
+            whereas for \code{method = "piecewise-PH-GH"} 7.}
         \item{verbose}{logical; if \code{TRUE} the parameter estimates and the log-likelihood value are printed during
             the optimization procedure. Default is \code{FALSE}.}
     }

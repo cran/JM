@@ -164,8 +164,11 @@ function (x, y, id, initial.values, control) {
         alpha <- thetasn[ncww + 1]
         sigma.t <- exp(thetasn[ncww + 2])
     }
-    thetas <- c(betas, log(sigma), gammas, alpha, log(sigma.t), if (diag.D) log(D) else chol.transf(D))
-    lgLik <- - LogLik.weibullAFTGH(thetas)    
+    list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
+        log.sigma.t = log(sigma.t), D = if (diag.D) log(D) else chol.transf(D))
+    thetas <- unlist(as.relistable(list.thetas))
+    lgLik <- - LogLik.weibullAFTGH(thetas)
+    
     # if not converged, start quasi-Newton iterations
     if (!conv && !control$only.EM) {
         if (is.null(control$parscale))
@@ -182,13 +185,13 @@ function (x, y, id, initial.values, control) {
         }
         if ((conv <- out$convergence) == 0 || - out[[2]] > lgLik) {
             lgLik <- - out[[2]]
-            thetas <- out$par
-            betas <- thetas[1:ncx]
-            sigma <- exp(thetas[ncx + 1])
-            gammas <- thetas[seq(ncx + 2, ncx + 1 + ncww)]
-            alpha <- thetas[ncx + ncww + 2]
-            sigma.t <- exp(thetas[ncx + ncww + 3])
-            D <- thetas[seq(ncx + ncww + 4, length(thetas))]
+            thetas <- relist(out$par, skeleton = list.thetas)
+            betas <- thetas$betas
+            sigma <- exp(thetas$log.sigma)
+            gammas <- thetas$gammas
+            alpha <- thetas$alpha
+            sigma.t <- exp(thetas$log.sigma.t)
+            D <- thetas$D
             D <- if (diag.D) exp(D) else chol.transf(D)
             it <- it + if (control$optimizer == "optim") out$counts[1] else out$iterations
             # compute posterior moments for thetas after quasi-Newton
@@ -231,9 +234,9 @@ function (x, y, id, initial.values, control) {
     }
     # calculate Hessian matrix
     Hessian <- if (control$numeriDeriv == "fd") {
-        fd.vec(thetas, Score.weibullAFTGH, eps = control$eps.Hes)
+        fd.vec(unlist(thetas), Score.weibullAFTGH, eps = control$eps.Hes)
     } else { 
-        cd.vec(thetas, Score.weibullAFTGH, eps = control$eps.Hes)
+        cd.vec(unlist(thetas), Score.weibullAFTGH, eps = control$eps.Hes)
     }
     names(betas) <- names(initial.values$betas)
     if (!diag.D) dimnames(D) <- dimnames(initial.values$D) else names(D) <- names(initial.values$D)

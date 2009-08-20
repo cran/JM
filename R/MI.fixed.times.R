@@ -11,7 +11,11 @@ function (time.points) {
     id2.miss <- rep(seq_along(ni.miss), ni.miss)
     ni <- as.vector(tapply(id.miss, id.miss, length))
     id3.miss <- rep(seq_along(ni), ni)
-    id.GK <- rep(seq_len(n) %in% unq.id.miss, each = object$control$GKk)
+    id.GK <- if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") {
+        rep(seq_len(n) %in% unq.id.miss, each = object$control$GKk)
+    } else if (object$method == "piecewise-PH-GH") {
+        object$x$id.GK %in% unq.id.miss
+    } else NULL
     # observed data corresponding to patients with
     # one or more missing values
     y.missO <- y[ind.miss]
@@ -21,11 +25,21 @@ function (time.points) {
     Z.missO <- Z[ind.miss, ]
     Xtime.missO <- Xtime[unq.id.miss, , drop = FALSE]
     Ztime.missO <- Ztime[unq.id.miss, , drop = FALSE]
-    P.missO <- P[unq.id.miss]
-    log.st.missO <- log.st[id.GK]
-    Xs.missO <- Xs[id.GK, , drop = FALSE]
-    Zs.missO <- Zs[id.GK, , drop = FALSE]
-    WW.missO <- WW[unq.id.miss, ]
+    if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
+        P.missO <- P[unq.id.miss]
+        log.st.missO <- log.st[id.GK]
+        Xs.missO <- Xs[id.GK, , drop = FALSE]
+        Zs.missO <- Zs[id.GK, , drop = FALSE]
+    }
+    if (method == "piecewise-PH-GH") {
+        st.missO <- st[id.GK]
+        ind.D.missO <- ind.D[unq.id.miss]
+        ind.K.missO <- ind.K[id.GK]
+        wkP.missO <- wkP[id.GK]
+        Xs.missO <- Xs[id.GK, , drop = FALSE]
+        Zs.missO <- Zs[id.GK, , drop = FALSE]
+    }
+    WW.missO <- WW[unq.id.miss, , drop = FALSE]
     # observed data corresponding to patients with
     # one or more missing values
     mis.times <- unlist(lapply(split(obs.times, id), function (x) time.points[!time.points %in% x]))
@@ -42,10 +56,11 @@ function (time.points) {
     diag.D <- ncz != ncol(D)
     thets <- c(object$coefficients$gammas, object$coefficients$alpha)
     thetas <- c(object$coefficients$betas, log(object$coefficients$sigma),
-        if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "ph-GH")) thets else {
+        if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH")) thets else {
             thets[2:nk] <- log(diff(thets[1:nk]))
             thets
-        }, if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") log(object$coefficients$sigma.t) else NULL, 
+        }, if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") log(object$coefficients$sigma.t) else NULL,
+           if (object$method == "piecewise-PH-GH") log(object$coefficients$xi) else NULL,
         if (diag.D) log(D) else chol.transf(D))
     V.thetas <- vcov(object)
     EBs <- ranef(object, postVar = TRUE)
@@ -61,20 +76,25 @@ function (time.points) {
     resid.valsM <- matrix(0, N.missM, M)
     environment(posterior.b) <- environment()
     old <- options(warn = (-1))
-    on.exit(options(old))
+    on.exit(options(old))    
     for (m in 1:M) {
         # Step1: simulate new parameter values from a multivariate normal
         thetas.new <- mvrnorm(1, thetas, V.thetas)
         betas.new <- thetas.new[1:ncx]
         sigma.new <- exp(thetas.new[ncx + 1])
-        gammas.new <- thetas.new[seq(ncx + 2, ncx + 1 + ncww)]
+        gammas.new <- if (!is.null(WW)) thetas.new[seq(ncx + 2, ncx + 1 + ncww)] else NULL
         if (object$method == "ch-GH" || object$method == "ch-Laplace")
             gammas.new[1:nk] <- cumsum(c(gammas.new[1], exp(gammas.new[2:nk])))
         alpha.new <- thetas.new[ncx + ncww + 2]
         if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") {
-            sigma.t.new <- exp(thetas.new[ncx + ncww + 3])
+            sigma.t.new <- exp(thetas.new[seq(ncx + ncww + 3, ncx + ncww + 3)])
             D.new <- thetas.new[seq(ncx + ncww + 4, length(thetas))]
             D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
+        } else if (object$method == "piecewise-PH-GH") {
+            Q <- object$x$Q
+            xi.new <- exp(thetas.new[seq(ncx + ncww + 3, ncx + ncww + 2 + Q)])
+            D.new <- thetas.new[seq(ncx + ncww + 3 + Q, length(thetas))]
+            D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)            
         } else {   
             D.new <- thetas.new[seq(ncx + ncww + 3, length(thetas))]
             D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
@@ -82,7 +102,7 @@ function (time.points) {
         # Step2: Simulate new values for the random effects
         eta.yx <- as.vector(X.missO %*% betas.new)
         eta.yxT <- as.vector(Xtime.missO %*% betas.new)
-        eta.tw <- as.vector(WW.missO %*% gammas.new)
+        eta.tw <- if (!is.null(WW)) as.vector(WW.missO %*% gammas.new) else 0
         dmvt.current <- dmvt.proposed <- numeric(n.missO)
         for (i in 1:n.missO) {
             proposed.b[i, ] <- rmvt(1, EBs[i, ], Var[[i]], 4)

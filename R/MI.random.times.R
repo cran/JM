@@ -3,6 +3,7 @@ function (time.points) {
     # indexes for missing data
     t.max <- if (is.null(tt <- attr(time.points, "t.max"))) max(obs.times) else tt
     max.visits <- if (is.null(tt <- attr(time.points, "max.visits"))) max(ni) * 5 else tt
+    id.GK <- rep(TRUE, length(object$x$id.GK))
     y.missO <- y
     logT.missO <- logT
     d.missO <- d
@@ -10,10 +11,20 @@ function (time.points) {
     Z.missO <- Z
     Xtime.missO <- Xtime
     Ztime.missO <- Ztime
-    P.missO <- P
-    log.st.missO <- log.st
-    Xs.missO <- Xs
-    Zs.missO <- Zs
+    if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
+        P.missO <- P
+        log.st.missO <- log.st
+        Xs.missO <- Xs
+        Zs.missO <- Zs
+    }
+    if (method == "piecewise-PH-GH") {
+        st.missO <- st
+        ind.D.missO <- ind.D
+        ind.K.missO <- ind.K
+        wkP.missO <- wkP
+        Xs.missO <- Xs
+        Zs.missO <- Zs
+    }
     WW.missO <- WW
     n.missO <- nrow(Ztime.missO)
     id.miss <- id3.miss <- id
@@ -22,10 +33,11 @@ function (time.points) {
     diag.D <- ncz != ncol(D)
     thets <- c(object$coefficients$gammas, object$coefficients$alpha)
     thetas <- c(object$coefficients$betas, log(object$coefficients$sigma),
-        if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "ph-GH")) thets else {
+        if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH")) thets else {
             thets[2:nk] <- log(diff(thets[1:nk]))
             thets
-        }, if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") log(object$coefficients$sigma.t) else NULL, 
+        }, if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") log(object$coefficients$sigma.t) else NULL,
+           if (object$method == "piecewise-PH-GH") log(object$coefficients$xi) else NULL,
         if (diag.D) log(D) else chol.transf(D))
     V.thetas <- vcov(object)
     EBs <- ranef(object, postVar = TRUE)
@@ -62,14 +74,19 @@ function (time.points) {
         thetas.new <- mvrnorm(1, thetas, V.thetas)
         betas.new <- thetas.new[1:ncx]
         sigma.new <- exp(thetas.new[ncx + 1])
-        gammas.new <- thetas.new[seq(ncx + 2, ncx + 1 + ncww)]
+        gammas.new <- if (!is.null(WW)) thetas.new[seq(ncx + 2, ncx + 1 + ncww)] else NULL
         if (object$method == "ch-GH" || object$method == "ch-Laplace")
             gammas.new[1:nk] <- cumsum(c(gammas.new[1], exp(gammas.new[2:nk])))
         alpha.new <- thetas.new[ncx + ncww + 2]
         if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") {
-            sigma.t.new <- exp(thetas.new[ncx + ncww + 3])
+            sigma.t.new <- exp(thetas.new[seq(ncx + ncww + 3, ncx + ncww + 3)])
             D.new <- thetas.new[seq(ncx + ncww + 4, length(thetas))]
             D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
+        } else if (object$method == "piecewise-PH-GH") {
+            Q <- object$x$Q
+            xi.new <- exp(thetas.new[seq(ncx + ncww + 3, ncx + ncww + 2 + Q)])
+            D.new <- thetas.new[seq(ncx + ncww + 3 + Q, length(thetas))]
+            D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)            
         } else {   
             D.new <- thetas.new[seq(ncx + ncww + 3, length(thetas))]
             D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)

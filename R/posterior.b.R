@@ -24,13 +24,13 @@ function (b) {
         log.survival <- - Vi^sigma.t.new
         d.missO * log.hazard + log.survival
     } else if (method == "piecewise-PH-GH") {
-        id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
+        ii <- object$x$id.GK[id.GK]
+        nn <- as.vector(tapply(ii, ii, length))
+        id.GK3 <- rep(seq_len(n.missO), nn)
         Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
         eta.s <- alpha.new * Ys.new
-        wkP <- rep(wk, n.missO) # <<<<<<<<<
-        log.hazard <- log(xi[ind.D.missO]) + eta.t# <<<<<<<<<
-        Vi <- xi[] * wkP * exp(eta.s)# <<<<<<<<<
-        log.survival <- - exp(eta.tw) * as.vector(tapply(wk * Vi, id.GK3, sum))# <<<<<<<<<
+        log.hazard <- log(xi.new[ind.D.missO]) + eta.t
+        log.survival <- - exp(eta.tw) * as.vector(tapply(xi.new[ind.K.missO] * wkP.missO * exp(eta.s), id.GK3, sum))
         d.missO * log.hazard + log.survival
     } else {
         kn <- object$knots

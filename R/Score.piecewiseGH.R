@@ -2,7 +2,7 @@ Score.piecewiseGH <-
 function (thetas) {
     betas <- thetas[1:ncx]
     sigma <- exp(thetas[ncx + 1])
-    gammas <- thetas[seq(ncx + 2, ncx + 1 + ncww)]
+    gammas <- if (!is.null(WW)) thetas[seq(ncx + 2, ncx + 1 + ncww)] else NULL
     alpha <- thetas[ncx + ncww + 2]
     xi <- exp(thetas[seq(ncx + ncww + 3, ncx + ncww + 2 + Q)])
     D <- thetas[seq(ncx + ncww + Q + 3, length(thetas))]

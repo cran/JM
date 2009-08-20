@@ -156,7 +156,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
             list("survival" = exp(- exp(eta)), "cumulative-Hazard" = exp(eta), "log-cumulative-Hazard" = eta)
         }
     }
-    one.fig <- prod(par("mfcol")) == 1   
+    one.fig <- prod(par("mfcol")) == 1
     if (ask) {
         op <- par(ask = TRUE)
         on.exit(par(op))

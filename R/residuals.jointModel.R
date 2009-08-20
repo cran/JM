@@ -48,21 +48,27 @@ function (object, process = c("Longitudinal", "Event"),
             Zs <- object$x$Zs
             P <- object$x$P
             wk <- object$x$wk
-            log.st <- log(object$x$st)
             method <- object$method
             W1 <- object$x$W
             WW <- if (method == "ph-GH") {
                 stop("multiple-imputation-based residuals are not available for joint models with method = 'ph-GH'.\n")
             } else if (method == "piecewise-PH-GH") {
-                stop("multiple-imputation-based residuals are not currently available for joint models with method = 'piecewise-PH-GH'.\n")
+                ind.D <- object$y$ind.D
+                nk <- object$control$GKk
+                st <- object$x$st
+                ind.K <- rep(unlist(lapply(ind.D, seq_len)), each = nk)
+                wk <- unlist(lapply(ind.D, function (n) rep(object$x$wk, n)))
+                wkP <- wk * rep(object$x$P, each = nk)
+                W1
             } else if (method == "weibull-PH-GH" || method == "weibull-AFT-GH") {
+                log.st <- log(object$x$st)
                 if (is.null(W1)) as.matrix(rep(1, length(logT))) else cbind(1, W1)
             } else {
                 W2 <- splineDesign(object$knots, logT, ord = object$control$ord)
                 nk <- ncol(W2) 
                 if (is.null(W1)) W2 else cbind(W2, W1)
             }
-            ncww <- ncol(WW)
+            ncww <- if (is.null(WW)) 0 else ncol(WW)
             n <- length(logT)
             ni <- as.vector(tapply(id, id, length))
             obs.times <- if (!object$timeVar %in% colnames(X)) {

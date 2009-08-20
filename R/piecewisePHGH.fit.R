@@ -59,7 +59,7 @@ function (x, y, id, initial.values, control) {
     if (!diag.D) dimnames(D) <- NULL else names(D) <- NULL
     # fix environments for functions
     environment(opt.survPC) <- environment(gr.survPC) <- environment()
-    environment(opt.longPC) <- environment(gr.longPC) <- environment()
+    environment(opt.longPC) <- environment(gr.longPC) <- environment(H.longPC) <- environment()
     environment(LogLik.piecewiseGH) <- environment(Score.piecewiseGH) <- environment()
     old <- options(warn = (-1))
     on.exit(options(old))
@@ -149,7 +149,7 @@ function (x, y, id, initial.values, control) {
         sigman <- sqrt(c(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / N)
         Dn <- matrix(colMeans(p.byt %*% (b2 * wGH), na.rm = TRUE), ncz, ncz)
         Dn <- if (diag.D) diag(Dn) else 0.5 * (Dn + t(Dn))
-        Hbetas <- nearPD(fd.vec(betas, gr.longPC))
+        Hbetas <- nearPD(H.longPC(betas))
         scbetas <- gr.longPC(betas)
         betasn <- betas - c(solve(Hbetas, scbetas))
         thetas <- c(gammas, alpha, log(xi))
@@ -187,7 +187,7 @@ function (x, y, id, initial.values, control) {
             thetas <- out$par
             betas <- thetas[1:ncx]
             sigma <- exp(thetas[ncx + 1])
-            gammas <- thetas[seq(ncx + 2, ncx + 1 + ncww)]
+            gammas <- if (!is.null(WW)) thetas[seq(ncx + 2, ncx + 1 + ncww)] else NULL
             alpha <- thetas[ncx + ncww + 2]
             xi <- exp(thetas[seq(ncx + ncww + 3, ncx + ncww + 2 + Q)])
             D <- thetas[seq(ncx + ncww + Q + 3, length(thetas))]
@@ -196,7 +196,7 @@ function (x, y, id, initial.values, control) {
             # compute posterior moments for thetas after quasi-Newton
             eta.yx <- as.vector(X %*% betas)
             eta.yxT <- as.vector(Xtime %*% betas)
-            eta.tw <- as.vector(WW %*% gammas)
+            eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0
             exp.eta.tw <- exp(eta.tw)
             Y <- eta.yxT + Ztime.b
             Ys <- as.vector(Xs %*% betas) + Zsb
@@ -240,7 +240,8 @@ function (x, y, id, initial.values, control) {
     }
     names(betas) <- names(initial.values$betas)
     if (!diag.D) dimnames(D) <- dimnames(initial.values$D) else names(D) <- names(initial.values$D)
-    names(gammas) <- colnames(x$W)
+    if (!is.null(WW))
+        names(gammas) <- colnames(x$W)
     names(xi) <- paste("xi.", seq_len(Q), sep = "")
     nams <- c(paste("Y.", c(names(betas), "sigma"), sep = ""), paste("T.", c(names(gammas), "alpha", names(xi)), sep = ""),
         paste("B.", if (!diag.D) paste("D", seq(1, ncz * (ncz + 1) / 2), sep = "") else names(D), sep = ""))

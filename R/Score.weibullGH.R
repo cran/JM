@@ -1,11 +1,12 @@
 Score.weibullGH <-
 function (thetas) {
-    betas <- thetas[1:ncx]
-    sigma <- exp(thetas[ncx + 1])
-    gammas <- thetas[seq(ncx + 2, ncx + 1 + ncww)]
-    alpha <- thetas[ncx + ncww + 2]
-    sigma.t <- exp(thetas[ncx + ncww + 3])
-    D <- thetas[seq(ncx + ncww + 4, length(thetas))]
+    thetas <- relist(thetas, skeleton = list.thetas)
+    betas <- thetas$betas
+    sigma <- exp(thetas$log.sigma)
+    gammas <- thetas$gammas
+    alpha <- thetas$alpha
+    sigma.t <- exp(thetas$log.sigma.t)
+    D <- thetas$D
     D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)

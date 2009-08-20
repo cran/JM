@@ -1,5 +1,5 @@
 fitted.jointModel <-
-function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Subject"), 
+function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Subject", "EventTime"), 
     scale = c("survival", "cumulative-Hazard", "log-cumulative-Hazard"), M = 200, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
@@ -10,7 +10,15 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
     if (process == "Longitudinal") {
         fitY <- c(object$x$X %*% object$coefficients$betas)
         names(fitY) <- names(object$y$y)
-        if (type == "Marginal") fitY else fitY + object$EB$Zb
+        if (type == "Marginal") fitY else if (type == "Subject") fitY + object$EB$Zb else {
+            fitYEvent <- if (method == "ph-GH") {
+                c(object$x$Xtime2 %*% object$coefficients$betas + object$EB$Ztime2b)
+            } else {
+                c(object$x$Xtime %*% object$coefficients$betas + object$EB$Ztimeb)
+            }
+            names(fitYEvent) <- names(object$y$logT)
+            fitYEvent
+        }
     } else {
         W1 <- object$x$W
         Y <- if (type == "Marginal") {
@@ -22,7 +30,7 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
                 c(object$x$Xtime2 %*% object$coefficients$betas) + Zb
             } else {
                 Zb <- object$x$Ztime %*% t(b)
-                c(object$x$Xtime %*% object$coefficients$betas) + Zb            
+                c(object$x$Xtime %*% object$coefficients$betas) + Zb
             }
         } else {
             if (method == "ph-GH") {
@@ -120,7 +128,6 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
                 "survival" = exp(- Haz),
                 "cumulative-Hazard" = Haz,
                 "log-cumulative-Hazard" = log(Haz))
-        
         } else {
             W2 <- splineDesign(object$knots, logT, ord = object$control$ord)
             WW <- if (is.null(W1)) W2 else cbind(W2, W1)

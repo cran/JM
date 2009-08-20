@@ -7,19 +7,19 @@ function (thetas) {
     eta.t <- eta.tw + alpha * Y
     exp.eta.s <- exp(alpha * Ys)
     exp.eta.tw <- exp(eta.tw)
-    Int <- xi[ind.K] * wkP * exp.eta.s
-    Int2 <- wkP * exp.eta.s
+    Int <-  wkP * exp.eta.s
+    Int2 <- xi[ind.K] * Int
     scgammas <- if (!is.null(WW))
-        - colSums(WW * (d - c((p.byt * (exp.eta.tw * rowsum(Int, id.GK, reorder = FALSE))) %*% wGH)), na.rm = TRUE)
+        - colSums(WW * (d - c((p.byt * (exp.eta.tw * rowsum(Int2, id.GK, reorder = FALSE))) %*% wGH)), na.rm = TRUE)
     else 
         NULL
-    scalpha <- - sum((p.byt * (d * Y - exp.eta.tw * rowsum(Int * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+    scalpha <- - sum((p.byt * (d * Y - exp.eta.tw * rowsum(Int2 * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
     scxi <- numeric(Q)
     for (i in 1:Q) {
         i1 <- ind.D == i
         i2 <- ind.K == i
         i3 <- ind.D >= i
-        ki <- c((p.byt[i3, ] * (exp.eta.tw[i3] * rowsum(Int2[i2, ], id.GK[i2], reorder = FALSE))) %*% wGH)
+        ki <- c((p.byt[i3, ] * (exp.eta.tw[i3] * rowsum(Int[i2, ], id.GK[i2], reorder = FALSE))) %*% wGH)
         kk <- numeric(n); kk[i3] <- ki
         scxi[i] <- - xi[i] * sum((d * i1)/xi[i] - kk)
     }
