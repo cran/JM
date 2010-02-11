@@ -12,7 +12,7 @@ data under a maximum likelihood approach. Various options for the survival model
 \usage{
 jointModel(lmeObject, survObject, timeVar, 
     method = c("weibull-AFT-GH", "weibull-PH-GH", 
-    "piecewise-PH-GH", "ch-GH", "ph-GH", "ch-Laplace"), 
+    "piecewise-PH-GH", "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), 
     init = NULL, control = list(), \dots)
 }
 
@@ -28,14 +28,14 @@ jointModel(lmeObject, survObject, timeVar,
         \item{betas}{the vector of fixed effects for the linear mixed effects model.}
         \item{sigma}{the measurement error standard deviation for the linear mixed effects model.}
         \item{D}{the variance-covariance matrix of the random effects.}
-        \item{gammas}{the vector of baseline covariates for the survival model. For \code{method = "ch-GH"} or
+        \item{gammas}{the vector of baseline covariates for the survival model. For \code{method = "spline-PH-GH"} or
             \code{method = "ch-Laplace"} this vector should first contain initial values for the sorted B-spline
             coefficients used to model the log cumulative baseline hazard.}
         \item{alpha}{the association parameter.}
         \item{sigma.t}{the scale parameter for the Weibull survival model; required only when 
             \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}.}
         \item{lambda0}{a vector of the baseline hazard values at the sorted unique event times; required only when 
-            \code{method = "ph-GH"}.}
+            \code{method = "Cox-PH-GH"}.}
     }
     If the user-specified list of initial values does not contain some of these components or contains components 
     not of the appropriate length, the default initial values are used instead.
@@ -44,8 +44,8 @@ jointModel(lmeObject, survObject, timeVar,
     \describe{
         \item{only.EM}{logical; if \code{TRUE} only the EM algorithm is used in the optimization, otherwise if 
             convergence has not been achieved a quasi-Newton algorithm is initiated. Default is \code{FALSE} except for 
-            \code{method = "ph-GH"} for which only the EM algorithm is available.}
-        \item{iter.EM}{the number of EM iterations. Default is 50 except for \code{method = "ph-GH"} for which
+            \code{method = "Cox-PH-GH"} for which only the EM algorithm is available.}
+        \item{iter.EM}{the number of EM iterations. Default is 50 except for \code{method = "Cox-PH-GH"} for which
             the default is 200.}
         \item{iter.qN}{the number of quasi-Newton iterations. Default is 150.}
         \item{optimizer}{a character string indicating which optimizer to use; options are "optim" (default) and
@@ -68,19 +68,19 @@ jointModel(lmeObject, survObject, timeVar,
             under \code{method = "ch-Laplace"}.}
         \item{knots}{a numeric vector of the knots positions for the piecewise constant baseline risk function of for 
             the log times used in the B-splines approximation of the log cumulative baseline hazard; therefore, this argument 
-            is relevant only when \code{method = "piecewise-PH-GH"} or when \code{method = "ch-GH"} or \code{method = "ch-Laplace"}. 
+            is relevant only when \code{method = "piecewise-PH-GH"} or when \code{method = "spline-PH-GH"} or \code{method = "ch-Laplace"}. 
             For \code{method = "piecewise-PH-GH"} default is to place equally-spaced \code{lng.in.kn} knots (see below) in the
-            quantiles of the observed event times. For \code{method = "ch-GH"} and \code{method = "ch-Laplace"} default is 
+            quantiles of the observed event times. For \code{method = "spline-PH-GH"} and \code{method = "ch-Laplace"} default is 
             to place \code{lng.in.kn} knots (see below) at the quantiles of the uncensored log survival times.}
         \item{lng.in.kn}{the number of internal knots; relevant only when when \code{method = "piecewise-PH-GH"} where it 
-            denotes the number of internal knots for the piecewise constant baseline risk function or when \code{method = "ch-GH"} 
-            or \code{method = "ch-Laplace"} where it denotes the number of internal knots for B-splines approximation of the log cumulative 
-            baseline hazard. Default is 6 when \code{method = "piecewise-PH-GH"} and 3 otherwise.}
+            denotes the number of internal knots for the piecewise constant baseline risk function or when \code{method = "spline-PH-GH"} 
+            or \code{method = "ch-Laplace"} where it denotes the number of internal knots for B-splines approximation of the log 
+            baseline hazard. Default is 6 when \code{method = "piecewise-PH-GH"} and 5 otherwise.}
         \item{ord}{a positive integer denoting the order of the B-splines used to approximate the log cumulative hazard
-            (default is 4); relevant only when \code{method = "ch-GH"} or \code{method = "ch-Laplace"}.}
+            (default is 4); relevant only when \code{method = "spline-PH-GH"} or \code{method = "ch-Laplace"}.}
         \item{GHk}{the number of Gauss-Hermite quadrature points used to approximate the integrals over the random 
-            effects. For \code{method = "weibull-AFT-GH"}, \code{method = "weibull-PH-GH"} and \code{method = "ch-GH"} default is 21 for one- or 
-            two-dimensional integration and 11 otherwise. For \code{method = "ph-GH"} default is 21 for one-dimensional 
+            effects. For \code{method = "weibull-AFT-GH"}, \code{method = "weibull-PH-GH"} and \code{method = "spline-PH-GH"} default is 21 for one- or 
+            two-dimensional integration and 11 otherwise. For \code{method = "Cox-PH-GH"} default is 21 for one-dimensional 
             integration, 11 for two-dimensional integration and 9 otherwise.}
         \item{GKk}{the number of Gauss-Kronrod points used to approximate the integral involved in the calculation of the survival function. Two 
             options are available, namely 7 or 15. For \code{method = "weibull-PH-GH"} and \code{method = "weibull-AFT-GH"} 15 are used, 
@@ -102,8 +102,9 @@ effects part of the linear mixed effects model for sample unit \eqn{i}), and \eq
 for \code{method = "weibull-AFT-GH"} a time-dependent Weibull model under the accelerated failure time formulation is assumed. For 
 \code{method = "weibull-PH-GH"} a time-dependent relative risk model is postulated with a Weibull baseline risk function. For 
 \code{method = "piecewise-PH-GH"} a time-dependent relative risk model is postulated with a piecewise constant baseline risk function.
-For \code{method = "ch-GH"} and \code{method = "ch-Laplace"} an additive model on the log cumulative hazard scale is assumed 
-(see Rizopoulos et al., 2009 for more info). Finally, for \code{method = "ph-GH"} a time-dependent relative risk model 
+For \code{method = "spline-PH-GH"} a time-dependent relative risk model is assumed in which the log baseline risk function is approximated
+using B-splines. For \code{method = "ch-Laplace"} an additive model on the log cumulative hazard scale is assumed 
+(see Rizopoulos et al., 2009 for more info). Finally, for \code{method = "Cox-PH-GH"} a time-dependent relative risk model 
 is assumed where the baseline risk function is left unspecified (Wulfsohn and Tsiatis, 1997).
 
 For all survival models except for the time-dependent proportional hazards model, the optimization algorithm starts 
@@ -118,8 +119,8 @@ and previous iterations, respectively, and \eqn{L(.)} is the log-likelihood func
 default convergence criteria of either \code{optim()} or \code{nlminb()} are used.
 
 The required integrals are approximated using the Gauss-Hermite quadrature rule for \code{method = "weibull-AFT-GH"}, 
-\code{method = "weibull-PH-GH"}, \code{method = "piecewise-PH-GH"}, \code{method = "ch-GH"} and \code{method = "ph-GH"}, 
-whereas for \code{method = "ch-Laplace"} the fully exponential Laplace approximation described in Rizopoulos et al. (2008) is used. 
+\code{method = "weibull-PH-GH"}, \code{method = "piecewise-PH-GH"}, \code{method = "spline-PH-GH"} and \code{method = "Cox-PH-GH"}, 
+whereas for \code{method = "ch-Laplace"} the fully exponential Laplace approximation described in Rizopoulos et al. (2009) is used. 
 This last option is more suitable when high-dimensional random effects vectors are considered (e.g., when modelling nonlinear 
 subject-specific trajectories with splines or high-order polynomials).
 }
@@ -168,10 +169,10 @@ standard errors for the \code{summary} generic) for the event process are augmen
 corresponds to the association parameter \eqn{\alpha} (see \bold{Details}).
 
 5. The standard errors returned by the \code{summary} generic function for class \code{jointModel} when 
-\code{method = "ph-GH"} are based on the profile score vector (i.e., given the NPMLE for the unspecified baseline 
+\code{method = "Cox-PH-GH"} are based on the profile score vector (i.e., given the NPMLE for the unspecified baseline 
 hazard). Hsieh et al. (2006) have noted that these standard errors are underestimated.
 
-6. For more examples of \code{jointModel()} check the following link: \url{http://wiki.r-project.org/rwiki/doku.php?id=packages:cran:jm}.
+6. For more examples of \code{jointModel()} check the following link: \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
 }
 
 \seealso{
@@ -182,7 +183,9 @@ hazard). Hsieh et al. (2006) have noted that these standard errors are underesti
     \code{\link{ranef.jointModel}},
     \code{\link{fitted.jointModel}},
     \code{\link{residuals.jointModel}},
-    \code{\link{plot.jointModel}}
+    \code{\link{plot.jointModel}},
+    \code{\link{survfitJM}},
+    \code{\link{dynC}}
 }
 
 \examples{
@@ -195,6 +198,7 @@ fitJOINT <- jointModel(fitLME, fitSURV, timeVar = "year")
 fitJOINT
 summary(fitJOINT)
 
+\dontrun{
 # linear mixed model fit (random intercepts + random slopes)
 fitLME <- lme(log(serBilir) ~ drug * year, random = ~ year | id, data = pbc2)
 # survival regression fit
@@ -203,15 +207,16 @@ fitSURV <- survreg(Surv(years, status2) ~ drug, data = pbc2.id, x = TRUE)
 fitJOINT <- jointModel(fitLME, fitSURV, timeVar = "year")
 fitJOINT
 summary(fitJOINT)
+}
 
 # linear mixed model fit
 fitLME <- lme(sqrt(CD4) ~ obstime * drug - drug, 
     random = ~ 1 | patient, data = aids)
 # cox model fit
 fitCOX <- coxph(Surv(Time, death) ~ drug, data = aids.id, x = TRUE)
-# joint model fit, under the additive log cumulative hazard model
+# joint model fit
 fitJOINT <- jointModel(fitLME, fitCOX, 
-    timeVar = "obstime", method = "ch-GH")
+    timeVar = "obstime", method = "spline-PH-GH")
 fitJOINT
 summary(fitJOINT)
 }

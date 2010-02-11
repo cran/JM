@@ -36,6 +36,7 @@ Extracts the random effects estimates from a fitted joint model.
 \seealso{\code{\link{coef.jointModel}}, \code{\link{fixef.jointModel}}}
 
 \examples{
+\dontrun{
 # linear mixed model fit
 fitLME <- lme(log(serBilir) ~ drug * year, random = ~ 1 | id, data = pbc2)
 # survival regression fit
@@ -44,6 +45,7 @@ fitSURV <- survreg(Surv(years, status2) ~ drug, data = pbc2.id, x = TRUE)
 # joint model fit, under the (default) Weibull model
 fitJOINT <- jointModel(fitLME, fitSURV, timeVar = "year")
 ranef(fitJOINT)
+}
 }
 
 \keyword{methods}

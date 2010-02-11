@@ -8,7 +8,7 @@ function (object, ...) {
     sds <- sqrt(diag(VarCov[indY, indY]))
     coefsY <- cbind("Value" = betas, "Std.Err" = sds, "z-value" = betas / sds, 
         "p-value" = 2 * pnorm(abs(betas / sds), lower.tail = FALSE))
-    if (object$method == "ph-GH") {
+    if (object$method == "Cox-PH-GH") {
         gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha))
         indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
     } else if (object$method == "weibull-PH-GH") {
@@ -24,6 +24,14 @@ function (object, ...) {
             log(as.vector(object$coefficients$xi)))
         names(gammas)[seq(length(gammas) - object$x$Q + 1, length(gammas))] <- paste("log(xi.", seq_len(object$x$Q), ")", sep = "")
         indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
+    } else if (object$method == "spline-PH-GH") {
+        gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
+            object$coefficients$gammas.bs)
+        indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
+        #ng <- length(object$coefficients$gammas)
+        #ng.bs <- length(object$coefficients$gammas.bs)
+        #ii <- if (ng > 0) c((ng.bs + 1):(ng + ng.bs), ng + ng.bs + 1, 1:ng.bs) else c(ng.bs + 1, 1:ng.bs) 
+        #indT <- indT[ii]
     } else {
         gms <- object$coefficients$gammas
         ng <- length(gms)

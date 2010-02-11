@@ -23,6 +23,15 @@ function (b) {
         log.hazard <- log(sigma.t.new) + (sigma.t.new - 1) * log(Vi) + eta.t
         log.survival <- - Vi^sigma.t.new
         d.missO * log.hazard + log.survival
+    } else if (method == "spline-PH-GH") {
+        id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
+        Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+        eta.s <- alpha.new * Ys.new
+        wk <- rep(wk, n.missO)
+        log.hazard <- c(W2.missO %*% gammas.bs.new) + eta.t
+        Vi <- exp(c(W2s.missO %*% gammas.bs.new) + eta.s)
+        log.survival <- - exp(eta.tw) * P.missO * as.vector(tapply(wk * Vi, id.GK3, sum))
+        d.missO * log.hazard + log.survival
     } else if (method == "piecewise-PH-GH") {
         ii <- object$x$id.GK[id.GK]
         nn <- as.vector(tapply(ii, ii, length))

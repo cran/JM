@@ -50,8 +50,8 @@ function (object, process = c("Longitudinal", "Event"),
             wk <- object$x$wk
             method <- object$method
             W1 <- object$x$W
-            WW <- if (method == "ph-GH") {
-                stop("multiple-imputation-based residuals are not available for joint models with method = 'ph-GH'.\n")
+            WW <- if (method == "Cox-PH-GH") {
+                stop("multiple-imputation-based residuals are not available for joint models with method = 'Cox-PH-GH'.\n")
             } else if (method == "piecewise-PH-GH") {
                 ind.D <- object$y$ind.D
                 nk <- object$control$GKk
@@ -63,6 +63,10 @@ function (object, process = c("Longitudinal", "Event"),
             } else if (method == "weibull-PH-GH" || method == "weibull-AFT-GH") {
                 log.st <- log(object$x$st)
                 if (is.null(W1)) as.matrix(rep(1, length(logT))) else cbind(1, W1)
+            } else if (method == "spline-PH-GH") {
+                W2 <- object$x$W2
+                W2s <- object$x$W2s
+                W1
             } else {
                 W2 <- splineDesign(object$knots, logT, ord = object$control$ord)
                 nk <- ncol(W2) 
@@ -96,7 +100,7 @@ function (object, process = c("Longitudinal", "Event"),
                 object$y$d - fits
             }
         } else if (type == "CoxSnell") {
-            if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH", "ch-GH", "ch-Laplace")) {
+            if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH", "spline-PH-GH", "ch-Laplace")) {
                 fits
             } else {
                 warning("CoxSnell residuals are only calculated for the parametric survival models; martingale residuals are calculated instead.\n")

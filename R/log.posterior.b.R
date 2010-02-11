@@ -40,11 +40,27 @@ function (b, time, method, ii) {
             Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * rep(b, each = nrow(Zs))))
             Vi <- exp(eta.tw) * P * sum(wk * exp(alpha.new * Ys))
             - Vi^sigma.t.new
+        } else if (method == "spline-PH-GH") {
+            id.GK <- rep(ii, each = 15)
+            wk <- gaussKronrod(15)$wk
+            sk <- gaussKronrod(15)$sk
+            P <- time[ii]/2
+            st <- P * (sk + 1)
+            data.id2 <- data.id[id.GK, ]
+            data.id2[timeVar] <- st
+            mf <- model.frame(TermsY, data = data.id2)
+            Xs <- model.matrix(object$formYx, mf)
+            Zs <- model.matrix(object$formYz, mf)
+            eta.tw <- if (!is.null(W)) as.vector(W[ii, , drop = FALSE] %*% gammas.new) else 0
+            Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * rep(b, each = nrow(Zs))))
+            W2s <- splineDesign(object$control$knots, st, ord = object$control$ord)
+            Vi <- exp(c(W2s %*% gammas.bs.new) + alpha.new * Ys)
+            - exp(eta.tw) * P * sum(wk * Vi)            
         } else if (method == "piecewise-PH-GH") {
             wk <- gaussKronrod(7)$wk
             sk <- gaussKronrod(7)$sk
             nk <- length(sk)
-            qs <- c(0, sort(object$control$knots), max(survTimes) + 1)
+            qs <- c(0, sort(object$control$knots), max(survTimes, object$control$knots) + 1)
             ind <- findInterval(time[ii], qs, rightmost.closed = TRUE)
             Tiq <- outer(time[ii], qs, pmin)
             Lo <- Tiq[, 1:Q]

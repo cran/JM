@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.4-0\cr
-Date: \tab 2009-08-20\cr
+Version: \tab 0.5-0\cr
+Date: \tab 2010-02-11\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -30,7 +30,7 @@ by either function \code{coxph()} or function \code{survreg()} of package \pkg{s
 argument of \code{jointModel()} specifies the type of the survival submodel to be fitted and the type of the numerical 
 integration technique; available options are:
 \describe{
-    \item{\code{"ph-GH"}}{the time-dependent version of a proportional hazards model with unspecified baseline hazard 
+    \item{\code{"Cox-PH-GH"}}{the time-dependent version of a proportional hazards model with unspecified baseline hazard 
         function. The Gauss-Hermite integration rule is used to approximate the required integrals. (This option 
         corresponds to the joint model proposed by Wulfsohn and Tsiatis, 1997)}
     \item{\code{"weibull-PH-GH"}}{the Weibull model under the proportional hazards formulation. The Gauss-Hermite 
@@ -39,7 +39,7 @@ integration technique; available options are:
         integration rule is used to approximate the required integrals.}
     \item{\code{"piecewise-PH-GH"}}{a proportional hazards model with a piecewise constant baseline risk function. The Gauss-Hermite 
         integration rule is used to approximate the required integrals.}    
-    \item{\code{"ch-GH"}}{an additive log cumulative hazard model, in which the log cumulative baseline hazard is 
+    \item{\code{"spline-PH-GH"}}{a proportional hazards model, in which the log baseline hazard is 
         approximated using B-splines. The Gauss-Hermite integration rule is used to approximate the required integrals.}
     \item{\code{"ch-Laplace"}}{an additive log cumulative hazard model, in which the log cumulative baseline hazard is 
         approximated using B-splines. A fully exponential Laplace approximation method is used to approximate the 

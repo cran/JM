@@ -1,4 +1,4 @@
-chLaplace.fit <-
+splinePHLaplace.fit <-
 function (x, y, id, initial.values, initial.EB = NULL, control) {
     # response vectors
     logT <- as.vector(y$logT)
@@ -10,32 +10,23 @@ function (x, y, id, initial.values, initial.EB = NULL, control) {
     Z <- x$Z
     Ztime <- x$Ztime
     W1 <- x$W
-    min.x <- min(logT)
-    max.x <- max(logT)
-    kn <- if (is.null(control$knots)) {
-        kk <- seq(0, 1, length.out = control$lng.in.kn + 2)[-c(1, control$lng.in.kn + 2)]
-        quantile(logT[d == 1], kk, names = FALSE)
-    } else {
-        control$knots
-    }    
-    kn <- sort(c(rep(c(min.x, max.x), control$ord), kn))
-    W2 <- splineDesign(kn, logT, ord = control$ord)
-    S <- splineDesign(kn[-c(1, length(kn))], logT, ord = control$ord - 1)
-    S <- control$ord * S / rep(diff(kn, lag = control$ord + 1), each = length(d))
-    ncs <- ncol(S)
-    SS <- cbind(- S[, 1], S[, 1:(ncs - 1)] - S[, 2:ncs], S[, ncs])
-    nk <- ncol(W2)
-    WW <- if (is.null(W1)) cbind(W2) else cbind(W2, W1)    
-    dimnames(X) <- dimnames(Xtime) <- dimnames(Z) <- dimnames(Ztime) <- dimnames(WW) <- NULL
+    W2 <- x$W2
+    W2s <- x$W2s
+    dimnames(X) <- dimnames(Xtime) <- dimnames(Z) <- dimnames(Ztime) <- dimnames(W1) <- NULL
     attr(X, "assign") <- attr(X, "contrasts") <- attr(Xtime, "assign") <- attr(Xtime, "contrasts") <- NULL
     attr(Z, "assign") <- attr(Ztime, "assign") <- NULL
     # sample size settings
     ncx <- ncol(X)
     ncz <- ncol(Z)
-    ncww <- ncol(WW)
+    ncw1 <- if (is.null(W2)) 0 else ncol(W1)
+    nk <- ncol(W2)
     n <- length(logT)
     N <- length(y)
     ni <- as.vector(tapply(id, id, length))
+    # Gauss-Kronrod rule
+    P <- as.vector(x$P)
+    id.GK <- rep(seq_along(logT), each = control$GKk)
+    GKk <- control$GKk
     # crossproducts and others
     XtX <- crossprod(X)
     ZtZ <- lapply(split(Z, id), function (x) crossprod(matrix(x, ncol = ncz))); names(ZtZ) <- NULL
@@ -45,6 +36,7 @@ function (x, y, id, initial.values, initial.EB = NULL, control) {
     betas <- as.vector(initial.values$betas)
     sigma <- initial.values$sigma
     gammas <- as.vector(initial.values$gammas)
+    gammas.bs <- as.vector(initial.values$gammas.bs)
     alpha <- as.vector(initial.values$alpha)
     D <- initial.values$D
     diag.D <- !is.matrix(D)
@@ -52,36 +44,47 @@ function (x, y, id, initial.values, initial.EB = NULL, control) {
     # initialize Laplace approximation components
     b <- trc.y1 <- if (is.null(initial.EB) || !all(dim(initial.EB) == c(n, ncz))) matrix(0, n, ncz) else initial.EB
     dimnames(b) <- NULL
-    vb <- matrix(0, n, ncz * ncz)
     trc.y2 <- trc.y3 <- matrix(0, n, ncz * ncz, TRUE)
     trc.t1 <- trc.t2 <- numeric(n)
-    log.p.yt <- numeric(n)
     cons.logLik <- 0.5 * n * ncz * log(2 * pi)
     # Fix environments for functions
-    environment(update.bCH) <- environment(fn.b) <- environment(gr.b) <- environment()
-    environment(logsurvCH) <- environment(ScsurvCH) <- environment(SclongCH) <- environment()
-    environment(LogLik.chLaplace) <- environment(Score.chLaplace) <- environment()
-    old <- options(warn = (-1))
-    on.exit(options(old))    
+    #environment(update.logLik.Laplace) <- environment(fn) <- environment(gr) <- environment()
+    #environment(logsurvCH) <- environment(ScsurvCH) <- environment(SclongCH) <- environment()
+    #environment(LogLik.chLaplace) <- environment(Score.chLaplace) <- environment()
+    #old <- options(warn = (-1))
+    #on.exit(options(old))    
     # EM iterations
     iter <- control$iter.EM
     Y.mat <- matrix(0, iter, ncx + 1)
-    T.mat <- matrix(0, iter, ncww + 1)
+    T.mat <- matrix(0, iter, ncw1 + nk + 1)
     B.mat <- if (diag.D) matrix(0, iter, ncz) else matrix(0, iter, ncz * ncz)
     lgLik <- numeric(iter)
     conv <- FALSE
-    new.b <- update.bCH(b, matrix(0, n, ncz * ncz), betas, sigma, c(gammas, alpha), D)
+    new.b <- update.logLik.Laplace(b, betas, sigma, gammas, gammas.bs, alpha, D)
+    
+    
     for (it in 1:iter) {
         # save parameter values in matrix
         Y.mat[it, ] <- c(betas, sigma)
-        T.mat[it, ] <- c(gammas, alpha)
+        T.mat[it, ] <- c(gammas, gammas.bs, alpha)
         B.mat[it, ] <- D
         
         # linear predictors
+        b.hat <- attr(new.b, "b")
+        Zb <- rowSums(Z * b.hat[id, ], na.rm = TRUE)
+        Zsb <- rowSums(Zs * b.hat[id.GK, ], na.rm = TRUE)
         eta.yx <- as.vector(X %*% betas)
         eta.yxT <- as.vector(Xtime %*% betas)
-        eta.tw <- as.vector(WW %*% gammas)
-        sc <- as.vector(S %*% diff(gammas[1:nk]))
+        Ys <- as.vector(Xs %*% betas) + Zsb
+        eta.s <- as.vector(alpha * Ys)
+        eta.ws <- as.vector(W2s %*% gammas.bs)
+
+        sc1 <- - crossprod(X, y - eta.yx - Zb) / sigma^2
+        sc2 <- - colSums(alpha * d * Xtime - exp(c(W1 %*% gammas)) * P * rowsum(exp(eta.ws + eta.s) * alpha * Xs, id.GK, reorder = FALSE))
+        c(sc1 + sc2)
+        
+        
+        
         
         # E-step -- compute EB estimates and traces
         for (i in 1:n) {

@@ -10,7 +10,7 @@
 }
 
 \usage{
-survfitJM(object, newdata, idVar = "id", survTimes = NULL, 
+survfitJM(object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL, 
 	last.time = NULL, M = 200, CI.levels = c(0.025, 0.975), scale = 1.6)
 }
 
@@ -22,6 +22,8 @@ survfitJM(object, newdata, idVar = "id", survTimes = NULL,
     that were supplied as the two first argument of \code{\link{jointModel}}. In addition, this data frame should contain a variable 
     that identifies the different subjects (see also argument \code{idVar}).}
   \item{idVar}{the name of the variable in \code{newdata} that identifies the different subjects.}
+  \item{simulate}{logical; if \code{TRUE}, a Monte Carlo approach is used to estimate survival probabilities. If \code{FALSE},
+    a first order estimator is used instead. (see \bold{Details})}
   \item{survTimes}{a numeric vector of times for which prediction survival probabilities are to be computed.}
   \item{last.time}{a numeric vector or character string. This specifies the known time at which each of the subjects in \code{newdat}
     was known to be alive. If \code{NULL}, then this is automatically taken as the last time each subject provided a longitudinal
@@ -40,8 +42,8 @@ survfitJM(object, newdata, idVar = "id", survTimes = NULL,
   tilde{y}_i(t), x_i)}, i.e., the conditional probability of surviving time \eqn{u} given that subject \eqn{i}, with covariate information
   \eqn{x_i}, has survived up to time \eqn{t} and has provided longitudinal the measurements \eqn{\tilde{y}_i(t)}{tilde{y}_i(t)}.
   
-  To estimate \eqn{Pr(T_i > u | T_i > t, \tilde{y}_i(t), x_i)}{Pr(T_i > u | T_i > t, tilde{y}_i(t), x_i)} a Monte Carlo procedure is 
-  followed with the following steps:
+  To estimate \eqn{Pr(T_i > u | T_i > t, \tilde{y}_i(t), x_i)}{Pr(T_i > u | T_i > t, tilde{y}_i(t), x_i)} and if \code{simulate = TRUE}, a 
+  Monte Carlo procedure is followed with the following steps:
   \describe{
     \item{Step 1:}{Simulate new parameter values, say \eqn{\theta^*}, from \eqn{N(\hat{\theta}, C(\hat{\theta}))},
         where \eqn{\hat{\theta}} are the MLEs and \eqn{C(\hat{\theta})} their large sample covariance matrix, which are extracted from
@@ -54,19 +56,21 @@ survfitJM(object, newdata, idVar = "id", survTimes = NULL,
         u | T_i > t, b_i^*, x_i; \theta^*)}.}
     \item{Step 4:}{Repeat Steps 1-3 \code{M} times.}
   }
-  
   Based on the \code{M} estimates of the conditional probabilities, we compute useful summary statistics, such as their mean, median, and
   quantiles (to produce a confidence interval).
 
+  If \code{simulate = FALSE}, then survival probabilities are estimated using the formula \deqn{Pr(T_i > u | T_i > t, \hat{b}_i, x_i; 
+    \hat{\theta})}{Pr(T_i > u | T_i > t, hat{b}_i, x_i; hat{\theta})}, where \eqn{\hat{\theta}} denotes the MLEs as above, and \eqn{\hat{b}_i} 
+    denotes the empirical Bayes estimates.
 }
 
 \note{
-Predicted probabilities are not computed for joint models with \code{method = "ch-GH"}, \code{method = "ch-Laplace"} and \code{method = "ph-GH"}.
+Predicted probabilities are not computed for joint models with \code{method = "ch-Laplace"} and \code{method = "Cox-PH-GH"}.
 }
 
 \value{
   A list of class \code{survfitJM} with components:
-  \item{summaries}{a list with elements numeric matrices with numeric summaries of the predicted probabilities for each subect.}
+  \item{summaries}{a list with elements numeric matrices with numeric summaries of the predicted probabilities for each subject.}
   \item{survTimes}{a copy of the \code{survTimes} argument.}
   \item{last.time}{a numeric vector with the time of the last available longitudinal measurement of each subject.}
   \item{obs.times}{a list with elements numeric vectors denoting the timings of the longitudinal measurements for each subject.}

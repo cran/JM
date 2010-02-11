@@ -50,6 +50,7 @@
 \seealso{\code{\link{jointModel}}}
 
 \examples{
+\dontrun{
 # linear mixed model fit
 fitLME <- lme(log(serBilir) ~ drug * year, random = ~ 1 | id, data = pbc2)
 # survival regression fit
@@ -61,7 +62,7 @@ plot(fitJOINT, 3, add.KM = TRUE, col = "red", lwd = 2)
 
 par(mfrow = c(2, 2))
 plot(fitJOINT)
-
+}
 }
 
 \keyword{methods}

@@ -11,7 +11,7 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
     cat("\n\nJoint Model Summary:")
     cat("\nLongitudinal Process: linear mixed effects model")
     cat("\nEvent Process: ")
-    if (x$method == "ph-GH") {
+    if (x$method == "Cox-PH-GH") {
         cat("Relative risk model with unspecified baseline risk function\n\n")
     } else if (x$method == "weibull-AFT-GH") {
         cat("Weibull accelerated failure time model\n\n")
@@ -20,6 +20,9 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
     } else if (x$method == "piecewise-PH-GH") {
         cat("Relative risk model with piecewise-constant baseline risk function (knots at: ", 
             paste(round(x$control$knots, 1), collapse = ", "), ")\n\n", sep = "")
+    } else if (x$method == "spline-PH-GH") {
+        cat("Relative risk model with spline baseline risk function (knots at: ", 
+            paste(round(unique(x$control$knots), 1), collapse = ", "), ")\n\n", sep = "")
     } else {
         cat("log cumulative baseline hazard with B-splines (internal knots at: ", 
             paste(round(exp(x$knots[-c(1, length(x$knots))]), 2), collapse = ", "), ")\n\n", sep = "")
@@ -74,7 +77,7 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
     if(x$method == "weibull-PH-GH" || x$method == "weibull-AFT-GH")
         cat("\nScale:", round(exp(x$"CoefTable-Event"[nrow(x$"CoefTable-Event"), 1]), digits), "\n")
     cat("\nIntegration:\n")
-    GH <- x$method %in% c("ch-GH", "ph-GH", "weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH")
+    GH <- x$method %in% c("ch-GH", "Cox-PH-GH", "weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH", "spline-PH-GH")
     cat("method:", if (GH) "Gauss-Hermite" else "Laplace")
     if (GH) cat("\nquadrature points:", x$control$GHk, "\n") else cat("\n")
     cat("\nOptimization:\n")

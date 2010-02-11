@@ -11,9 +11,9 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
     show <- rep(FALSE, 10)
     show[which] <- TRUE
     method <- x$method
-    if (any(show[6], show[7]) && method != "ph-GH") {
+    if (any(show[6], show[7]) && method != "Cox-PH-GH") {
         show[6] <- show[7] <- FALSE
-        warning("the baseline hazard and the cumulative baseline hazard are only plotted for the 'ph-GH' method.\n")
+        warning("the baseline hazard and the cumulative baseline hazard are only plotted for the 'Cox-PH-GH' method.\n")
     }   
     if (any(show[c(3:5, 8:10)])) {
         if (is.null(ids))
@@ -26,7 +26,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
         W1 <- x$x$W
         gammas <- x$coefficients$gammas
         alpha <- x$coefficients$alpha
-        fitT <- if (method == "ph-GH") {
+        fitT <- if (method == "Cox-PH-GH") {
             lambda0 <- x$coefficients$lambda0[, "basehaz"]
             unqT <- x$coefficients$lambda0[, "time"]
             T.mat <- matrix(exp(log.survTimes), nrow = n, ncol = nt, byrow = TRUE)
@@ -145,6 +145,32 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
             list("survival" = exp(- Haz),
                  "cumulative-Hazard" = Haz,
                  "log-cumulative-Hazard" = log(Haz))
+        } else if (method == "spline-PH-GH") {
+            T.mat <- matrix(exp(log.survTimes), nrow = n, ncol = nt, byrow = TRUE)
+            eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else 0
+            gammas.bs <- x$coefficients$gammas.bs
+            b <- x$EB$post.b
+            wk <- gaussKronrod()$wk
+            sk <- gaussKronrod()$sk
+            id.GK <- rep(seq_len(n), each = x$control$GKk)
+            Haz <- matrix(0, n, nt)
+            for (i in 1:nt) {
+                P <- T.mat[, i] / 2
+                st <- outer(P, sk + 1)
+                data.id <- x$data.id[id.GK, ]
+                data.id[x$timeVar] <- c(t(st))
+                mf <- model.frame(x$termsY, data = data.id)
+                Xs <- model.matrix(x$formYx, mf)
+                Zs <- model.matrix(x$formYz, mf)
+                W2s <- splineDesign(x$control$knots, c(t(st)), ord = x$control$ord)
+                Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
+                eta.s <- alpha * Ys
+                eta.ws <- c(W2s %*% gammas.bs)
+                Haz[, i] <- exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
+            }
+            list("survival" = exp(- Haz),
+                 "cumulative-Hazard" = Haz,
+                 "log-cumulative-Hazard" = log(Haz))
         } else {
             W2 <- splineDesign(x$knots, log.survTimes, ord = x$control$ord)
             Y <- c(x$x$Xtime %*% x$coefficients$betas + x$EB$Ztimeb)
@@ -217,19 +243,19 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
     if (show[8]) {
         yy <- t(fitT[["survival"]])
         matplot(survTimes, yy[, ids], type = "l", col = "black", lty = 1, 
-            xlab = "Time", ylab = "Survival", main = main)
+            xlab = "Time", ylab = "Survival", main = main, ylim = c(0, 1), ...)
         mtext(caption[8], 3, 0.25, cex = cex.caption)
     }
     if (show[9]) {
         yy <- t(fitT[["cumulative-Hazard"]])
         matplot(survTimes, yy[, ids], type = "l", col = "black", lty = 1, 
-            xlab = "Time", ylab = "Cumulative Hazard", main = main)
+            xlab = "Time", ylab = "Cumulative Hazard", main = main, ...)
         mtext(caption[9], 3, 0.25, cex = cex.caption)
     }
     if (show[10]) {
         yy <- t(fitT[["log-cumulative-Hazard"]])
         matplot(survTimes, yy[, ids], type = "l", col = "black", lty = 1, 
-            xlab = "Time", ylab = "log Cumulative Hazard", main = main)
+            xlab = "Time", ylab = "log Cumulative Hazard", main = main, ...)
         mtext(caption[10], 3, 0.25, cex = cex.caption)
     }
     invisible()

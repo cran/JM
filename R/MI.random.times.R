@@ -17,6 +17,13 @@ function (time.points) {
         Xs.missO <- Xs
         Zs.missO <- Zs
     }
+    if (method == "spline-PH-GH") {
+        P.missO <- P
+        Xs.missO <- Xs
+        Zs.missO <- Zs
+        W2s.missO <- W2s
+        W2.missO <- W2
+    }
     if (method == "piecewise-PH-GH") {
         st.missO <- st
         ind.D.missO <- ind.D
@@ -31,14 +38,21 @@ function (time.points) {
     # Estimated MLEs (Joint Model)
     D <- object$coefficients$D
     diag.D <- ncz != ncol(D)
-    thets <- c(object$coefficients$gammas, object$coefficients$alpha)
-    thetas <- c(object$coefficients$betas, log(object$coefficients$sigma),
-        if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH")) thets else {
-            thets[2:nk] <- log(diff(thets[1:nk]))
-            thets
-        }, if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") log(object$coefficients$sigma.t) else NULL,
-           if (object$method == "piecewise-PH-GH") log(object$coefficients$xi) else NULL,
-        if (diag.D) log(D) else chol.transf(D))
+    list.thetas <- if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") {
+        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
+            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, log.sigma.t = log(object$coefficients$sigma.t),
+            D = if (diag.D) log(D) else chol.transf(D))
+    } else if (object$method == "spline-PH-GH") {
+        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
+            gammas = object$coefficients$gammas, gammas.bs = object$coefficients$gammas.bs, alpha = object$coefficients$alpha,
+            D = if (diag.D) log(D) else chol.transf(D))
+    } else if (object$method == "piecewise-PH-GH") {
+        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
+            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, log.xi = log(object$coefficients$xi),
+            D = if (diag.D) log(D) else chol.transf(D))
+    }
+    list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
+    thetas <- unlist(as.relistable(list.thetas))
     V.thetas <- vcov(object)
     EBs <- ranef(object, postVar = TRUE)
     Var <- attr(EBs, "postVar")
@@ -72,25 +86,19 @@ function (time.points) {
         # Step1: simulate new parameter values from a multivariate normal
         # joint model
         thetas.new <- mvrnorm(1, thetas, V.thetas)
-        betas.new <- thetas.new[1:ncx]
-        sigma.new <- exp(thetas.new[ncx + 1])
-        gammas.new <- if (!is.null(WW)) thetas.new[seq(ncx + 2, ncx + 1 + ncww)] else NULL
-        if (object$method == "ch-GH" || object$method == "ch-Laplace")
-            gammas.new[1:nk] <- cumsum(c(gammas.new[1], exp(gammas.new[2:nk])))
-        alpha.new <- thetas.new[ncx + ncww + 2]
-        if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") {
-            sigma.t.new <- exp(thetas.new[seq(ncx + ncww + 3, ncx + ncww + 3)])
-            D.new <- thetas.new[seq(ncx + ncww + 4, length(thetas))]
-            D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
-        } else if (object$method == "piecewise-PH-GH") {
-            Q <- object$x$Q
-            xi.new <- exp(thetas.new[seq(ncx + ncww + 3, ncx + ncww + 2 + Q)])
-            D.new <- thetas.new[seq(ncx + ncww + 3 + Q, length(thetas))]
-            D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)            
-        } else {   
-            D.new <- thetas.new[seq(ncx + ncww + 3, length(thetas))]
-            D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
-        }
+        thetas.new <- relist(thetas.new, skeleton = list.thetas)
+        betas.new <- thetas.new$betas
+        sigma.new <- exp(thetas.new$log.sigma)
+        gammas.new <- thetas.new$gammas
+        alpha.new <- thetas.new$alpha
+        D.new <- thetas.new$D
+        D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
+        if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH")
+            sigma.t.new <- exp(thetas.new$log.sigma.t)
+        if (object$method == "spline-PH-GH")
+            gammas.bs.new <- thetas.new$gammas.bs
+        if (object$method == "piecewise-PH-GH")
+            xi.new <- exp(thetas.new$log.xi); Q <- object$x$Q
         # visiting model
         thetas.vs.new <- mvrnorm(1, thetas.vs, Var.vs)
         betas.vs.new <- thetas.vs.new[seq_len(ncx.vs)]
@@ -133,7 +141,7 @@ function (time.points) {
             u.new <- rweibull(n, shape.vs.new, 1 / exp(mu.vs))
             Visit.Times[, ii] <- new.visit <- last.visit + u.new
             ind.tmax <- new.visit > t.max
-            dataM <- object$data
+            dataM <- object$data.id
             dataM[object$timeVar] <- new.visit
             mf <- model.frame(object$termsY, data = dataM, na.action = NULL)
             X.missM <- model.matrix(object$formYx, mf)

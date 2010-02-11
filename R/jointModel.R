@@ -1,6 +1,6 @@
 jointModel <-
 function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", 
-    "ch-GH", "ph-GH", "ch-Laplace"), init = NULL, control = list(), ...) {
+    "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), init = NULL, control = list(), ...) {
     cl <- match.call()
     if (!inherits(lmeObject, "lme"))
         stop("\n'lmeObject' must inherit from class lme.")
@@ -17,6 +17,8 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     if (length(timeVar) != 1 || !is.character(timeVar))
         stop("\n'timeVar' must be a character string.")
     method <- match.arg(method)
+    if (method == "Cox-PH-GH" && !inherits(survObject, "coxph"))
+        stop("\nfor 'method = Cox-PH-GH', 'survObject' must inherit from class coxph.")
     # survival process
     formT <- formula(survObject)
     if (inherits(survObject, "coxph")) {
@@ -53,9 +55,9 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     # control values
     con <- list(only.EM = FALSE, iter.EM = 50, iter.qN = 150, optimizer = "optim", tol1 = 1e-03, tol2 = 1e-04, 
         tol3 = sqrt(.Machine$double.eps), numeriDeriv = "fd", eps.Hes = 1e-06, parscale = NULL, step.max = 0.1, 
-        backtrackSteps = 2, knots = NULL, lng.in.kn = if (method == "piecewise-PH-GH") 6 else 3, ord = 4, GHk = if (ncol(Z) < 3) 15 else 9, 
-        GKk = if (method == "piecewise-PH-GH") 7 else 15, verbose = FALSE)
-    if (method == "ph-GH") {
+        backtrackSteps = 2, knots = NULL, lng.in.kn = if (method == "piecewise-PH-GH") 6 else 5, ord = 4, 
+        GHk = if (ncol(Z) < 3) 15 else 9, GKk = if (method == "piecewise-PH-GH") 7 else 15, verbose = FALSE)
+    if (method == "Cox-PH-GH") {
         con$only.EM <- TRUE
         con$iter.EM <- 200
         con$GHk <- if (ncol(Z) == 1) 15 else if (ncol(Z) == 2) 11 else 9
@@ -65,10 +67,10 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     con[(namc <- names(control))] <- control
     if (length(noNms <- namc[!namc %in% namC]) > 0) 
         warning("unknown names in control: ", paste(noNms, collapse = ", "))
-    if (method == "ph-GH" && !con$only.EM)
-        stop("with method 'ph-GH' only the EM algorithm is used.\n")
-    if (method == "ph-GH" && any(!is.na(match(c("iter.qN", "optimizer"), namc))))
-        warning("method 'ph-GH' uses only the EM algorithm.\n")
+    if (method == "Cox-PH-GH" && !con$only.EM)
+        stop("with method 'Cox-PH-GH' only the EM algorithm is used.\n")
+    if (method == "Cox-PH-GH" && any(!is.na(match(c("iter.qN", "optimizer"), namc))))
+        warning("method 'Cox-PH-GH' uses only the EM algorithm.\n")
     # extra design matrices for the longitudinal part
     data.id[timeVar] <- Time
     mf <- model.frame(lmeObject$terms, data = data.id)
@@ -79,7 +81,8 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     y <- list(y = y.long, logT = log(Time), d = d)
     x <- list(X = X, Xtime = Xtime, Z = Z, Ztime = Ztime, W = W)
     # extra design matrices for 'method = "weibull-AFT-GH"' and 'method = "weibull-PH-GH"'
-    if (method == "weibull-AFT-GH" || method == "weibull-PH-GH") {
+    # extra design matrices for 'method = "spline-PH-GH"' and 'method = "spline-PH-Laplace"'
+    if (method %in% c("weibull-AFT-GH", "weibull-PH-GH", "spline-PH-GH", "spline-PH-Laplace")) {
         wk <- gaussKronrod(con$GKk)$wk
         sk <- gaussKronrod(con$GKk)$sk
         P <- Time/2
@@ -90,6 +93,19 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
         Xs <- model.matrix(formYx, mf)
         Zs <- model.matrix(formYz, mf)
         x <- c(x, list(Xs = Xs, Zs = Zs, P = P, st = c(t(st)), wk = wk))
+        if (method == "spline-PH-GH" || method == "spline-PH-Laplace") {
+            kn <- if (is.null(con$knots)) {
+                kk <- seq(0, 1, length.out = con$lng.in.kn + 2)[-c(1, con$lng.in.kn + 2)]
+                quantile(Time, kk, names = FALSE)
+            } else {
+                con$knots
+            }
+            kn <- sort(c(rep(range(Time, st), con$ord), kn))
+            con$knots <- kn
+            W2 <- splineDesign(kn, Time, ord = con$ord)
+            W2s <- splineDesign(kn, c(t(st)), ord = con$ord)
+            x <- c(x, list(W2 = W2, W2s = W2s))
+        }
     }
     # extra design matrices for 'method = "piecewise-PH-GH"'
     if (method == "piecewise-PH-GH") {
@@ -131,8 +147,8 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
         P <- c(t(P))
         x <- c(x, list(Xs = Xs, Zs = Zs, P = P[!is.na(P)], st = st[!is.na(st)], wk = wk, id.GK = id.GK, Q = Q))
     }
-    # extra design matrices for 'method = "ph-GH"' with event times prior to observed time for the ith subject
-    if (method == "ph-GH") {
+    # extra design matrices for 'method = "Cox-PH-GH"' with event times prior to observed time for the ith subject
+    if (method == "Cox-PH-GH") {
         unqT <- sort(unique(Time[d == 1]))
         times <- lapply(Time, function (t) unqT[t >= unqT])
         ind.len <- sapply(times, length)
@@ -155,9 +171,9 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
             extra = list(Time = Time, d = d, y = y$y, id = id, times = data[[timeVar]]))
     } else {
         initial.surv(log(Time), d, if (is.null(W)) as.matrix(long) else cbind(W, long), method, con, 
-            extra = list(y = y$y, id = id, times = data[[timeVar]]))
+            extra = list(y = y$y, id = id, times = data[[timeVar]], W2 = x$W2))
     }
-    if (method == "ph-GH" && length(init.surv$lambda0) < length(unqT))
+    if (method == "Cox-PH-GH" && length(init.surv$lambda0) < length(unqT))
         init.surv$lambda0 <- basehaz(survObject)$hazard
     initial.values <- c(list(betas = fixef(lmeObject), sigma = lmeObject$sigma, D = VC), init.surv)
     if (!is.null(init)) {
@@ -171,11 +187,11 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     }
     # joint model fit
     out <- switch(method,
-        "ph-GH" = phGH.fit(x, y, id, initial.values, con),
+        "Cox-PH-GH" = phGH.fit(x, y, id, initial.values, con),
         "weibull-AFT-GH" = weibullAFTGH.fit(x, y, id, initial.values, con),
         "weibull-PH-GH" = weibullPHGH.fit(x, y, id, initial.values, con),
         "piecewise-PH-GH" = piecewisePHGH.fit(x, y, id, initial.values, con),
-        "ch-GH" = chGH.fit(x, y, id, initial.values, con),
+        "spline-PH-GH" = splinePHGH.fit(x, y, id, initial.values, con),
         "ch-Laplace" = chLaplace.fit(x, y, id, initial.values, b, con))
     # check if any problems with the Hessian at convergence
     H <- out$Hessian
@@ -188,6 +204,8 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     }
     out$x <- x
     out$y <- y
+    out$times <- data[[timeVar]]
+    out$data <- data
     out$data.id <- data.id
     out$method <- method
     out$termsY <- lmeObject$terms

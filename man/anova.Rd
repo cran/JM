@@ -44,16 +44,16 @@
 \seealso{\code{\link{jointModel}}}
 
 \examples{
+\dontrun{
 # linear mixed model fit without treatment effect
 fitLME.null <- lme(sqrt(CD4) ~ obstime, 
     random = ~ 1 | patient, data = aids)
 # cox model fit without treatment effect
 fitCOX.null <- coxph(Surv(Time, death) ~ 1, 
     data = aids.id, x = TRUE)
-# joint model fit, under the additive log cumulative hazard model 
-# without treatment effect
+# joint model fit without treatment effect
 fitJOINT.null <- jointModel(fitLME.null, fitCOX.null, 
-    timeVar = "obstime", method = "ch-GH")
+    timeVar = "obstime", method = "weibull-PH-GH")
 
 # linear mixed model fit with treatment effect
 fitLME.alt <- lme(sqrt(CD4) ~ obstime * drug - drug, 
@@ -64,10 +64,11 @@ fitCOX.alt <- coxph(Surv(Time, death) ~ drug,
 # joint model fit, under the additive log cumulative hazard model 
 # with treatment effect
 fitJOINT.alt <- jointModel(fitLME.alt, fitCOX.alt, timeVar = "obstime", 
-    method = "ch-GH")
+    method = "weibull-PH-GH")
 
 # likelihood ratio test for treatment effect
 anova(fitJOINT.null, fitJOINT.alt)
+}
 }
 
 \keyword{methods}

@@ -1,38 +1,29 @@
-chGH.fit <-
+splinePHGH.fit <-
 function (x, y, id, initial.values, control) {
     # response vectors
     logT <- as.vector(y$logT)
+    Time <- exp(logT)
     d <- as.vector(y$d)
     y <- as.vector(y$y)
     # design matrices
     X <- x$X
     Xtime <- x$Xtime
+    Xs <- x$Xs
     Z <- x$Z
     Ztime <- x$Ztime
+    Zs <- x$Zs
     W1 <- x$W
-    min.x <- min(logT)
-    max.x <- max(logT)
-    kn <- if (is.null(control$knots)) {
-        kk <- seq(0, 1, length.out = control$lng.in.kn + 2)[-c(1, control$lng.in.kn + 2)]
-        quantile(logT[d == 1], kk, names = FALSE)
-    } else {
-        control$knots
-    }
-    kn <- sort(c(rep(c(min.x, max.x), control$ord), kn))
-    W2 <- splineDesign(kn, logT, ord = control$ord)
-    S <- splineDesign(kn[-c(1, length(kn))], logT, ord = control$ord - 1)
-    S <- control$ord * S / rep(diff(kn, lag = control$ord + 1), each = length(d))
-    ncs <- ncol(S)
-    SS <- cbind(- S[, 1], S[, 1:(ncs - 1)] - S[, 2:ncs], S[, ncs])
-    nk <- ncol(W2)
-    WW <- if (is.null(W1)) cbind(W2) else cbind(W2, W1)
-    dimnames(X) <- dimnames(Xtime) <- dimnames(Z) <- dimnames(Ztime) <- dimnames(WW) <- NULL
+    W2 <- x$W2
+    W2s <- x$W2s
+    WW <- if (is.null(W1)) W2 else cbind(W2, W1)
+    dimnames(X) <- dimnames(Xtime) <- dimnames(Xs) <- dimnames(Z) <- dimnames(Ztime) <- dimnames(Zs) <- dimnames(WW) <- NULL
     attr(X, "assign") <- attr(X, "contrasts") <- attr(Xtime, "assign") <- attr(Xtime, "contrasts") <- NULL
-    attr(Z, "assign") <- attr(Ztime, "assign") <- NULL
+    attr(Xs, "assign") <- attr(Xs, "contrasts") <- attr(Zs, "assign") <- attr(Zs, "contrasts") <- attr(Z, "assign") <- attr(Ztime, "assign") <- NULL
     # sample size settings
     ncx <- ncol(X)
     ncz <- ncol(Z)
     ncww <- ncol(WW)
+    nk <- ncol(W2)
     n <- length(logT)
     N <- length(y)
     ni <- as.vector(tapply(id, id, length))
@@ -52,17 +43,24 @@ function (x, y, id, initial.values, control) {
     b2 <- if (ncz == 1) b * b else t(apply(b, 1, function (x) x %o% x))
     Ztb <- Z %*% t(b)
     Ztime.b <- Ztime %*% t(b)
+    Zsb <- Zs %*% t(b)
+    # Gauss-Kronrod rule
+    wk <- rep(x$wk, length(logT))
+    P <- as.vector(x$P)
+    id.GK <- rep(seq_along(logT), each = control$GKk)
     # initial values
     betas <- as.vector(initial.values$betas)
     sigma <- initial.values$sigma
     gammas <- as.vector(initial.values$gammas)
+    gammas.bs <- as.vector(initial.values$gammas.bs)
     alpha <- as.vector(initial.values$alpha)
     D <- initial.values$D
     diag.D <- !is.matrix(D)
     if (!diag.D) dimnames(D) <- NULL else names(D) <- NULL
     # fix environments for functions
-    environment(opt.survCH) <- environment(gr.survCH) <- environment(gr.longCH) <- environment()
-    environment(LogLik.chGH) <- environment(Score.chGH) <- environment()
+    environment(opt.survSplinePH) <- environment(gr.survSplinePH) <- environment()
+    environment(opt.longSplinePH) <- environment(gr.longSplinePH) <- environment(H.longSplinePH) <- environment()
+    environment(LogLik.splineGH) <- environment(Score.splineGH) <- environment()
     old <- options(warn = (-1))
     on.exit(options(old))
     # EM iterations
@@ -75,23 +73,28 @@ function (x, y, id, initial.values, control) {
     for (it in 1:iter) {
         # save parameter values in matrix
         Y.mat[it, ] <- c(betas, sigma)
-        T.mat[it, ] <- c(gammas, alpha)
-        B.mat[it,] <- D
+        T.mat[it, ] <- c(gammas.bs, gammas, alpha)
+        B.mat[it, ] <- D
         
         # linear predictors
         eta.yx <- as.vector(X %*% betas)
         eta.yxT <- as.vector(Xtime %*% betas)
-        eta.tw <- as.vector(WW %*% gammas)
+        eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, n)
+        eta.tw2 <- as.vector(W2 %*% gammas.bs)
         Y <- eta.yxT + Ztime.b
-        eta.t <- eta.tw + alpha * Y
+        Ys <- as.vector(Xs %*% betas) + Zsb
+        eta.t <- eta.tw2 + eta.tw1 + alpha * Y
+        eta.s <- alpha * Ys
+        eta.ws <- as.vector(W2s %*% gammas.bs)
         
         # E-step
         mu.y <- eta.yx + Ztb
         logNorm <- dnorm(y, mu.y, sigma, TRUE)
-        log.p.yb <- rowsum(logNorm, id); dimnames(log.p.yb) <- NULL
-        sc <- as.vector(S %*% diff(gammas[1:nk]))
-        ew <- - exp(eta.t)
-        log.p.tb <- d * (log(sc) + eta.t - logT) + ew
+        log.p.yb <- rowsum(logNorm, id, reorder = FALSE); dimnames(log.p.yb) <- NULL
+        log.hazard <- eta.t        
+        log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
+        dimnames(log.survival) <- NULL
+        log.p.tb <- d * log.hazard + log.survival
         log.p.b <- if (ncz == 1) {
             dnorm(b, sd = sqrt(D), log = TRUE)
         } else {
@@ -111,28 +114,9 @@ function (x, y, id, initial.values, control) {
             (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
         }
         
-        # compute log-likelihood and check convergence
+        # compute log-likelihood
         log.p.yt <- log(p.yt)
         lgLik[it] <- sum(log.p.yt[is.finite(log.p.yt)], na.rm = TRUE)
-        if (it > 5) {
-            if (lgLik[it] < lgLik[it - 1]) {
-                betas <- Y.mat[it - 1, 1:ncx]; sigma <- Y.mat[it - 1, ncx + 1]
-                gammas <- T.mat[it - 1, 1:ncww]; alpha <- T.mat[it - 1, ncww + 1]
-                D <- B.mat[it - 1,  ]
-                if (!diag.D) dim(D) <- c(ncz, ncz)
-                break
-            } else {
-                thets1 <- c(Y.mat[it - 1, ], T.mat[it - 1, ], B.mat[it - 1, ])
-                thets2 <- c(Y.mat[it, ], T.mat[it, ], B.mat[it, ])
-                check1 <- max(abs(thets2 - thets1) / (abs(thets1) + control$tol1)) < control$tol2
-                check2 <- (lgLik[it] - lgLik[it - 1]) < control$tol3 * (abs(lgLik[it - 1]) + control$tol3)
-                if (check1 || check2) {
-                    conv <- TRUE
-                    if (control$verbose) cat("\n\nconverged!\n")
-                    break
-                }
-            }
-        }
         
         # print results if verbose
         if (control$verbose) {
@@ -140,9 +124,23 @@ function (x, y, id, initial.values, control) {
             cat("log-likelihood:", lgLik[it], "\n")
             cat("betas:", round(betas, 4), "\n")
             cat("sigma:", round(sigma, 4), "\n")
-            cat("gammas:", round(gammas, 4), "\n")
+            cat("gammas:", round(c(gammas.bs, gammas), 4), "\n")
             cat("alpha:", round(alpha, 4), "\n")
             cat("D:", if (!diag.D) round(D[lower.tri(D, TRUE)], 4) else round(D, 4), "\n")
+        }
+        
+        # check convergence
+        if (it > 5 && lgLik[it] > lgLik[it - 1]) {
+            thets1 <- c(Y.mat[it - 1, ], T.mat[it - 1, ], B.mat[it - 1, ])
+            thets2 <- c(Y.mat[it, ], T.mat[it, ], B.mat[it, ])
+            check1 <- max(abs(thets2 - thets1) / (abs(thets1) + control$tol1)) < control$tol2
+            check2 <- (lgLik[it] - lgLik[it - 1]) < control$tol3 * (abs(lgLik[it - 1]) + control$tol3)
+            if (check1 || check2) {
+                conv <- TRUE
+                if (control$verbose)
+                    cat("\n\nconverged!\ncalculating Hessian...\n")
+                break
+            }
         }
         
         # M-step
@@ -152,13 +150,13 @@ function (x, y, id, initial.values, control) {
         sigman <- sqrt(c(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / N)
         Dn <- matrix(colMeans(p.byt %*% (b2 * wGH), na.rm = TRUE), ncz, ncz)
         Dn <- if (diag.D) diag(Dn) else 0.5 * (Dn + t(Dn))
-        Hbetas <- nearPD(fd.vec(betas, gr.longCH))
-        scbetas <- gr.longCH(betas)
+        Hbetas <- nearPD(H.longSplinePH(betas))
+        scbetas <- gr.longSplinePH(betas)
         betasn <- betas - c(solve(Hbetas, scbetas))
-        thetas <- c(gammas, alpha)
-        thetas[2:nk] <- log(diff(thetas[1:nk]))
-        optz.surv <- optim(thetas, opt.survCH, gr.survCH, method = "BFGS", 
-            control = list(maxit = 3, parscale = rep(0.1, length(thetas))))
+        thetas <- c(gammas.bs, gammas, alpha)
+        optz.surv <- optim(thetas, opt.survSplinePH, gr.survSplinePH, method = "BFGS", 
+            control = list(maxit = if (it < 5) 20 else 4, 
+                parscale = if (it < 5) rep(0.01, length(thetas)) else rep(0.1, length(thetas))))
         thetasn <- optz.surv$par
 
         # update parameter values
@@ -166,13 +164,15 @@ function (x, y, id, initial.values, control) {
         sigma <- sigman
         D <- Dn
         gammas <- thetasn[1:ncww]
-        gammas[1:nk] <- cumsum(c(gammas[1], exp(gammas[2:nk])))
+        gammas.bs <- gammas[1:nk]
+        gammas <- if (!is.null(W1)) gammas[-(1:nk)] else NULL
         alpha <- thetasn[ncww + 1]
     }
-    thetsT <- c(gammas, alpha)
-    thetsT[2:nk] <- log(diff(thetsT[1:nk]))
-    thetas <- c(betas, log(sigma), thetsT, if (diag.D) log(D) else chol.transf(D))
-    lgLik <- - LogLik.chGH(thetas)
+    list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, gammas.bs = gammas.bs,
+        D = if (diag.D) log(D) else chol.transf(D))
+    list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
+    thetas <- unlist(as.relistable(list.thetas))
+    lgLik <- - LogLik.splineGH(thetas)
     # if not converged, start quasi-Newton iterations
     if (!conv && !control$only.EM) {
         if (is.null(control$parscale))
@@ -180,36 +180,42 @@ function (x, y, id, initial.values, control) {
         if (control$verbose)
             cat("\n\nquasi-Newton iterations start.\n\n")
         out <- if (control$optimizer == "optim") {
-            optim(thetas, LogLik.chGH, Score.chGH, method = "BFGS",
+            optim(thetas, LogLik.splineGH, Score.splineGH, method = "BFGS",
                 control = list(maxit = control$iter.qN, parscale = control$parscale, 
                 trace = 10 * control$verbose))
         } else {
-            nlminb(thetas, LogLik.chGH, Score.chGH, scale = control$parscale, 
+            nlminb(thetas, LogLik.splineGH, Score.splineGH, scale = control$parscale, 
                 control = list(iter.max = control$iter.qN, trace = 1 * control$verbose))
         }
         if ((conv <- out$convergence) == 0 || - out[[2]] > lgLik) {
-            lgLik <- - out[[2]]
-            thetas <- out$par
-            betas <- thetas[1:ncx]
-            sigma <- exp(thetas[ncx + 1])
-            gammas <- thetas[seq(ncx + 2, ncx + 1 + ncww)]
-            gammas[1:nk] <- cumsum(c(gammas[1], exp(gammas[2:nk])))
-            alpha <- thetas[ncx + ncww + 2]
-            D <- thetas[seq(ncx + ncww + 3, length(thetas))]
+            lgLik <- - out[[2]]            
+            thetas <- relist(out$par, skeleton = list.thetas)
+            betas <- thetas$betas
+            sigma <- exp(thetas$log.sigma)
+            gammas <- thetas$gammas
+            gammas.bs <- thetas$gammas.bs
+            alpha <- thetas$alpha
+            D <- thetas$D
             D <- if (diag.D) exp(D) else chol.transf(D)
             it <- it + if (control$optimizer == "optim") out$counts[1] else out$iterations
             # compute posterior moments for thetas after quasi-Newton
             eta.yx <- as.vector(X %*% betas)
             eta.yxT <- as.vector(Xtime %*% betas)
-            eta.tw <- as.vector(WW %*% gammas)
+            eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, n)
+            eta.tw2 <- as.vector(W2 %*% gammas.bs)
+            exp.eta.tw <- exp(eta.tw1)
             Y <- eta.yxT + Ztime.b
-            eta.t <- eta.tw + alpha * Y    
+            Ys <- as.vector(Xs %*% betas) + Zsb
+            eta.t <- eta.tw2 + eta.tw1 + alpha * Y
+            eta.s <- alpha * Ys
+            eta.ws <- as.vector(W2s %*% gammas.bs)
             mu.y <- eta.yx + Ztb
             logNorm <- dnorm(y, mu.y, sigma, TRUE)
             log.p.yb <- rowsum(logNorm, id)
-            sc <- as.vector(S %*% diff(gammas[1:nk]))
-            ew <- - exp(eta.t)
-            log.p.tb <- d * (log(sc) + eta.t + ew - logT) + (1 - d) * ew
+            log.hazard <- eta.t
+            log.survival <- - exp.eta.tw * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
+            dimnames(log.survival) <- NULL
+            log.p.tb <- d * log.hazard + log.survival            
             log.p.b <- if (ncz == 1) {
                 dnorm(b, sd = sqrt(D), log = TRUE)
             } else {
@@ -230,25 +236,26 @@ function (x, y, id, initial.values, control) {
                 (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
             }
             Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
+            if (control$verbose)
+                cat("\n\nconverged!\ncalculating Hessian...\n")
         }
     }
     # calculate Hessian matrix
     Hessian <- if (control$numeriDeriv == "fd") {
-        fd.vec(thetas, Score.chGH, eps = control$eps.Hes)
+        fd.vec(unlist(thetas), Score.splineGH, eps = control$eps.Hes)
     } else { 
-        cd.vec(thetas, Score.chGH, eps = control$eps.Hes)
+        cd.vec(unlist(thetas), Score.splineGH, eps = control$eps.Hes)
     }
     names(betas) <- names(initial.values$betas)
     if (!diag.D) dimnames(D) <- dimnames(initial.values$D) else names(D) <- names(initial.values$D)
-    names(gammas) <- c(paste("bs.", 1:nk, sep = ""), colnames(W1))
-    nams <- c(paste("Y.", c(names(betas), "sigma"), sep = ""), paste("T.", c(names(gammas), "alpha"), sep = ""),
-        paste("B.", if (!diag.D) paste("D", seq(1, ncz * (ncz + 1) / 2), sep = "") else names(D), sep = "")
-    )
+    names(gammas) <- colnames(W1)
+    names(gammas.bs) <- paste("bs", 1:nk, sep = "")
+    nams <- c(paste("Y.", c(names(betas), "sigma"), sep = ""), paste("T.", c(names(gammas), "alpha", names(gammas.bs)), sep = ""),
+        paste("B.", if (!diag.D) paste("D", seq(1, ncz * (ncz + 1) / 2), sep = "") else names(D), sep = ""))
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
-    list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, D = as.matrix(D)), 
-        Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, Zb = Zb, 
-        Ztimeb = rowSums(Ztime * post.b)), knots = kn, iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, 
-        id = id)
+    list(coefficients = list(betas = betas, sigma = sigma, gammas.bs = gammas.bs, gammas = gammas, alpha = alpha,
+        D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, Zb = Zb, 
+        Ztimeb = rowSums(Ztime * post.b)), iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
 }
 

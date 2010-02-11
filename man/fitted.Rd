@@ -49,6 +49,7 @@ type = c("Marginal", "Subject", "EventTime"), scale = c("survival",
 \seealso{\code{\link{residuals.jointModel}}}
 
 \examples{
+\dontrun{
 # linear mixed model fit
 fitLME <- lme(log(serBilir) ~ drug * year, 
     random = ~ 1 | id, data = pbc2)
@@ -77,6 +78,7 @@ head(cbind(
     "Subj" = fitted(fitJOINT, process = "Ev", type = "Subject", 
         scale = "cumulative-Hazard")
 ))
+}
 }
 
 \keyword{methods}

@@ -1,7 +1,7 @@
 predict.b <-
 function (method, y, X, Xtime, Z, Ztime, betas, sigma, Time, W1, gammas, alpha, sigma.t, D, 
     id, control, knots) {
-    WW <- if (method == "ph-GH") {
+    WW <- if (method == "Cox-PH-GH") {
         NA
     } else if (method == "weibull-GH") {
         if (is.null(W1)) as.matrix(rep(1, length(Time))) else cbind(1, W1)
@@ -22,7 +22,7 @@ function (method, y, X, Xtime, Z, Ztime, betas, sigma, Time, W1, gammas, alpha, 
     N <- length(y)
     ni <- as.vector(tapply(id, id, length))
     diag.D <- ncz != ncol(D)
-    out <- if (method %in% c("ph-GH", "weibull-GH", "ch-GH")) {
+    out <- if (method %in% c("Cox-PH-GH", "weibull-GH", "ch-GH", "spline-GH-PH")) {
         GH <- gauher(control$GHk)
         b <- as.matrix(expand.grid(lapply(1:ncz, function (k, u) u$x, u = GH)))
         k <- nrow(b)

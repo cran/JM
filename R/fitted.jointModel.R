@@ -11,7 +11,7 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
         fitY <- c(object$x$X %*% object$coefficients$betas)
         names(fitY) <- names(object$y$y)
         if (type == "Marginal") fitY else if (type == "Subject") fitY + object$EB$Zb else {
-            fitYEvent <- if (method == "ph-GH") {
+            fitYEvent <- if (method == "Cox-PH-GH") {
                 c(object$x$Xtime2 %*% object$coefficients$betas + object$EB$Ztime2b)
             } else {
                 c(object$x$Xtime %*% object$coefficients$betas + object$EB$Ztimeb)
@@ -25,7 +25,7 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
             D <- object$coefficients$D
             diag.D <- (ncz <- ncol(D)) == 1 & nrow(D) > 1
             b <- mvrnorm(M, rep(0, ncz), if (diag.D) diag(c(D)) else D)
-            if (method == "ph-GH") {
+            if (method == "Cox-PH-GH") {
                 Zb <- object$x$Ztime2 %*% t(b)
                 c(object$x$Xtime2 %*% object$coefficients$betas) + Zb
             } else {
@@ -33,7 +33,7 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
                 c(object$x$Xtime %*% object$coefficients$betas) + Zb
             }
         } else {
-            if (method == "ph-GH") {
+            if (method == "Cox-PH-GH") {
                 c(object$x$Xtime2 %*% object$coefficients$betas + object$EB$Ztime2b)
             } else {
                 c(object$x$Xtime %*% object$coefficients$betas + object$EB$Ztimeb)
@@ -42,7 +42,7 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
         gammas <- object$coefficients$gammas
         alpha <- object$coefficients$alpha
         logT <- object$y$logT
-        fitT <- if (method == "ph-GH") {
+        fitT <- if (method == "Cox-PH-GH") {
             indT <- object$indexes$indT
             lambda0 <- object$coefficients$lambda0[, "basehaz"]
             eta.tw <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, )
@@ -106,6 +106,23 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
                 "survival" = exp(- Haz),
                 "cumulative-Hazard" = Haz,
                 "log-cumulative-Hazard" = log(Haz))
+        } else if (method == "spline-PH-GH") {
+            eta.tw <- if (!is.null(W1)) as.vector(W1 %*% gammas) else 0
+            P <- object$x$P
+            wk <- rep(object$x$wk, length(logT))
+            id.GK <- rep(seq_along(logT), each = object$control$GKk)
+            Zsb <- if (type == "Marginal") {
+                object$x$Zs %*% t(b)
+            } else {
+                rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+            }
+            Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
+            eta.s <- object$coefficients$alpha * Ys
+            Haz <- exp(eta.tw) * P * rowsum(wk * exp(c(object$x$W2s %*% object$coefficients$gammas.bs) + eta.s), id.GK, reorder = FALSE)
+            switch(scale,
+                "survival" = exp(- Haz),
+                "cumulative-Hazard" = Haz,
+                "log-cumulative-Hazard" = log(Haz))            
         } else if (method == "piecewise-PH-GH") {
             WW <- W1
             eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0

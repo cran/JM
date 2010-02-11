@@ -51,7 +51,7 @@
 }
 
 \note{
-The multiple-imputation-based residuals are not available for joint models with \code{method = "ph-GH"}.
+The multiple-imputation-based residuals are not available for joint models with \code{method = "Cox-PH-GH"}.
 }
 
 \value{
@@ -79,6 +79,7 @@ for joint models of longitudinal and survival outcomes. \emph{Biometrics}, to ap
 \seealso{\code{\link{fitted.jointModel}}}
 
 \examples{
+\dontrun{
 # linear mixed model fit
 fitLME <- lme(sqrt(CD4) ~ obstime * drug - drug, 
     random = ~ 1 | patient, data = aids)
@@ -87,7 +88,7 @@ fitCOX <- coxph(Surv(Time, death) ~ drug, data = aids.id, x = TRUE)
 
 # joint model fit, under the additive log cumulative hazard model
 fitJOINT <- jointModel(fitLME, fitCOX, 
-    timeVar = "obstime", method = "ch-GH")
+    timeVar = "obstime")
 
 # residuals for the longitudinal outcome
 head(cbind(
@@ -102,6 +103,7 @@ head(cbind(
     "Martingale" = residuals(fitJOINT, process = "Event", type = "Martingale"),
     "CoxSnell" = residuals(fitJOINT, process = "Event", type = "CoxSnell")
 ))
+}
 }
 
 \keyword{methods}

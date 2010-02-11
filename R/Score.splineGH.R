@@ -1,23 +1,31 @@
-Score.chGH <-
+Score.splineGH <-
 function (thetas) {
-    betas <- thetas[1:ncx]
-    sigma <- exp(thetas[ncx + 1])
-    gammas <- thetas[seq(ncx + 2, ncx + 1 + ncww)]
-    gammas[1:nk] <- cumsum(c(gammas[1], exp(gammas[2:nk])))
-    alpha <- thetas[ncx + ncww + 2]
-    D <- thetas[seq(ncx + ncww + 3, length(thetas))]
+    thetas <- relist(thetas, skeleton = list.thetas)
+    betas <- thetas$betas
+    sigma <- exp(thetas$log.sigma)
+    gammas <- thetas$gammas
+    gammas.bs <- thetas$gammas.bs
+    alpha <- thetas$alpha
+    D <- thetas$D
     D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)
-    eta.tw <- as.vector(WW %*% gammas)
+    eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, n)
+    eta.tw2 <- as.vector(W2 %*% gammas.bs)
     Y <- eta.yxT + Ztime.b
-    eta.t <- eta.tw + alpha * Y
+    Ys <- as.vector(Xs %*% betas) + Zsb
+    eta.t <- eta.tw2 + eta.tw1 + alpha * Y
+    eta.s <- alpha * Ys
+    eta.ws <- as.vector(W2s %*% gammas.bs)
+    exp.eta.tw.P <- exp(eta.tw1) * P
     mu.y <- eta.yx + Ztb
     logNorm <- dnorm(y, mu.y, sigma, TRUE)
     log.p.yb <- rowsum(logNorm, id)
-    sc <- as.vector(S %*% diff(gammas[1:nk]))
-    ew <- - exp(eta.t)
-    log.p.tb <- d * (log(sc) + eta.t + ew - logT) + (1 - d) * ew
+    log.hazard <- eta.t
+    Int <- wk * exp(eta.ws + eta.s)
+    log.survival <- - exp.eta.tw.P * rowsum(Int, id.GK, reorder = FALSE)
+    dimnames(log.survival) <- NULL
+    log.p.tb <- d * log.hazard + log.survival
     log.p.b <- if (ncz == 1) {
         dnorm(b, sd = sqrt(D), log = TRUE)
     } else {
@@ -39,16 +47,22 @@ function (thetas) {
     Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
     mu <- y - eta.yx
     tr.tZZvarb <- sum(ZtZ * post.vb, na.rm = TRUE)
-    ew1 <- - exp(eta.t)
-    ew2 <- ew1 * Ztime.b
-    out <- (d + c((ew1 * p.byt) %*% wGH)) * WW
-    out[, 1:nk] <- out[, 1:nk] + d * SS / sc
-    out <- colSums(out, na.rm = TRUE)
-    out[1:nk] <- c(out[1:nk] %*% jacobian(thetas[seq(ncx + 2, ncx + 1 + nk)]))
-    sc.alpha <- sum(((d * Y + eta.yxT * ew1 + ew2) * p.byt) %*% wGH, na.rm = TRUE)
-    score.t <- - c(out, sc.alpha)
-    score.y <- - c(crossprod(X, mu - Zb) / sigma^2 + colSums((d + c((ew1 * p.byt) %*% wGH)) * (alpha * Xtime), na.rm = TRUE),
-        sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
+    sc1 <- - crossprod(X, y - eta.yx - Zb) / sigma^2
+    sc2 <- numeric(ncx)
+    for (i in 1:ncx) {
+        ki <- exp.eta.tw.P * rowsum(Int * alpha * Xs[, i], id.GK, reorder = FALSE)
+        kii <- c((p.byt * ki) %*% wGH)
+        sc2[i] <- - sum(d * alpha * Xtime[, i] - kii, na.rm = TRUE)
+    }    
+    score.y <- c(sc1 + sc2, - sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
+    scgammas1 <- if (!is.null(W1)) - colSums(W1 * (d + c((p.byt * log.survival) %*% wGH)), na.rm = TRUE) else NULL    
+    scgammas2 <- numeric(nk)
+    for (i in 1:nk) {
+        kk <- exp.eta.tw.P * rowsum(Int * W2s[, i], id.GK, reorder = FALSE)
+        scgammas2[i] <- - sum(W2[, i] * d - c((p.byt * kk) %*% wGH))
+    }
+    scalpha <- - sum((p.byt * (d * Y - exp.eta.tw.P * rowsum(Int * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)    
+    score.t <- c(scgammas1, scalpha, scgammas2)
     score.b <- if (diag.D) {
         svD <- 1 / D
         svD2 <- svD^2

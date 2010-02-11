@@ -38,15 +38,16 @@
 \seealso{\code{\link{ranef.jointModel}}}
 
 \examples{
+\dontrun{
 # linear mixed model fit
 fitLME <- lme(sqrt(CD4) ~ obstime * drug - drug, 
     random = ~ 1 | patient, data = aids)
 # cox model fit
 fitCOX <- coxph(Surv(Time, death) ~ drug, data = aids.id, x = TRUE)
 
-# joint model fit, under the additive log cumulative hazard model
+# joint model fit
 fitJOINT <- jointModel(fitLME, fitCOX, 
-    timeVar = "obstime", method = "ch-GH")
+    timeVar = "obstime")
 
 # fixed effects for the longitudinal process
 fixef(fitJOINT)
@@ -58,10 +59,7 @@ coef(fitJOINT)
 # fixed effects for the event process
 fixef(fitJOINT, process = "Event")
 coef(fitJOINT, process = "Event")
-
-# fixed effects for the event process, 
-# include spline coefficients 
-fixef(fitJOINT, process = "Event", include.splineCoefs = TRUE)
+}
 }
 
 \keyword{ methods }

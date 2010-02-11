@@ -10,7 +10,7 @@
 
 \usage{
 \method{plot}{survfitJM}(x, estimator = c("both", "mean", "median"), 
-    which = NULL, fun = NULL, conf.int = TRUE, add.last.time.axis.tick = FALSE, 
+    which = NULL, fun = NULL, conf.int = FALSE, add.last.time.axis.tick = FALSE, 
     include.y = FALSE, main = NULL, xlab = NULL, ylab = NULL, lty = NULL, 
     col = NULL, lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, \dots)
 }
@@ -36,7 +36,7 @@
   \item{col}{which colors to use.}
   \item{lwd}{the thickness of the lines.}
   \item{pch}{the type of points to use.}  
-  \item{ask}{logical; if \code{TRUE}, the user is asked before each plot, see \code{par(ask=.)}.}
+  \item{ask}{logical; if \code{TRUE}, the user is asked before each plot, see \code{par()}.}
   \item{legend}{logical; if \code{TRUE}, a legend is included in the plot.}
   \item{\dots}{extra graphical parameters passed to \code{plot()}.}
 }
