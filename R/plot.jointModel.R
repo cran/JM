@@ -6,7 +6,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
     add.smooth = getOption("add.smooth"), add.qqline = TRUE, add.KM = FALSE, cex.caption = 1) {
     if (!inherits(x, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
-    if (!is.numeric(which) || any(which < 1) || any(which > 10)) 
+    if (!is.numeric(which) || any(which < 1) || any(which > 10))
         stop("'which' must be in 1:10.\n")
     show <- rep(FALSE, 10)
     show[which] <- TRUE
@@ -37,7 +37,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 ind.len <- sapply(times, length)
                 indT <- rep(1:nrow(x$data.id), ind.len)
                 data.id2 <- x$data.id[indT, ]
-                data.id2[x$timeVar] <- unlist(times, use.names = FALSE)
+                data.id2[x$timeVar] <- pmax(unlist(times, use.names = FALSE) - x$y$lag, 0)
                 mf <- model.frame(x$termsY, data = data.id2)
                 Xtime2 <- model.matrix(x$formYx, mf)
                 Ztime2 <- model.matrix(x$formYz, mf)
@@ -64,7 +64,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 P <- T.mat[, i] / 2
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
-                data.id[x$timeVar] <- c(t(st))
+                data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 mf <- model.frame(x$termsY, data = data.id)
                 Xs <- model.matrix(x$formYx, mf)
                 Zs <- model.matrix(x$formYz, mf)
@@ -90,7 +90,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 P <- T.mat[, i] / 2
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
-                data.id[x$timeVar] <- c(t(st))
+                data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 mf <- model.frame(x$termsY, data = data.id)
                 Xs <- model.matrix(x$formYx, mf)
                 Zs <- model.matrix(x$formYz, mf)
@@ -129,7 +129,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     st[ii, ] <- rep(P[ii, ], each = nk) * skQ + rep(P1[ii, ], each = nk)
                 }
                 data.id2 <- x$data.id[rep(1:n, each = nk*Q), ]
-                data.id2[x$timeVar] <- c(t(st))
+                data.id2[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 mf <- model.frame(x$termsY, data = data.id2)
                 Xs <- model.matrix(x$formYx, mf)
                 Zs <- model.matrix(x$formYz, mf)
@@ -158,11 +158,20 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 P <- T.mat[, i] / 2
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
-                data.id[x$timeVar] <- c(t(st))
+                data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 mf <- model.frame(x$termsY, data = data.id)
                 Xs <- model.matrix(x$formYx, mf)
                 Zs <- model.matrix(x$formYz, mf)
-                W2s <- splineDesign(x$control$knots, c(t(st)), ord = x$control$ord)
+                strt <- x$y$strata
+                split.Time <- split(c(t(st)), rep(strt, each = x$control$GKk))
+                W2s <- mapply(function (k, t) splineDesign(k, t, ord = x$control$ord, outer.ok = TRUE), x$control$knots, split.Time, SIMPLIFY = FALSE)
+                W2s <- mapply(function (w2s, ind) {
+                    out <- matrix(0, n * x$control$GKk, ncol(w2s))
+                    out[strt == ind, ] <- w2s
+                    out
+                }, W2s, levels(strt), SIMPLIFY = FALSE)
+                W2s <- do.call(cbind, W2s)
+                #W2s <- splineDesign(x$control$knots, c(t(st)), ord = x$control$ord)
                 Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
                 eta.s <- alpha * Ys
                 eta.ws <- c(W2s %*% gammas.bs)
@@ -205,26 +214,29 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
         mtext(caption[2], 3, 0.25, cex = cex.caption)
     }
     if (show[3]) {
-        yy <- colMeans(fitT[["survival"]])
+        strata <- if (is.null(x$y$strata)) gl(1, n) else x$y$strata
+        yy <- rowsum(fitT[["survival"]], strata) / as.vector(table(strata))
         if (add.KM) {
             Time <- exp(x$y$logT)
             failure <- x$y$d
-            sf <- survfit(Surv(Time, failure) ~ 1)
+            sf <- survfit(Surv(Time, failure) ~ strata)
             plot(sf, xlab = "Time", ylab = "Survival", main = main, mark.time = FALSE)
-            lines(survTimes, yy, ...)
+            matlines(survTimes, t(yy), ...)
         } else {
-            plot(survTimes, yy, xlab = "Time", ylab = "Survival", main = main, ylim = c(0, 1), type = "l", ...)
+            matplot(survTimes, t(yy), xlab = "Time", ylab = "Survival", main = main, ylim = c(0, 1), type = "l", ...)
         }
         mtext(caption[3], 3, 0.25, cex = cex.caption)
     }
     if (show[4]) {
-        yy <- colMeans(fitT[["cumulative-Hazard"]])
-        plot(survTimes, yy, xlab = "Time", ylab = "Cumulative Hazard", main = main, type = "l", ...)
+        strata <- if (is.null(x$y$strata)) gl(1, n) else x$y$strata
+        yy <- rowsum(fitT[["cumulative-Hazard"]], strata) / as.vector(table(strata))
+        matplot(survTimes, t(yy), xlab = "Time", ylab = "Cumulative Hazard", main = main, type = "l", ...)
         mtext(caption[4], 3, 0.25, cex = cex.caption)
     }
     if (show[5]) {
-        yy <- colMeans(fitT[["log-cumulative-Hazard"]])
-        plot(survTimes, yy, xlab = "Time", ylab = "log Cumulative Hazard", main = main, type = "l", ...)
+        strata <- if (is.null(x$y$strata)) gl(1, n) else x$y$strata
+        yy <- rowsum(fitT[["log-cumulative-Hazard"]], strata) / as.vector(table(strata))
+        plot(survTimes, t(yy), xlab = "Time", ylab = "log Cumulative Hazard", main = main, type = "l", ...)
         mtext(caption[5], 3, 0.25, cex = cex.caption)
     }
     if (show[6]) {

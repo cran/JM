@@ -21,8 +21,16 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
         cat("Relative risk model with piecewise-constant baseline risk function (knots at: ", 
             paste(round(x$control$knots, 1), collapse = ", "), ")\n\n", sep = "")
     } else if (x$method == "spline-PH-GH") {
-        cat("Relative risk model with spline baseline risk function (knots at: ", 
-            paste(round(unique(x$control$knots), 1), collapse = ", "), ")\n\n", sep = "")
+        xx <- if (length(x$control$knots) == 1) {
+            kk <- round(unique(x$control$knots[[1]]), 1)
+            paste(kk[-c(1, length(kk))], collapse = ", ")
+        } else {
+            paste(names(x$control$knots), sapply(x$control$knots, function (k) {
+                kk <- round(unique(k), 1)
+                paste(kk[-c(1, length(kk))], collapse = ", ")
+            }), sep = ": ", collapse = "\n\t\t")
+        }
+        cat("Relative risk model with spline baseline risk function (knots at: ", xx, ")\n\n", sep = "")
     } else {
         cat("log cumulative baseline hazard with B-splines (internal knots at: ", 
             paste(round(exp(x$knots[-c(1, length(x$knots))]), 2), collapse = ", "), ")\n\n", sep = "")

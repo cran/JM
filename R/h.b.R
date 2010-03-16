@@ -2,7 +2,7 @@ h.b <-
 function (t, b, i) {
     log.hazard <- if (method == "weibull-PH-GH") {
         data.id2 <- data.id[i, ]
-        data.id2[timeVar] <- t
+        data.id2[timeVar] <- pmax(t - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
         Xs <- model.matrix(object$formYx, mf)
         Zs <- model.matrix(object$formYz, mf)
@@ -16,13 +16,13 @@ function (t, b, i) {
         P <- t/2
         st <- P * (sk + 1)
         data.id2 <- data.id[id.i, ]
-        data.id2[timeVar] <- st
+        data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
         Xs <- model.matrix(object$formYx, mf)
         Zs <- model.matrix(object$formYz, mf)
         Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * b[id.i, , drop = FALSE]))
         data.id3 <- data.id[i, ]
-        data.id3[timeVar] <- t
+        data.id3[timeVar] <- pmax(t - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id3)
         X <- model.matrix(object$formYx, mf)
         Z <- model.matrix(object$formYz, mf)
@@ -34,7 +34,7 @@ function (t, b, i) {
         qs <- c(0, sort(object$control$knots), max(survTimes) + 1)
         ind <- findInterval(t, qs, rightmost.closed = TRUE)
         data.id2 <- data.id[i, ]
-        data.id2[timeVar] <- t       
+        data.id2[timeVar] <- pmax(t - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
         Xs <- model.matrix(object$formYx, mf)
         Zs <- model.matrix(object$formYz, mf)

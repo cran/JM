@@ -39,8 +39,14 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
         nw <- ncol(x$x$W)
         gammas <- if (is.null(nw)) NULL else gammas[seq(ng - nw + 1, ng)]
     }
-    gammas <- c(gammas, "Assoct" = as.vector(x$coefficients$alpha), 
-        if (x$method == "piecewise-PH-GH") x$coefficients$xi else NULL, if (x$method == "spline-PH-GH") x$coefficients$gammas.bs else NULL)
+    gammas <- c(if (x$method == "weibull-AFT-GH") -gammas else gammas, 
+        "Assoct" = if (x$method == "weibull-AFT-GH") -as.vector(x$coefficients$alpha) else as.vector(x$coefficients$alpha), 
+        if (x$method == "piecewise-PH-GH") x$coefficients$xi else NULL, 
+        if (x$method == "spline-PH-GH") x$coefficients$gammas.bs else NULL)
+    if ((lag <- x$y$lag) > 0) {
+        ii <- names(gammas) == "Assoct"
+        names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
+    }
     print(lapply(list("Longitudinal Process" = x$coefficients$betas, "Event Process" = gammas), 
         round, digits = digits))
     cat("\nlog-Lik:", x$logLik)

@@ -22,8 +22,15 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     TermsT <- object$termsT
     data.id <- newdata[!duplicated(id), ]
     mfT <- model.frame(delete.response(TermsT), data = data.id)
-    formT <- as.character(object$formT)
-    formT <- as.formula(paste(formT[1], formT[3], collapse = " "))
+    #formT <- as.character(object$formT)
+    formT <- if (!is.null(kk <- attr(TermsT, "specials")$strata)) {
+        strt <- eval(attr(TermsT, "variables"), data.id)[[kk]]
+        tt <- drop.terms(TermsT, kk - 1, keep.response = FALSE)
+        reformulate(attr(tt, "term.labels"))
+    } else {
+        reformulate(attr(delete.response(TermsT), "term.labels"))
+        #as.formula(paste(formT[1], formT[3], collapse = " "))
+    }
     W <- model.matrix(formT, mfT)
     obs.times <- split(mfY[[timeVar]], id)
     last.time <- if (is.null(last.time)) {
@@ -74,8 +81,8 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
             ncww <- ncww - 1
         }
         gammas.bs <- object$coefficients$gammas.bs
-        list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, gammas.bs = gammas.bs, 
-                alpha = alpha, D = if (diag.D) log(D) else chol.transf(D))
+        list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
+            gammas.bs = gammas.bs, D = if (diag.D) log(D) else chol.transf(D))
     } 
     if (!method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH", "spline-PH-GH")) {
         stop("\nsurvfitJM() is not yet available for this type of joint model.")

@@ -44,7 +44,7 @@ function (time.points) {
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "spline-PH-GH") {
         list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
-            gammas = object$coefficients$gammas, gammas.bs = object$coefficients$gammas.bs, alpha = object$coefficients$alpha,
+            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, gammas.bs = object$coefficients$gammas.bs, 
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "piecewise-PH-GH") {
         list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
@@ -142,7 +142,7 @@ function (time.points) {
             Visit.Times[, ii] <- new.visit <- last.visit + u.new
             ind.tmax <- new.visit > t.max
             dataM <- object$data.id
-            dataM[object$timeVar] <- new.visit
+            dataM[object$timeVar] <- pmax(new.visit - object$y$lag, 0)
             mf <- model.frame(object$termsY, data = dataM, na.action = NULL)
             X.missM <- model.matrix(object$formYx, mf)
             Z.missM.lis[[ii]] <- Z.missM <- model.matrix(object$formYz, mf)

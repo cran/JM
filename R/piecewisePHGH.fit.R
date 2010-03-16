@@ -65,10 +65,10 @@ function (x, y, id, initial.values, control) {
     on.exit(options(old))
     # EM iterations
     iter <- control$iter.EM
-    Y.mat <- matrix(0, iter, ncx + 1)
-    T.mat <- matrix(0, iter, ncww + length(xi) + 1)
-    B.mat <- if (diag.D) matrix(0, iter, ncz) else matrix(0, iter, ncz * ncz)
-    lgLik <- numeric(iter)
+    Y.mat <- matrix(0, iter + 1, ncx + 1)
+    T.mat <- matrix(0, iter + 1, ncww + length(xi) + 1)
+    B.mat <- if (diag.D) matrix(0, iter + 1, ncz) else matrix(0, iter + 1, ncz * ncz)
+    lgLik <- numeric(iter + 1)
     conv <- FALSE
     for (it in 1:iter) {
         # save parameter values in matrix
@@ -141,6 +141,7 @@ function (x, y, id, initial.values, control) {
                 break
             }
         }
+        if (iter == 0) break
         
         # M-step
         Zb <- rowSums(Z * post.b[id, ], na.rm = TRUE)
@@ -248,7 +249,8 @@ function (x, y, id, initial.values, control) {
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
     list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, xi = xi, 
-        D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, Zb = Zb, 
+        D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
+        Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb, 
         Ztimeb = rowSums(Ztime * post.b)), iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
 }
 

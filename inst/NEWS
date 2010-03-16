@@ -1,9 +1,22 @@
+Changes in version: JM_0.6-0
+
+  * method = "spline-PH-GH" allows now to include statification factors for which different spline coefficients are estimated. By default the knots positions are the same across strata -- this can be changed by either directly specifying the knots or by setting the control argument 'equal.strata.knots' to FALSE.
+
+  * the new function wald.strata() can be used to test for equality of the spline coefficients among strata.
+  
+  * a confint() method has been introduced for 'jointModel' objects.
+
+  * a bug was corrected in joint models with piecewise constant baseline risk function. In particular, the 'xi' parameters were reported as double their actual value.
+
+
+==============================
+
 Changes in version: JM_0.5-0
 
   * function dynC() has been added that calculates a dynamic concordance index for joint models.
 
   * method = "ch-GH" has been replaced by method = "spline-PH-GH" that fits a relative risk model with a B-spline-approximated baseline risk function.
-  
+
   * method = "ph-GH" that fits a relative risk with an unspecified baseline risk function has been renamed to method = "Cox-PH-GH".
 
 

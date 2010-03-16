@@ -1,6 +1,6 @@
 jointModel <-
 function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", 
-    "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), init = NULL, control = list(), ...) {
+    "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), lag = 0, init = NULL, control = list(), ...) {
     cl <- match.call()
     if (!inherits(lmeObject, "lme"))
         stop("\n'lmeObject' must inherit from class lme.")
@@ -56,7 +56,7 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     con <- list(only.EM = FALSE, iter.EM = 50, iter.qN = 150, optimizer = "optim", tol1 = 1e-03, tol2 = 1e-04, 
         tol3 = sqrt(.Machine$double.eps), numeriDeriv = "fd", eps.Hes = 1e-06, parscale = NULL, step.max = 0.1, 
         backtrackSteps = 2, knots = NULL, lng.in.kn = if (method == "piecewise-PH-GH") 6 else 5, ord = 4, 
-        GHk = if (ncol(Z) < 3) 15 else 9, GKk = if (method == "piecewise-PH-GH") 7 else 15, verbose = FALSE)
+        equal.strata.knots = TRUE, GHk = if (ncol(Z) < 3) 15 else 9, GKk = if (method == "piecewise-PH-GH") 7 else 15, verbose = FALSE)
     if (method == "Cox-PH-GH") {
         con$only.EM <- TRUE
         con$iter.EM <- 200
@@ -66,19 +66,19 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     namC <- names(con)
     con[(namc <- names(control))] <- control
     if (length(noNms <- namc[!namc %in% namC]) > 0) 
-        warning("unknown names in control: ", paste(noNms, collapse = ", "))
+        warning("unknown names in 'control': ", paste(noNms, collapse = ", "))
     if (method == "Cox-PH-GH" && !con$only.EM)
         stop("with method 'Cox-PH-GH' only the EM algorithm is used.\n")
     if (method == "Cox-PH-GH" && any(!is.na(match(c("iter.qN", "optimizer"), namc))))
         warning("method 'Cox-PH-GH' uses only the EM algorithm.\n")
     # extra design matrices for the longitudinal part
-    data.id[timeVar] <- Time
+    data.id[timeVar] <- pmax(Time - lag, 0)
     mf <- model.frame(lmeObject$terms, data = data.id)
     Xtime <- model.matrix(formYx, mf)
     Ztime <- model.matrix(formYz, mf)
     long <- as.vector(c(Xtime %*% fixef(lmeObject)) + rowSums(Ztime * b))
     # response vectors and design matrices
-    y <- list(y = y.long, logT = log(Time), d = d)
+    y <- list(y = y.long, logT = log(Time), d = d, lag = lag)
     x <- list(X = X, Xtime = Xtime, Z = Z, Ztime = Ztime, W = W)
     # extra design matrices for 'method = "weibull-AFT-GH"' and 'method = "weibull-PH-GH"'
     # extra design matrices for 'method = "spline-PH-GH"' and 'method = "spline-PH-Laplace"'
@@ -88,22 +88,55 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
         P <- Time/2
         st <- outer(P, sk + 1)
         data.id2 <- data.id[rep(seq_len(nY), each = con$GKk), ]
-        data.id2[timeVar] <- c(t(st))
+        data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
         mf <- model.frame(lmeObject$terms, data = data.id2)
         Xs <- model.matrix(formYx, mf)
         Zs <- model.matrix(formYz, mf)
         x <- c(x, list(Xs = Xs, Zs = Zs, P = P, st = c(t(st)), wk = wk))
         if (method == "spline-PH-GH" || method == "spline-PH-Laplace") {
-            kn <- if (is.null(con$knots)) {
-                kk <- seq(0, 1, length.out = con$lng.in.kn + 2)[-c(1, con$lng.in.kn + 2)]
-                quantile(Time, kk, names = FALSE)
+            strt <- if (is.null(survObject$strata)) gl(1, nT) else survObject$strata
+            nstrt <- length(levels(strt))
+            split.Time <- split(Time, strt)
+            kn <- if (con$equal.strata.knots) {
+                kk <- if (is.null(con$knots)) {
+                    pp <- seq(0, 1, length.out = con$lng.in.kn + 2)[-c(1, con$lng.in.kn + 2)]
+                    quantile(Time, pp, names = FALSE)
+                } else {
+                    con$knots
+                }
+                rr <- rep(list(sort(c(rep(range(Time, st), con$ord), kk))), nstrt)
+                names(rr) <- names(split.Time)
+                rr
             } else {
-                con$knots
+                lapply(split.Time, function (t) {
+                    kk <- if (is.null(con$knots)) {
+                        pp <- seq(0, 1, length.out = con$lng.in.kn + 2)[-c(1, con$lng.in.kn + 2)]
+                        quantile(t, pp, names = FALSE)
+                    } else {
+                        con$knots
+                    }
+                    sort(c(rep(range(Time, st), con$ord), kk))
+                })
             }
-            kn <- sort(c(rep(range(Time, st), con$ord), kn))
             con$knots <- kn
-            W2 <- splineDesign(kn, Time, ord = con$ord)
-            W2s <- splineDesign(kn, c(t(st)), ord = con$ord)
+            W2 <- mapply(function (k, t) splineDesign(k, t, ord = con$ord), kn, split.Time, SIMPLIFY = FALSE)
+            W2 <- mapply(function (w2, ind) {
+                out <- matrix(0, nT, ncol(w2))
+                out[strt == ind, ] <- w2
+                out
+            }, W2, levels(strt), SIMPLIFY = FALSE)
+            W2 <- do.call(cbind, W2)
+            split.Time <- split(c(t(st)), rep(strt, each = con$GKk))
+            W2s <- mapply(function (k, t) splineDesign(k, t, ord = con$ord), kn, split.Time, SIMPLIFY = FALSE)
+            W2s <- mapply(function (w2s, ind) {
+                out <- matrix(0, nT * con$GKk, ncol(w2s))
+                out[strt == ind, ] <- w2s
+                out
+            }, W2s, levels(strt), SIMPLIFY = FALSE)
+            W2s <- do.call(cbind, W2s)
+            #W2 <- splineDesign(kn, Time, ord = con$ord)
+            #W2s <- splineDesign(kn, c(t(st)), ord = con$ord)
+            y <- c(y, list(strata = strt))
             x <- c(x, list(W2 = W2, W2s = W2s))
         }
     }
@@ -138,7 +171,7 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
             st[i, ] <- rep(P[i, ], each = nk) * skQ + rep(P1[i, ], each = nk)
         }
         data.id2 <- data.id[rep(seq_len(nY), each = nk*Q), ]
-        data.id2[timeVar] <- c(t(st))
+        data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
         mf <- model.frame(lmeObject$terms, data = data.id2)
         Xs <- model.matrix(formYx, mf)
         Zs <- model.matrix(formYz, mf)
@@ -154,7 +187,7 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
         ind.len <- sapply(times, length)
         indT <- rep(1:nrow(data.id), ind.len)
         data.id2 <- data.id[indT, ]
-        data.id2[timeVar] <- unlist(times, use.names = FALSE)
+        data.id2[timeVar] <- pmax(unlist(times, use.names = FALSE) - lag, 0)
         mf <- model.frame(lmeObject$terms, data = data.id2)
         Xtime2 <- model.matrix(formYx, mf)
         Ztime2 <- model.matrix(formYz, mf)
@@ -179,8 +212,8 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     if (!is.null(init)) {
         nams1 <- names(init)
         nams2 <- names(initial.values)
-        if (!is.list(init) || length(noNms <- nams1[!nams1 %in% nams2]) > 0) {
-            warning("unknown names in control: ", paste(noNms, collapse = ", "))
+        if (!is.list(init) || length(noNms <- nams1[!nams1 %in% nams2])) {
+            warning("unknown names in 'init': ", paste(noNms, collapse = ", "))
         } else {
             initial.values[nams1] <- init
         }
@@ -193,7 +226,7 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
         "piecewise-PH-GH" = piecewisePHGH.fit(x, y, id, initial.values, con),
         "spline-PH-GH" = splinePHGH.fit(x, y, id, initial.values, con),
         "ch-Laplace" = chLaplace.fit(x, y, id, initial.values, b, con))
-    # check if any problems with the Hessian at convergence
+    # check for problems with the Hessian at convergence
     H <- out$Hessian
     if (any(is.na(H) | !is.finite(H))) {
         warning("infinite or missing values in Hessian at convergence.\n")

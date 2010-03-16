@@ -42,7 +42,7 @@
 
 \note{
   The plots of the baseline hazard and the cumulative baseline hazard are only produced when the joint model has
-  been fitted using \code{method = "ph-GH"}.
+  been fitted using \code{method = "Cox-PH-GH"}.
 }
 
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}

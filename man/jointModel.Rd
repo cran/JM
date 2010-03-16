@@ -13,7 +13,7 @@ data under a maximum likelihood approach. Various options for the survival model
 jointModel(lmeObject, survObject, timeVar, 
     method = c("weibull-AFT-GH", "weibull-PH-GH", 
     "piecewise-PH-GH", "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), 
-    init = NULL, control = list(), \dots)
+    lag = 0, init = NULL, control = list(), \dots)
 }
 
 \arguments{
@@ -23,22 +23,25 @@ jointModel(lmeObject, survObject, timeVar,
     the object fit. See \bold{Examples}.}
   \item{timeVar}{a character string indicating the time variable in the linear mixed effects model.}
   \item{method}{a character string specifying the type of joint model to fit. See \bold{Details}.}
+  \item{lag}{a numeric value denoting a lag effect in the time-dependent covariate represented by the mixed model; default is 0.}
   \item{init}{a list of user-specified initial values. The initial values list must have the following components:
     \describe{
         \item{betas}{the vector of fixed effects for the linear mixed effects model.}
         \item{sigma}{the measurement error standard deviation for the linear mixed effects model.}
         \item{D}{the variance-covariance matrix of the random effects.}
-        \item{gammas}{the vector of baseline covariates for the survival model. For \code{method = "spline-PH-GH"} or
-            \code{method = "ch-Laplace"} this vector should first contain initial values for the sorted B-spline
-            coefficients used to model the log cumulative baseline hazard.}
+        \item{gammas}{the vector of baseline covariates for the survival model. For \code{method = "ch-Laplace"} this vector should 
+            first contain initial values for the sorted B-spline coefficients used to model the log cumulative baseline hazard.}
         \item{alpha}{the association parameter.}
-        \item{sigma.t}{the scale parameter for the Weibull survival model; required only when 
+        \item{xi}{the vector of baseline risk function values within the intervals specified by the knots; specified only 
+            when \code{method = "piecewise-PH-GH"}.}
+        \item{gammas.bs}{the vector of spline coefficients; specified only when \code{method = "spline-PH-GH"}.}
+        \item{sigma.t}{the scale parameter for the Weibull baseline risk function; specified only when 
             \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}.}
-        \item{lambda0}{a vector of the baseline hazard values at the sorted unique event times; required only when 
+        \item{lambda0}{a vector of the baseline hazard values at the sorted unique event times; specified only when 
             \code{method = "Cox-PH-GH"}.}
     }
     If the user-specified list of initial values does not contain some of these components or contains components 
-    not of the appropriate length, the default initial values are used instead.
+    not of the appropriate length, then the default initial values are used instead.
   }
   \item{control}{a list of control values with components:
     \describe{
@@ -68,24 +71,23 @@ jointModel(lmeObject, survObject, timeVar,
             under \code{method = "ch-Laplace"}.}
         \item{knots}{a numeric vector of the knots positions for the piecewise constant baseline risk function of for 
             the log times used in the B-splines approximation of the log cumulative baseline hazard; therefore, this argument 
-            is relevant only when \code{method = "piecewise-PH-GH"} or when \code{method = "spline-PH-GH"} or \code{method = "ch-Laplace"}. 
-            For \code{method = "piecewise-PH-GH"} default is to place equally-spaced \code{lng.in.kn} knots (see below) in the
-            quantiles of the observed event times. For \code{method = "spline-PH-GH"} and \code{method = "ch-Laplace"} default is 
-            to place \code{lng.in.kn} knots (see below) at the quantiles of the uncensored log survival times.}
+            is relevant only when \code{method = "piecewise-PH-GH"}, \code{method = "spline-PH-GH"} or \code{method = "ch-Laplace"}. 
+            The default is to place equally-spaced \code{lng.in.kn} knots in the quantiles of the observed event times. For stratified models
+            fitted with \code{method = "spline-PH-GH"} this should be a list with elements numeric vectors of knots positions for each strata.}
         \item{lng.in.kn}{the number of internal knots; relevant only when when \code{method = "piecewise-PH-GH"} where it 
             denotes the number of internal knots for the piecewise constant baseline risk function or when \code{method = "spline-PH-GH"} 
             or \code{method = "ch-Laplace"} where it denotes the number of internal knots for B-splines approximation of the log 
             baseline hazard. Default is 6 when \code{method = "piecewise-PH-GH"} and 5 otherwise.}
+        \item{equal.strata.knots}{logical; if \code{TRUE} (the default), then the same knots are used in the approximation of the 
+            baseline risk function in different strata when \code{method = "spline-PH-GH"}.}
         \item{ord}{a positive integer denoting the order of the B-splines used to approximate the log cumulative hazard
             (default is 4); relevant only when \code{method = "spline-PH-GH"} or \code{method = "ch-Laplace"}.}
         \item{GHk}{the number of Gauss-Hermite quadrature points used to approximate the integrals over the random 
-            effects. For \code{method = "weibull-AFT-GH"}, \code{method = "weibull-PH-GH"} and \code{method = "spline-PH-GH"} default is 21 for one- or 
-            two-dimensional integration and 11 otherwise. For \code{method = "Cox-PH-GH"} default is 21 for one-dimensional 
-            integration, 11 for two-dimensional integration and 9 otherwise.}
+            effects. The default is 15 for one- or two-dimensional integration and 9 otherwise.}
         \item{GKk}{the number of Gauss-Kronrod points used to approximate the integral involved in the calculation of the survival function. Two 
             options are available, namely 7 or 15. For \code{method = "weibull-PH-GH"} and \code{method = "weibull-AFT-GH"} 15 are used, 
             whereas for \code{method = "piecewise-PH-GH"} 7.}
-        \item{verbose}{logical; if \code{TRUE} the parameter estimates and the log-likelihood value are printed during
+        \item{verbose}{logical; if \code{TRUE}, the parameter estimates and the log-likelihood value are printed during
             the optimization procedure. Default is \code{FALSE}.}
     }
   }
@@ -93,12 +95,12 @@ jointModel(lmeObject, survObject, timeVar,
 }
 
 \details{
-The \code{jointModel} function fits joint models for longitudinal and survival data. For the longitudinal responses the 
-linear mixed effects model represented by the \code{lmeObject} is assumed. For the survival times three options are 
-available. In particular, let \eqn{t_i} denote the time-to-event for the \eqn{i}th sample unit, \eqn{x_i} denote the 
-vector of baseline covariates in \code{survObject}, with associated parameter vector \eqn{\gamma}, \eqn{W_i(t)} the value 
-of the longitudinal outcome at time point \eqn{t} (i.e., \eqn{W_i(t)} equals the fixed effects part \code{+} random 
-effects part of the linear mixed effects model for sample unit \eqn{i}), and \eqn{\alpha} the association parameter. Then, 
+Function \code{jointModel} fits joint models for longitudinal and survival data (more detailed information about the formulation of these
+models can be found in Rizopoulos (2010)). For the longitudinal responses the linear mixed effects model represented by the \code{lmeObject} is 
+assumed. For the survival times three options are available. In particular, let \eqn{T_i} denote the time-to-event for the \eqn{i}th sample unit, 
+\eqn{w_i} denotes the vector of baseline covariates in \code{survObject}, with associated parameter vector \eqn{\gamma}, \eqn{m_i(t)} the value 
+of the longitudinal outcome at time point \eqn{t} as approximated by the linear mixed model (i.e., \eqn{m_i(t)} equals the fixed effects part 
+\code{+} random effects part of the linear mixed effects model for sample unit \eqn{i}), and \eqn{\alpha} the association parameter. Then, 
 for \code{method = "weibull-AFT-GH"} a time-dependent Weibull model under the accelerated failure time formulation is assumed. For 
 \code{method = "weibull-PH-GH"} a time-dependent relative risk model is postulated with a Weibull baseline risk function. For 
 \code{method = "piecewise-PH-GH"} a time-dependent relative risk model is postulated with a piecewise constant baseline risk function.
@@ -107,11 +109,13 @@ using B-splines. For \code{method = "ch-Laplace"} an additive model on the log c
 (see Rizopoulos et al., 2009 for more info). Finally, for \code{method = "Cox-PH-GH"} a time-dependent relative risk model 
 is assumed where the baseline risk function is left unspecified (Wulfsohn and Tsiatis, 1997).
 
+For \code{method = "spline-PH-GH"} it is also allowed to include stratification factors. These should be included in the specification of
+the \code{survObject} using function \code{strata()}. Note that in this case \code{survObject} must only be a 'coxph' object.
+
 For all survival models except for the time-dependent proportional hazards model, the optimization algorithm starts 
 with EM iterations, and if convergence is not achieved, it switches to quasi-Newton iterations (i.e., BFGS in 
-\code{optim()} or \code{nlminb()}, depending on the value of the \code{optimizer} control argument). For the 
-time-dependent proportional hazards model only the EM algorithm is used. During the EM iterations, convergence is 
-declared if either of the following two conditions is satisfied: (i) \eqn{ L(\theta^{it}) - L(\theta^{it - 1}) < tol_3 
+\code{optim()} or \code{nlminb()}, depending on the value of the \code{optimizer} control argument). For \code{method = "Cox-PH-GH"} only the 
+EM algorithm is used. During the EM iterations, convergence is declared if either of the following two conditions is satisfied: (i) \eqn{ L(\theta^{it}) - L(\theta^{it - 1}) < tol_3 
 \{ | L(\theta^{it - 1}) | + tol_3 \} }, or (ii) \eqn{ \max \{ | \theta^{it} - \theta^{it - 1} | / ( | \theta^{it - 1} | 
 + tol_1) \} < tol_2}, where \eqn{\theta^{it}} and \eqn{\theta^{it - 1}} is the vector of parameter values at the current 
 and previous iterations, respectively, and \eqn{L(.)} is the log-likelihood function. The values for \eqn{tol_1}, 
@@ -136,6 +140,9 @@ Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal 
 Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and longitudinal data: Likelihood 
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
+Rizopoulos, D. (2010) JM: an R package for the joint modelling of longitudinal and time-to-event data. Submitted.
+(\url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm#helpful_material})
+
 Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
 modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 637--654.
 
@@ -152,7 +159,7 @@ Wulfsohn, M. and Tsiatis, A. (1997) A joint model for survival and longitudinal 
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \note{
-1. The \code{lmeObject} should represent a linear mixed model with a simple random effects structure, i.e., only the 
+1. The \code{lmeObject} should represent a linear mixed model with a simple random-effects structure, i.e., only the 
 \code{pdDiag()} class is currently allowed.
 
 2. The \code{lmeObject} should not contain any within-group correlation structure (i.e., \code{correlation} argument of
@@ -172,7 +179,7 @@ corresponds to the association parameter \eqn{\alpha} (see \bold{Details}).
 \code{method = "Cox-PH-GH"} are based on the profile score vector (i.e., given the NPMLE for the unspecified baseline 
 hazard). Hsieh et al. (2006) have noted that these standard errors are underestimated.
 
-6. For more examples of \code{jointModel()} check the following link: \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
+6. For more examples of \code{jointModel()} check \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
 }
 
 \seealso{

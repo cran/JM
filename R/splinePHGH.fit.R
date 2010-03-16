@@ -4,6 +4,7 @@ function (x, y, id, initial.values, control) {
     logT <- as.vector(y$logT)
     Time <- exp(logT)
     d <- as.vector(y$d)
+    strata <- y$strata
     y <- as.vector(y$y)
     # design matrices
     X <- x$X
@@ -51,7 +52,7 @@ function (x, y, id, initial.values, control) {
     # initial values
     betas <- as.vector(initial.values$betas)
     sigma <- initial.values$sigma
-    gammas <- as.vector(initial.values$gammas)
+    gammas <- if (!is.null(W1)) as.vector(initial.values$gammas) else NULL
     gammas.bs <- as.vector(initial.values$gammas.bs)
     alpha <- as.vector(initial.values$alpha)
     D <- initial.values$D
@@ -65,15 +66,15 @@ function (x, y, id, initial.values, control) {
     on.exit(options(old))
     # EM iterations
     iter <- control$iter.EM
-    Y.mat <- matrix(0, iter, ncx + 1)
-    T.mat <- matrix(0, iter, ncww + 1)
-    B.mat <- if (diag.D) matrix(0, iter, ncz) else matrix(0, iter, ncz * ncz)
-    lgLik <- numeric(iter)
+    Y.mat <- matrix(0, iter + 1, ncx + 1)
+    T.mat <- matrix(0, iter + 1, ncww + 1)
+    B.mat <- if (diag.D) matrix(0, iter + 1, ncz) else matrix(0, iter + 1, ncz * ncz)
+    lgLik <- numeric(iter + 1)
     conv <- FALSE
     for (it in 1:iter) {
         # save parameter values in matrix
         Y.mat[it, ] <- c(betas, sigma)
-        T.mat[it, ] <- c(gammas.bs, gammas, alpha)
+        T.mat[it, ] <- c(gammas, alpha, gammas.bs)
         B.mat[it, ] <- D
         
         # linear predictors
@@ -142,6 +143,7 @@ function (x, y, id, initial.values, control) {
                 break
             }
         }
+        if (iter == 0) break
         
         # M-step
         Zb <- rowSums(Z * post.b[id, ], na.rm = TRUE)
@@ -192,7 +194,7 @@ function (x, y, id, initial.values, control) {
             thetas <- relist(out$par, skeleton = list.thetas)
             betas <- thetas$betas
             sigma <- exp(thetas$log.sigma)
-            gammas <- thetas$gammas
+            gammas <- if (!is.null(W1)) thetas$gammas else NULL
             gammas.bs <- thetas$gammas.bs
             alpha <- thetas$alpha
             D <- thetas$D
@@ -249,13 +251,17 @@ function (x, y, id, initial.values, control) {
     names(betas) <- names(initial.values$betas)
     if (!diag.D) dimnames(D) <- dimnames(initial.values$D) else names(D) <- names(initial.values$D)
     names(gammas) <- colnames(W1)
-    names(gammas.bs) <- paste("bs", 1:nk, sep = "")
+    names(gammas.bs) <- if (length(levels(strata)) == 1) paste("bs", 1:nk, sep = "") else {
+        len.kn <- sapply(control$knots, length) - control$ord
+        paste("bs", sapply(len.kn, seq_len), "(", rep(levels(strata), len.kn), ")", sep = "")
+    }
     nams <- c(paste("Y.", c(names(betas), "sigma"), sep = ""), paste("T.", c(names(gammas), "alpha", names(gammas.bs)), sep = ""),
         paste("B.", if (!diag.D) paste("D", seq(1, ncz * (ncz + 1) / 2), sep = "") else names(D), sep = ""))
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
-    list(coefficients = list(betas = betas, sigma = sigma, gammas.bs = gammas.bs, gammas = gammas, alpha = alpha,
-        D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, Zb = Zb, 
+    list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, gammas.bs = gammas.bs,
+        D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
+        Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb, 
         Ztimeb = rowSums(Ztime * post.b)), iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
 }
 

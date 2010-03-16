@@ -10,7 +10,7 @@ function (t, b, i) {
         st <- P * (sk + 1)
         log.st <- log(st)
         data.id2 <- data.id[id.i, ]
-        data.id2[timeVar] <- st
+        data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
         Xs <- model.matrix(object$formYx, mf)
         Zs <- model.matrix(object$formYz, mf)
@@ -25,7 +25,7 @@ function (t, b, i) {
         P <- t/2
         st <- P * (sk + 1)
         data.id2 <- data.id[id.i, ]
-        data.id2[timeVar] <- st
+        data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
         Xs <- model.matrix(object$formYx, mf)
         Zs <- model.matrix(object$formYz, mf)
@@ -41,13 +41,21 @@ function (t, b, i) {
         st <- P * (sk + 1)
         log.st <- log(st)
         data.id2 <- data.id[id.i, ]
-        data.id2[timeVar] <- st
+        data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
         Xs <- model.matrix(object$formYx, mf)
         Zs <- model.matrix(object$formYz, mf)
         eta.tw <- if (!is.null(W)) as.vector(W[i, , drop = FALSE] %*% gammas.new) else 0
         Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * b[id.i, , drop = FALSE]))
-        W2s <- splineDesign(object$control$knots, st, ord = object$control$ord)
+        W2s <- if (length(kn <- object$control$knots) == 1) {
+            splineDesign(unlist(kn, use.names = FALSE), st, ord = object$control$ord)
+        } else {
+            strt.i <- strt[i]
+            w2s <- lapply(kn, function (kn) splineDesign(kn, st, ord = object$control$ord, outer.ok = TRUE))
+            ll <- match(strt.i, names(w2s))
+            w2s[-ll] <- lapply(w2s[-ll], function (m) {m[, ] <- 0; m})
+            do.call(cbind, w2s)
+        }
         Vi <- exp(c(W2s %*% gammas.bs.new) + alpha.new * Ys)
         - exp(eta.tw) * P * sum(wk * Vi)
     } else if (method == "piecewise-PH-GH") {
@@ -65,7 +73,7 @@ function (t, b, i) {
         P1 <- (Up + Lo) / 2
         st <- rep(P, each = nk) * rep(sk, Q) + rep(P1, each = nk)
         data.id2 <- data.id[rep(i, each = nk*Q), ]
-        data.id2[timeVar] <- st       
+        data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
         Xs <- model.matrix(object$formYx, mf)
         Zs <- model.matrix(object$formYz, mf)

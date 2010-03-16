@@ -21,6 +21,10 @@ function (object, process = c("Longitudinal", "Event"), include.splineCoefs = FA
         out <- c(gammas, "Assoct" = as.vector(object$coefficients$alpha))
         if (object$method == "weibull-AFT-GH")
             out <- - out
+        if ((lag <- object$y$lag) > 0) {
+            ii <- names(out) == "Assoct"
+            names(out)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
+        }
         out
     }
 }

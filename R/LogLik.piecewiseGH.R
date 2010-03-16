@@ -6,7 +6,7 @@ function (thetas) {
     alpha <- thetas[ncx + ncww + 2]
     xi <- exp(thetas[seq(ncx + ncww + 3, ncx + ncww + 2 + Q)])
     D <- thetas[seq(ncx + ncww + Q + 3, length(thetas))]
-    D <- if (diag.D) exp(D) else chol.transf(D)    
+    D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)
     eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0

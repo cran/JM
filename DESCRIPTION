@@ -1,7 +1,7 @@
 Package: JM
 Title: Joint Modelling of Longitudinal and Survival Data
-Version: 0.5-0
-Date: 2010-02-11
+Version: 0.6-0
+Date: 2010-03-16
 Author: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 Description: Shared parameter models for the joint modelling of
@@ -11,6 +11,6 @@ LazyLoad: yes
 LazyData: yes
 License: GPL (>= 2)
 URL: http://rwiki.sciviews.org/doku.php?id=packages:cran:jm
-Packaged: 2010-02-11 09:15:00 UTC; Dimitris
+Packaged: 2010-03-16 06:34:30 UTC; Dimitris
 Repository: CRAN
-Date/Publication: 2010-02-11 11:06:08
+Date/Publication: 2010-03-16 17:05:50

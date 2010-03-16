@@ -4,14 +4,14 @@ function (object, object2, test = TRUE, ...) {
         stop("Use only with 'jointModel' objects.\n")
     if (!inherits(object2, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
-    if (object$method != object2$method)
-        stop("You compare joint models with different survival submodels.\n")
+    if (test && object$method != object2$method)
+        stop("you compare joint models with different survival submodels.\n")
     L0 <- logLik(object)
     L1 <- logLik(object2)
     nb0 <- attr(L0, "df")
     nb1 <- attr(L1, "df")
     df <- nb1 - nb0
-    if (df < 0)
+    if (test && df < 0)
         stop("'object' should be nested in 'object2'.\n")
     out <- list(nam0 = deparse(substitute(object)), L0 = L0, aic0 = AIC(object), 
         bic0 = AIC(object, k = log(attr(L0, "nobs"))), nam1 = deparse(substitute(object2)), L1 = L1, aic1 = AIC(object2), 

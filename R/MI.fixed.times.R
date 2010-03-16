@@ -52,7 +52,7 @@ function (time.points) {
     mis.times <- unlist(lapply(split(obs.times, id), function (x) time.points[!time.points %in% x]))
     dataM <- object$data[unq.id.miss, ]
     dataM <- dataM[id2.miss, ]
-    dataM[object$timeVar] <- mis.times
+    dataM[object$timeVar] <- pmax(mis.times - object$y$lag, 0)
     mf <- model.frame(object$termsY, data = dataM)
     X.missM <- model.matrix(object$formYx, mf)
     Z.missM <- model.matrix(object$formYz, mf)
@@ -67,7 +67,7 @@ function (time.points) {
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "spline-PH-GH") {
         list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
-            gammas = object$coefficients$gammas, gammas.bs = object$coefficients$gammas.bs, alpha = object$coefficients$alpha,
+            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, gammas.bs = object$coefficients$gammas.bs, 
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "piecewise-PH-GH") {
         list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),

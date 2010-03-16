@@ -28,10 +28,6 @@ function (object, ...) {
         gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
             object$coefficients$gammas.bs)
         indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
-        #ng <- length(object$coefficients$gammas)
-        #ng.bs <- length(object$coefficients$gammas.bs)
-        #ii <- if (ng > 0) c((ng.bs + 1):(ng + ng.bs), ng + ng.bs + 1, 1:ng.bs) else c(ng.bs + 1, 1:ng.bs) 
-        #indT <- indT[ii]
     } else {
         gms <- object$coefficients$gammas
         ng <- length(gms)
@@ -41,6 +37,10 @@ function (object, ...) {
         gms <- gms[- seq(1, ng - nw)]
         gammas <- c(gms, "Assoct" = as.vector(object$coefficients$alpha))
         indT <- seq(length(betas) + 2 + ng - nw, length(betas) + ng + 2)
+    }
+    if ((lag <- object$y$lag) > 0) {
+        ii <- names(gammas) == "Assoct"
+        names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
     }
     sds <- if (length(indT) > 1) sqrt(diag(VarCov[indT, indT])) else sqrt(VarCov[indT, indT])
     coefsT <- cbind("Value" = gammas, "Std.Err" = sds, "z-value" = gammas / sds,
