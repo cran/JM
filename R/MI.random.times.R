@@ -51,6 +51,8 @@ function (time.points) {
             gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, log.xi = log(object$coefficients$xi),
             D = if (diag.D) log(D) else chol.transf(D))
     }
+    if (!is.null(object$scaleWB))
+        list.thetas$log.sigma.t <- NULL
     list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
     thetas <- unlist(as.relistable(list.thetas))
     V.thetas <- vcov(object)
@@ -94,7 +96,7 @@ function (time.points) {
         D.new <- thetas.new$D
         D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
         if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH")
-            sigma.t.new <- exp(thetas.new$log.sigma.t)
+            sigma.t.new <- if (is.null(object$scaleWB)) exp(thetas.new$log.sigma.t) else object$scaleWB
         if (object$method == "spline-PH-GH")
             gammas.bs.new <- thetas.new$gammas.bs
         if (object$method == "piecewise-PH-GH")

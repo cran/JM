@@ -14,11 +14,11 @@ function (object, ...) {
     } else if (object$method == "weibull-PH-GH") {
         gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
             "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
-        indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
+        indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else if (object$method == "weibull-AFT-GH") {
         gammas <- c(-object$coefficients$gammas, "Assoct" = -as.vector(object$coefficients$alpha),
             "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
-        indT <- seq(length(betas) + 2, length(betas) + length(gammas) + 1)
+        indT <- grep("T.", colnames(VarCov), fixed = TRUE)        
     } else if (object$method == "piecewise-PH-GH") {
         gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
             log(as.vector(object$coefficients$xi)))
@@ -43,6 +43,8 @@ function (object, ...) {
         names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
     }
     sds <- if (length(indT) > 1) sqrt(diag(VarCov[indT, indT])) else sqrt(VarCov[indT, indT])
+    if (!is.null(object$scaleWB))
+        sds <- c(sds, NA)
     coefsT <- cbind("Value" = gammas, "Std.Err" = sds, "z-value" = gammas / sds,
         "p-value" = 2 * pnorm(abs(gammas / sds), lower.tail = FALSE))
     out <- list("CoefTable-Long" = coefsY, "CoefTable-Event" = coefsT, D = object$coefficients$D, 

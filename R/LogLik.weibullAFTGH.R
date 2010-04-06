@@ -5,7 +5,7 @@ function (thetas) {
     sigma <- exp(thetas$log.sigma)
     gammas <- thetas$gammas
     alpha <- thetas$alpha
-    sigma.t <- exp(thetas$log.sigma.t)
+    sigma.t <- if (is.null(scaleWB)) exp(thetas$log.sigma.t) else scaleWB
     D <- thetas$D
     D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)

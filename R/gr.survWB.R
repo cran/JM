@@ -2,7 +2,7 @@ gr.survWB <-
 function (thetas) {
     gammas <- thetas[1:ncww]
     alpha <- thetas[ncww + 1]
-    sigma.t <- exp(thetas[ncww + 2])
+    sigma.t <- if (is.null(scaleWB)) exp(thetas[ncww + 2]) else scaleWB
     eta.tw <- as.vector(WW %*% gammas)
     eta.t <- eta.tw + alpha * Y
     eta.s <- alpha * Ys
@@ -13,7 +13,11 @@ function (thetas) {
     scgammas <- - colSums(WW * (d - kii), na.rm = TRUE)
     scalpha <- - sum((p.byt * (d * Y - exp.eta.tw.P * rowsum(Int * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)    
     Int2 <- st^(sigma.t - 1) * (1 + sigma.t * log.st) * exp(eta.s)
-    scsigmat <- - sigma.t * sum((p.byt * (d * (1/sigma.t + logT) - exp.eta.tw.P * rowsum(wk * Int2, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
-    c(scgammas, scalpha, scsigmat)
+    if (is.null(scaleWB)) {
+        scsigmat <- - sigma.t * sum((p.byt * (d * (1/sigma.t + logT) - exp.eta.tw.P * rowsum(wk * Int2, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+        c(scgammas, scalpha, scsigmat)
+    } else {
+        c(scgammas, scalpha)
+    }
 }
 

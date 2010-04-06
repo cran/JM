@@ -13,7 +13,7 @@ data under a maximum likelihood approach. Various options for the survival model
 jointModel(lmeObject, survObject, timeVar, 
     method = c("weibull-AFT-GH", "weibull-PH-GH", 
     "piecewise-PH-GH", "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), 
-    lag = 0, init = NULL, control = list(), \dots)
+    lag = 0, scaleWB = NULL, init = NULL, control = list(), \dots)
 }
 
 \arguments{
@@ -24,6 +24,8 @@ jointModel(lmeObject, survObject, timeVar,
   \item{timeVar}{a character string indicating the time variable in the linear mixed effects model.}
   \item{method}{a character string specifying the type of joint model to fit. See \bold{Details}.}
   \item{lag}{a numeric value denoting a lag effect in the time-dependent covariate represented by the mixed model; default is 0.}
+  \item{scaleWB}{a numeric scalar denoting a fixed value for the scale parameter of the Weibull hazard; used only when 
+    \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}. The default \code{NULL} means that the scale parameter is estimated.}
   \item{init}{a list of user-specified initial values. The initial values list must have the following components:
     \describe{
         \item{betas}{the vector of fixed effects for the linear mixed effects model.}
@@ -147,7 +149,7 @@ Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace ap
 modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 637--654.
 
 Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2009) Multiple-imputation-based residuals and diagnostic plots
-for joint models of longitudinal and survival outcomes. \emph{Biometrics}, to appear (doi: 10.1111/j.1541-0420.2009.01273.x).
+for joint models of longitudinal and survival outcomes. \emph{Biometrics} \bold{66}, 20--29.
 
 Tsiatis, A. and Davidian, M. (2004) Joint modeling of longitudinal and time-to-event data: an overview. 
 \emph{Statistica Sinica} \bold{14}, 809--834.

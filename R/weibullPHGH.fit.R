@@ -1,5 +1,5 @@
 weibullPHGH.fit <-
-function (x, y, id, initial.values, control) {
+function (x, y, id, initial.values, scaleWB, control) {
     # response vectors
     logT <- as.vector(y$logT)
     d <- as.vector(y$d)
@@ -51,7 +51,7 @@ function (x, y, id, initial.values, control) {
     sigma <- initial.values$sigma
     gammas <- as.vector(initial.values$gammas)
     alpha <- as.vector(initial.values$alpha)
-    sigma.t <- initial.values$sigma.t
+    sigma.t <- if (is.null(scaleWB)) initial.values$sigma.t else scaleWB
     D <- initial.values$D
     diag.D <- !is.matrix(D)
     if (!diag.D) dimnames(D) <- NULL else names(D) <- NULL
@@ -151,7 +151,7 @@ function (x, y, id, initial.values, control) {
         Hbetas <- nearPD(H.longWB(betas))
         scbetas <- gr.longWB(betas)
         betasn <- betas - c(solve(Hbetas, scbetas))
-        thetas <- c(gammas, alpha, log(sigma.t))
+        thetas <- if (is.null(scaleWB)) c(gammas, alpha, log(sigma.t)) else c(gammas, alpha)
         optz.surv <- optim(thetas, opt.survWB, gr.survWB, method = "BFGS", 
             control = list(maxit = if (it < 5) 20 else 5, 
                 parscale = if (it < 5) rep(0.01, length(thetas)) else rep(0.1, length(thetas))))
@@ -163,10 +163,14 @@ function (x, y, id, initial.values, control) {
         D <- Dn
         gammas <- thetasn[1:ncww]
         alpha <- thetasn[ncww + 1]
-        sigma.t <- exp(thetasn[ncww + 2])
+        sigma.t <- if (is.null(scaleWB)) exp(thetasn[ncww + 2]) else scaleWB
     }
     list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
-        log.sigma.t = log(sigma.t), D = if (diag.D) log(D) else chol.transf(D))
+        log.sigma.t = log(sigma.t), D = if (diag.D) log(D) else chol.transf(D))    
+    if (!is.null(scaleWB)) {
+        list.thetas$log.sigma.t <- NULL
+        list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
+    }
     thetas <- unlist(as.relistable(list.thetas))
     lgLik <- - LogLik.weibullGH(thetas)    
     # if not converged, start quasi-Newton iterations
@@ -190,7 +194,7 @@ function (x, y, id, initial.values, control) {
             sigma <- exp(thetas$log.sigma)
             gammas <- thetas$gammas
             alpha <- thetas$alpha
-            sigma.t <- exp(thetas$log.sigma.t)
+            sigma.t <- if (is.null(scaleWB)) exp(thetas$log.sigma.t) else scaleWB
             D <- thetas$D
             D <- if (diag.D) exp(D) else chol.transf(D)
             it <- it + if (control$optimizer == "optim") out$counts[1] else out$iterations
@@ -241,13 +245,14 @@ function (x, y, id, initial.values, control) {
     names(betas) <- names(initial.values$betas)
     if (!diag.D) dimnames(D) <- dimnames(initial.values$D) else names(D) <- names(initial.values$D)
     names(gammas) <- c("(Intercept)", colnames(W1))
-    nams <- c(paste("Y.", c(names(betas), "sigma"), sep = ""), paste("T.", c(names(gammas), "alpha", "sigma.t"), sep = ""),
+    nams <- c(paste("Y.", c(names(betas), "sigma"), sep = ""), 
+        paste("T.", if (is.null(scaleWB)) c(names(gammas), "alpha", "sigma.t") else c(names(gammas), "alpha"), sep = ""),
         paste("B.", if (!diag.D) paste("D", seq(1, ncz * (ncz + 1) / 2), sep = "") else names(D), sep = ""))
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
     list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, sigma.t = sigma.t, 
         D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
         Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb, 
-        Ztimeb = rowSums(Ztime * post.b)), iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
+        Ztimeb = rowSums(Ztime * post.b)), iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id, scaleWB = scaleWB)
 }
 

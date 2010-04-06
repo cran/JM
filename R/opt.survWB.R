@@ -2,7 +2,7 @@ opt.survWB <-
 function (thetas) {
     gammas <- thetas[1:ncww]
     alpha <- thetas[ncww + 1]
-    sigma.t <- exp(thetas[ncww + 2])
+    sigma.t <- if (is.null(scaleWB)) exp(thetas[ncww + 2]) else scaleWB
     eta.tw <- as.vector(WW %*% gammas)
     eta.t <- eta.tw + alpha * Y
     eta.s <- alpha * Ys

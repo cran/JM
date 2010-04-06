@@ -8,7 +8,7 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     if (is.null(newdata[[idVar]]))
         stop("'idVar' not in 'newdata.\n'")
     if (is.null(survTimes) || !is.numeric(survTimes))
-        survTimes <- seq(min(exp(object$y$logT)), max(exp(object$y$logT)), length.out = 35)
+        survTimes <- seq(min(exp(object$y$logT)), max(exp(object$y$logT)) + 0.1, length.out = 35)
     method <- object$method
     timeVar <- object$timeVar
     id <- as.numeric(unclass(newdata[[idVar]]))
@@ -57,7 +57,9 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     if (method == "weibull-PH-GH" || method == "weibull-AFT-GH") {
         sigma.t <- object$coefficients$sigma.t
         list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
-                log.sigma.t = log(sigma.t), D = if (diag.D) log(D) else chol.transf(D))        
+            log.sigma.t = log(sigma.t), D = if (diag.D) log(D) else chol.transf(D))
+        if (!is.null(object$scaleWB))
+            list.thetas$log.sigma.t <- NULL
     }
     if (method == "piecewise-PH-GH") {
         if (ncww == 1) {
@@ -140,7 +142,7 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
             D.new <- thetas.new$D
             D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
             if (method == "weibull-PH-GH" || method == "weibull-AFT-GH") {
-                sigma.t.new <- exp(thetas.new$log.sigma.t)
+                sigma.t.new <- if (is.null(object$scaleWB)) exp(thetas.new$log.sigma.t) else object$scaleWB
             } else if (method == "piecewise-PH-GH") {
                 xi.new <- exp(thetas.new$log.xi)
             } else if (method == "spline-PH-GH") {

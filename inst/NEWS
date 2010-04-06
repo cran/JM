@@ -1,45 +1,71 @@
+Changes in version: JM_0.6-1
+
+  * jointModel() has now the extra argument 'scaleWB' tha allows to fix the
+scale parameter for the Weibull baseline hazard to a specific value.
+
+
+==============================
+
 Changes in version: JM_0.6-0
 
-  * method = "spline-PH-GH" allows now to include statification factors for which different spline coefficients are estimated. By default the knots positions are the same across strata -- this can be changed by either directly specifying the knots or by setting the control argument 'equal.strata.knots' to FALSE.
+  * method = "spline-PH-GH" allows now to include statification factors for 
+which different spline coefficients are estimated. By default the knots positions 
+are the same across strata -- this can be changed by either directly specifying the 
+knots or by setting the control argument 'equal.strata.knots' to FALSE.
 
-  * the new function wald.strata() can be used to test for equality of the spline coefficients among strata.
+  * the new function wald.strata() can be used to test for equality of the spline 
+coefficients among strata.
   
   * a confint() method has been introduced for 'jointModel' objects.
 
-  * a bug was corrected in joint models with piecewise constant baseline risk function. In particular, the 'xi' parameters were reported as double their actual value.
+  * jointModel() has now the extra argument 'lag' that allows for lagged effects in
+the time-dependent covariate represented by the linear mixed model.
+
+  * a bug was corrected in joint models with piecewise constant baseline risk function. 
+In particular, the 'xi' parameters were reported as double their actual value.
 
 
 ==============================
 
 Changes in version: JM_0.5-0
 
-  * function dynC() has been added that calculates a dynamic concordance index for joint models.
+  * function dynC() has been added that calculates a dynamic concordance index 
+for joint models.
 
-  * method = "ch-GH" has been replaced by method = "spline-PH-GH" that fits a relative risk model with a B-spline-approximated baseline risk function.
+  * method = "ch-GH" has been replaced by method = "spline-PH-GH" that fits a relative 
+risk model with a B-spline-approximated baseline risk function.
 
-  * method = "ph-GH" that fits a relative risk with an unspecified baseline risk function has been renamed to method = "Cox-PH-GH".
+  * method = "ph-GH" that fits a relative risk with an unspecified baseline risk function 
+has been renamed to method = "Cox-PH-GH".
 
 
 ==============================
 
 Changes in version: JM_0.4-0
 
-  * function survfitJM() has been added that calculates predictions of subject-specific probabilities of survival given a history of longitudinal responses.
+  * function survfitJM() has been added that calculates predictions of subject-specific 
+probabilities of survival given a history of longitudinal responses.
 
-  * the multiple-imputation residuals now work also for joint models with piecewise constant baseline risk functions.
+  * the multiple-imputation residuals now work also for joint models with piecewise constant 
+baseline risk functions.
 
-  * faster optimization algorithms have implemented for 'method = "weibull-PH-GH"' and 'method = "piecewise-PH-GH".
+  * faster optimization algorithms have implemented for 'method = "weibull-PH-GH"' and 
+'method = "piecewise-PH-GH".
 
 
 ==============================
 
 Changes in version: JM_0.3-0
 
-  * the Weibull model is now available under both the relative risk and accelerated failure time parameterizations.
+  * the Weibull model is now available under both the relative risk and accelerated failure 
+time parameterizations.
 
-  * a number of enhancements have been implemented in the functions that compute the MI-based residuals.
+  * a number of enhancements have been implemented in the functions that compute the MI-based 
+residuals.
 
-  * new more robust algorithms have been written for the numerical approximation of integrals; this will lead to some discrepancies in the results, especially in the survival part, compared to the previous versions of the package.
+  * new more robust algorithms have been written for the numerical approximation of integrals; 
+this will lead to some discrepancies in the results, especially in the survival part, compared 
+to the previous versions of the package.
 
 
 ==============================
@@ -53,9 +79,12 @@ Changes in version: JM_0.2-1
 
 Changes in version: JM_0.2-0
 
-  * the jointModel method for the residuals generic has further options: (i) MI residuals for fixed and random visit times for the longitudinal process, and (ii) martingale, Cox-Snell, and AFT residuals for the survival process.
+  * the jointModel method for the residuals generic has further options: (i) MI residuals for fixed 
+and random visit times for the longitudinal process, and (ii) martingale, Cox-Snell, and AFT residuals 
+for the survival process.
 
-  * Function weibull.frailty() is introduced (along with supporting methods) for fitting multivariate survival data using the Weibull model with Gamma multiplicative frailties under maximum likelihood.
+  * Function weibull.frailty() is introduced (along with supporting methods) for fitting multivariate 
+survival data using the Weibull model with Gamma multiplicative frailties under maximum likelihood.
 
   * several typos have been corrected in .Rd files.
 

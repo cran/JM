@@ -73,7 +73,7 @@ Cox, D. and Snell, E. (1968) A general definition of residuals. \emph{Journal of
 Series B} \bold{30}, 248--275.
 
 Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2009) Multiple-imputation-based residuals and diagnostic plots 
-for joint models of longitudinal and survival outcomes. \emph{Biometrics}, to appear (doi: 10.1111/j.1541-0420.2009.01273.x).
+for joint models of longitudinal and survival outcomes. \emph{Biometrics} \bold{66}, 20--29.
 }
 
 \seealso{\code{\link{fitted.jointModel}}}

@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.6-0\cr
-Date: \tab 2010-03-16\cr
+Version: \tab 0.6-1\cr
+Date: \tab 2010-04-06\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -61,7 +61,7 @@ Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace ap
 modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 637--654.
 
 Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2009) Multiple-imputation-based residuals and diagnostic 
-plots for joint models of longitudinal and survival outcomes. \emph{Biometrics}, to appear (doi: 10.1111/j.1541-0420.2009.01273.x).
+plots for joint models of longitudinal and survival outcomes. \emph{Biometrics} \bold{66}, 20--29.
 
 Tsiatis, A. and Davidian, M. (2004) Joint modeling of longitudinal and time-to-event data: an overview. 
 \emph{Statistica Sinica} \bold{14}, 809--834.

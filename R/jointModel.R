@@ -1,6 +1,6 @@
 jointModel <-
 function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", 
-    "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), lag = 0, init = NULL, control = list(), ...) {
+    "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), lag = 0, scaleWB = NULL, init = NULL, control = list(), ...) {
     cl <- match.call()
     if (!inherits(lmeObject, "lme"))
         stop("\n'lmeObject' must inherit from class lme.")
@@ -134,8 +134,6 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
                 out
             }, W2s, levels(strt), SIMPLIFY = FALSE)
             W2s <- do.call(cbind, W2s)
-            #W2 <- splineDesign(kn, Time, ord = con$ord)
-            #W2s <- splineDesign(kn, c(t(st)), ord = con$ord)
             y <- c(y, list(strata = strt))
             x <- c(x, list(W2 = W2, W2s = W2s))
         }
@@ -221,8 +219,8 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     # joint model fit
     out <- switch(method,
         "Cox-PH-GH" = phGH.fit(x, y, id, initial.values, con),
-        "weibull-AFT-GH" = weibullAFTGH.fit(x, y, id, initial.values, con),
-        "weibull-PH-GH" = weibullPHGH.fit(x, y, id, initial.values, con),
+        "weibull-AFT-GH" = weibullAFTGH.fit(x, y, id, initial.values, scaleWB, con),
+        "weibull-PH-GH" = weibullPHGH.fit(x, y, id, initial.values, scaleWB, con),
         "piecewise-PH-GH" = piecewisePHGH.fit(x, y, id, initial.values, con),
         "spline-PH-GH" = splinePHGH.fit(x, y, id, initial.values, con),
         "ch-Laplace" = chLaplace.fit(x, y, id, initial.values, b, con))

@@ -5,7 +5,7 @@ function (thetas) {
     sigma <- exp(thetas$log.sigma)
     gammas <- thetas$gammas
     alpha <- thetas$alpha
-    sigma.t <- exp(thetas$log.sigma.t)
+    sigma.t <- if (is.null(scaleWB)) exp(thetas$log.sigma.t) else scaleWB
     D <- thetas$D
     D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)
@@ -60,8 +60,12 @@ function (thetas) {
     Vii <- d * (sigma.t - 1) / Vi - sigma.t * Vi^(sigma.t - 1)
     scgammas <- - colSums(WW * (d + c((p.byt * Vii * Vi) %*% wGH)), na.rm = TRUE)
     scalpha <- - sum((p.byt * (d * Y + Vii * exp.eta.tw * P * rowsum(wk.exp.eta.s * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
-    scsigmat <- - sigma.t * sum((p.byt * (d / sigma.t + (d - Vi^sigma.t) * log(Vi))) %*% wGH, na.rm = TRUE)
-    score.t <- c(scgammas, scalpha, scsigmat)
+    score.t <- if (is.null(scaleWB)) {
+        scsigmat <- - sigma.t * sum((p.byt * (d / sigma.t + (d - Vi^sigma.t) * log(Vi))) %*% wGH, na.rm = TRUE)
+        c(scgammas, scalpha, scsigmat)
+    } else {
+        c(scgammas, scalpha)
+    }
     score.b <- if (diag.D) {
         svD <- 1 / D
         svD2 <- svD^2
