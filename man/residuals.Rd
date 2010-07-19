@@ -72,8 +72,11 @@ The multiple-imputation-based residuals are not available for joint models with 
 Cox, D. and Snell, E. (1968) A general definition of residuals. \emph{Journal of the Royal Statistical Society, 
 Series B} \bold{30}, 248--275.
 
-Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2009) Multiple-imputation-based residuals and diagnostic plots 
+Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2010) Multiple-imputation-based residuals and diagnostic plots 
 for joint models of longitudinal and survival outcomes. \emph{Biometrics} \bold{66}, 20--29.
+
+Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
+\emph{Journal of Statistical Software} \bold{35} (9), 1--22. \url{http://www.jstatsoft.org/v35/i09/}
 }
 
 \seealso{\code{\link{fitted.jointModel}}}

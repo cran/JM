@@ -1,3 +1,10 @@
+Changes in version: JM_0.6-2
+
+  * a small bug was corrected in summary.jointModel().
+
+
+==============================
+
 Changes in version: JM_0.6-1
 
   * jointModel() has now the extra argument 'scaleWB' tha allows to fix the

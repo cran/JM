@@ -142,13 +142,13 @@ Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal 
 Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and longitudinal data: Likelihood 
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
-Rizopoulos, D. (2010) JM: an R package for the joint modelling of longitudinal and time-to-event data. Submitted.
-(\url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm#helpful_material})
+Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
+\emph{Journal of Statistical Software} \bold{35} (9), 1--22. \url{http://www.jstatsoft.org/v35/i09/}
 
 Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
 modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 637--654.
 
-Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2009) Multiple-imputation-based residuals and diagnostic plots
+Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2010) Multiple-imputation-based residuals and diagnostic plots
 for joint models of longitudinal and survival outcomes. \emph{Biometrics} \bold{66}, 20--29.
 
 Tsiatis, A. and Davidian, M. (2004) Joint modeling of longitudinal and time-to-event data: an overview. 

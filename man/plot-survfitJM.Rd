@@ -41,6 +41,12 @@
   \item{\dots}{extra graphical parameters passed to \code{plot()}.}
 }
 
+\references{
+Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
+\emph{Journal of Statistical Software} \bold{35} (9), 1--22. \url{http://www.jstatsoft.org/v35/i09/}
+}
+
+
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \seealso{\code{\link{survfitJM}}}
