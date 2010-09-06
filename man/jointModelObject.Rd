@@ -65,6 +65,9 @@ joint model for longitudinal and time-to-event data. Objects of this class have 
   \item{formT}{the formula for the survival model.}
   \item{timeVar}{the value of the \code{timeVar} argument}
   \item{control}{the value of the \code{control} argument.}
+  \item{parameterization}{the value of the \code{parameterization} argument.}
+  \item{derivForm}{the value of the \code{derivForm} argument.}
+  \item{lag}{the value of the \code{lag} argument.}
   \item{call}{the matched call.}
 }
 

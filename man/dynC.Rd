@@ -11,9 +11,9 @@
 \usage{
 dynC(object, \dots)
 
-\method{dynC}{jointModel}(object, dt, data, idVar = "id", 
-    times = NULL, nt = 10, simulate = FALSE, estimator = c("median", "mean"),
-    M = 10, validate = FALSE, B = 10, verbose = FALSE, \dots)
+\method{dynC}{jointModel}(object, dt, data, idVar = "id", times = NULL, 
+  nt = 10, simulate = FALSE, estimator = c("median", "mean"), 
+  M = 10, validate = FALSE, B = 10, verbose = FALSE, \dots)
 }
 
 \arguments{
@@ -36,7 +36,25 @@ dynC(object, \dots)
 }
 
 \details{
-More details can be found in Rizopoulos (2010).
+(\bold{Note:} the following contain some math formulas, which are better viewed in the pdf version 
+of the manual accessible at \url{http://cran.r-project.org/web/packages/JM/JM.pdf}.)
+
+Function \code{dynC} computes the following discrimination index
+\deqn{\mbox{C}_{dyn}^{\Delta t} = \int \mbox{AUC}(t, \Delta t) \, 
+\mbox{Pr} \{ {\cal E}(t, \Delta t) \} \; dt \Big / \int \mbox{Pr} \{ {\cal E}(t, \Delta t) \} \; dt,}
+where \deqn{\mbox{AUC}(t, \Delta t) = \mbox{Pr} \bigl [ \pi_i(t + \Delta t \mid t) < 
+\pi_j(t + \Delta t \mid t) \mid \{ T_i^* \in (t, t + \Delta t] \} \cap \{ T_j^* > t + \Delta t \} \bigr ],}
+and \deqn{{\cal E}(t, \Delta t) = \bigl [ \{ T_i^* \in (t, t + \Delta t] \} \cap \{ T_j^* > t + 
+\Delta t \} \bigr ],} with \eqn{i} and \eqn{j} denote to randomly selected subjects, and
+\eqn{\pi_i(t + \Delta t \mid t)} denotes the conditional survival probabilities calculated by
+\code{\link{survfitJM}}, calculated for different time windows \eqn{\Delta t} specified by argument \code{dt}.
+
+Index \eqn{\mbox{C}_{dyn}^{\Delta t}} is in the spirit of Harrell's \eqn{c}-index, that is for the comparable 
+subjects (i.e., the ones whose observed event times can be ordered), we compare their dynamic survival
+probabilities calculated by \code{\link{survfitJM}}.
+
+As with Harrell's \eqn{c}-index, \eqn{\mbox{C}_{dyn}^{\Delta t}} does not take into account censoring, and
+therefore is expected to mask the true discriminative capability of the joint model under heavy censoring.
 }
 
 \value{
@@ -49,11 +67,12 @@ More details can be found in Rizopoulos (2010).
 Antolini, L., Boracchi, P., and Biganzoli, E. (2005). A time-dependent discrimination index
 for survival data. \emph{Statistics in Medicine} \bold{24}, 3927--3944.
 
-Heagerty, P. and Zheng, Y. (2005). Survival model predictive accuracy and ROC curves.
-\emph{Biometrics} \bold{61}, 92--105.
+Harrell, F., Kerry, L. and Mark, D. (1996). Multivariable prognostic models: issues in 
+developing models, evaluating assumptions and adequacy, and measuring and reducing errors.
+\emph{Statistics in Medicine} \bold{15}, 361--387.
 
-Rizopoulos, D. (2010). Dynamic prediction in joint models for longitudinal and time-to-event data. 
-\emph{Submitted}.
+Rizopoulos, D. (2010). Dynamic predictions and prospective accuracy in joint models for 
+longitudinal and time-to-event data. \emph{Submitted}.
 }
 
 \author{
@@ -61,8 +80,9 @@ Rizopoulos, D. (2010). Dynamic prediction in joint models for longitudinal and t
 }
 
 \seealso{
-    \code{\link{jointModel}},
-    \code{\link{survfitJM}}
+    \code{\link{survfitJM}},
+    \code{\link{rocJM}},
+    \code{\link{jointModel}}
 }
 
 \examples{

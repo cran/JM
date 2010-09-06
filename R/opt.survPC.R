@@ -1,11 +1,15 @@
 opt.survPC <-
 function (thetas) {
-    gammas <- thetas[seq_len(ncww)]
-    alpha <- thetas[ncww + 1]
-    xi <- exp(thetas[seq(ncww + 2, length(thetas))])
+    thetas <- relist(thetas, skeleton = list.thetas)
+    gammas <- thetas$gammas
+    alpha <- thetas$alpha
+    Dalpha <- thetas$Dalpha
+    xi <- exp(thetas$log.xi)
     eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0
-    eta.t <- eta.tw + alpha * Y
-    eta.s <- alpha * Ys
+    eta.t <- switch(parameterization, "value" = eta.tw + alpha * Y, 
+        "slope" = eta.tw + Dalpha * Y.deriv, "both" = eta.tw + alpha * Y + Dalpha * Y.deriv)    
+    eta.s <- switch(parameterization, "value" = alpha * Ys, "slope" = Dalpha * Ys.deriv, 
+        "both" = alpha * Ys + Dalpha * Ys.deriv)
     log.hazard <- log(xi[ind.D]) + eta.t
     log.survival <- - exp(eta.tw) * rowsum(xi[ind.K] * wkP * exp(eta.s), id.GK, reorder = FALSE)
     dimnames(log.survival) <- NULL

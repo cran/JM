@@ -1,3 +1,14 @@
+Changes in version: JM_0.7-0
+
+  * the new function rocJM() has been added that calculates time-dependent
+ROC curves and the corresponding AUCs for joint models.
+
+  * methods "weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", and 
+"spline-PH-GH" support now the derivative parameterization.
+
+
+==============================
+
 Changes in version: JM_0.6-2
 
   * a small bug was corrected in summary.jointModel().

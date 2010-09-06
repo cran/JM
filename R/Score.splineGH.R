@@ -6,16 +6,24 @@ function (thetas) {
     gammas <- thetas$gammas
     gammas.bs <- thetas$gammas.bs
     alpha <- thetas$alpha
+    Dalpha <- thetas$Dalpha
     D <- thetas$D
     D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)
-    eta.yxT <- as.vector(Xtime %*% betas)
     eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, n)
     eta.tw2 <- as.vector(W2 %*% gammas.bs)
-    Y <- eta.yxT + Ztime.b
-    Ys <- as.vector(Xs %*% betas) + Zsb
-    eta.t <- eta.tw2 + eta.tw1 + alpha * Y
-    eta.s <- alpha * Ys
+    if (parameterization %in% c("value", "both")) {
+        Y <- as.vector(Xtime %*% betas) + Ztime.b
+        Ys <- as.vector(Xs %*% betas) + Zsb
+        eta.t <- eta.tw2 + eta.tw1 + alpha * Y
+        eta.s <- alpha * Ys
+    }
+    if (parameterization %in% c("slope", "both")) {
+        Y.deriv <- as.vector(Xtime.deriv %*% betas[indFixed]) + Ztime.b.deriv
+        Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + Zsb.deriv
+        eta.t <- if (parameterization == "both") eta.t + Dalpha * Y.deriv else eta.tw2 + eta.tw1 + Dalpha * Y.deriv
+        eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+    }    
     eta.ws <- as.vector(W2s %*% gammas.bs)
     exp.eta.tw.P <- exp(eta.tw1) * P
     mu.y <- eta.yx + Ztb
@@ -50,9 +58,22 @@ function (thetas) {
     sc1 <- - crossprod(X, y - eta.yx - Zb) / sigma^2
     sc2 <- numeric(ncx)
     for (i in 1:ncx) {
-        ki <- exp.eta.tw.P * rowsum(Int * alpha * Xs[, i], id.GK, reorder = FALSE)
+        ki <- exp.eta.tw.P * switch(parameterization,
+            "value" = rowsum(Int * alpha * Xs[, i], id.GK, reorder = FALSE),
+            "slope" = {ii <- match(i, indFixed); 
+                if (is.na(ii)) 0 else rowsum(Int * Dalpha * Xs.deriv[, ii], id.GK, reorder = FALSE)},
+            "both" = {ii <- match(i, indFixed);
+                rowsum(Int * (alpha * Xs[, i] + Dalpha * if (is.na(ii)) 0 else Xs.deriv[, ii]), id.GK, reorder = FALSE)}
+        )
         kii <- c((p.byt * ki) %*% wGH)
-        sc2[i] <- - sum(d * alpha * Xtime[, i] - kii, na.rm = TRUE)
+        sc2[i] <- switch(parameterization,
+            "value" = - sum(d * alpha * Xtime[, i] - kii, na.rm = TRUE),
+            "slope" = {ii <- match(i, indFixed); 
+                if (is.na(ii)) 0 else - sum(d * Dalpha * Xtime.deriv[, ii] - kii, na.rm = TRUE)},
+            "both" = {ii <- match(i, indFixed);
+                - sum(d * (alpha * Xtime[, i] + Dalpha * if (is.na(ii)) 0 else Xtime.deriv[, ii]) - kii, na.rm = TRUE)}
+        )        
+        
     }    
     score.y <- c(sc1 + sc2, - sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
     scgammas1 <- if (!is.null(W1)) - colSums(W1 * (d + c((p.byt * log.survival) %*% wGH)), na.rm = TRUE) else NULL    
@@ -61,8 +82,13 @@ function (thetas) {
         kk <- exp.eta.tw.P * rowsum(Int * W2s[, i], id.GK, reorder = FALSE)
         scgammas2[i] <- - sum(W2[, i] * d - c((p.byt * kk) %*% wGH))
     }
-    scalpha <- - sum((p.byt * (d * Y - exp.eta.tw.P * rowsum(Int * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)    
-    score.t <- c(scgammas1, scalpha, scgammas2)
+    scalpha <- if (parameterization %in% c("value", "both")) {
+        - sum((p.byt * (d * Y - exp.eta.tw.P * rowsum(Int * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)    
+    } else NULL
+    scalpha.D <- if (parameterization %in% c("slope", "both")) {
+        - sum((p.byt * (d * Y.deriv - exp.eta.tw.P * rowsum(Int * Ys.deriv, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+    } else NULL
+    score.t <- c(scgammas1, scalpha, scalpha.D, scgammas2)
     score.b <- if (diag.D) {
         svD <- 1 / D
         svD2 <- svD^2

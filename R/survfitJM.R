@@ -11,25 +11,28 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
         survTimes <- seq(min(exp(object$y$logT)), max(exp(object$y$logT)) + 0.1, length.out = 35)
     method <- object$method
     timeVar <- object$timeVar
+    parameterization <- object$parameterization
+    derivForm <- object$derivForm
+    indFixed <- derivForm$indFixed
+    indRandom <- derivForm$indRandom
     id <- as.numeric(unclass(newdata[[idVar]]))
-    r <- rle(id)
-    id <- rep(seq_along(r$values), r$lengths)
+    id <- match(id, unique(id))    
     TermsY <- object$termsY
     mfY <- model.frame(TermsY, data = newdata)
+    formYx <- reformulate(attr(delete.response(TermsY), "term.labels"))
     y <- model.response(mfY)
-    X <- model.matrix(object$formYx, mfY)
+    X <- model.matrix(formYx, mfY)
     Z <- model.matrix(object$formYz, mfY)
     TermsT <- object$termsT
     data.id <- newdata[!duplicated(id), ]
     mfT <- model.frame(delete.response(TermsT), data = data.id)
-    #formT <- as.character(object$formT)
     formT <- if (!is.null(kk <- attr(TermsT, "specials")$strata)) {
         strt <- eval(attr(TermsT, "variables"), data.id)[[kk]]
         tt <- drop.terms(TermsT, kk - 1, keep.response = FALSE)
         reformulate(attr(tt, "term.labels"))
     } else {
-        reformulate(attr(delete.response(TermsT), "term.labels"))
-        #as.formula(paste(formT[1], formT[3], collapse = " "))
+        tt <- attr(delete.response(TermsT), "term.labels")
+        if (length(tt)) reformulate(tt) else reformulate("1")
     }
     W <- model.matrix(formT, mfT)
     obs.times <- split(mfY[[timeVar]], id)
@@ -54,14 +57,18 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     D <- if (diag.D) diag(c(D)) else D
     gammas <- object$coefficients$gammas
     alpha <- object$coefficients$alpha
-    if (method == "weibull-PH-GH" || method == "weibull-AFT-GH") {
-        sigma.t <- object$coefficients$sigma.t
-        list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
-            log.sigma.t = log(sigma.t), D = if (diag.D) log(D) else chol.transf(D))
-        if (!is.null(object$scaleWB))
-            list.thetas$log.sigma.t <- NULL
+    Dalpha <- object$coefficients$Dalpha
+    sigma.t <- object$coefficients$sigma.t
+    xi <- object$coefficients$xi
+    gammas.bs <- object$coefficients$gammas.bs
+    list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
+            Dalpha = Dalpha, log.sigma.t = if (is.null(sigma.t)) NULL else log(sigma.t), 
+            log.xi = if (is.null(xi)) NULL else log(xi), gammas.bs = gammas.bs, 
+            D = if (diag.D) log(D) else chol.transf(D))
+    if (method %in% c("weibull-PH-GH", "weibull-AFT-GH") && !is.null(object$scaleWB)) {
+        list.thetas$log.sigma.t <- NULL
     }
-    if (method == "piecewise-PH-GH") {
+    if (method %in% c("piecewise-PH-GH", "spline-PH-GH")) {
         if (ncww == 1) {
             W <- NULL
             ncww <- 0
@@ -70,22 +77,8 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
             ncww <- ncww - 1
         }
         Q <- object$x$Q
-        xi <- object$coefficients$xi
-        list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
-                log.xi = log(xi), D = if (diag.D) log(D) else chol.transf(D))
     }
-    if (method == "spline-PH-GH") {
-        if (ncww == 1) {
-            W <- NULL
-            ncww <- 0
-        } else {
-            W <- W[, -1, drop = FALSE]
-            ncww <- ncww - 1
-        }
-        gammas.bs <- object$coefficients$gammas.bs
-        list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
-            gammas.bs = gammas.bs, D = if (diag.D) log(D) else chol.transf(D))
-    } 
+    list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
     if (!method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH", "spline-PH-GH")) {
         stop("\nsurvfitJM() is not yet available for this type of joint model.")
     }
@@ -102,18 +95,15 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
         D.new <- D
         gammas.new <- gammas
         alpha.new <- alpha
-        if (method == "weibull-PH-GH" || method == "weibull-AFT-GH") {
-            sigma.t.new <- sigma.t
-        } else if (method == "piecewise-PH-GH") {
-            xi.new <- xi
-        } else if (method == "spline-PH-GH") {
-            gammas.bs.new <- gammas.bs
-        }
-        ff <- function (b, tt, mm, i) -log.posterior.b(b, time = tt, method = mm, ii = i)
-        opt <- try(optim(rep(0, ncz), ff, tt = last.time, mm = method, i = i, method = "BFGS", hessian = TRUE), TRUE)
+        Dalpha.new <- Dalpha
+        sigma.t.new <- sigma.t
+        xi.new <- xi
+        gammas.bs.new <- gammas.bs
+        ff <- function (b, y, tt, mm, i) -log.posterior.b(b, y, time = tt, method = mm, ii = i)
+        opt <- try(optim(rep(0, ncz), ff, y = y, tt = last.time, mm = method, i = i, method = "BFGS", hessian = TRUE), TRUE)
         if (inherits(opt, "try-error")) {
-            gg <- function (b, tt, mm, i) cd(b, ff, tt = tt, mm = mm, i = i)
-            opt <- optim(rep(0, ncz), ff, gg, tt = last.time, mm = method, i = i, method = "BFGS", hessian = TRUE)
+            gg <- function (b, y, tt, mm, i) cd(b, ff, y = y, tt = tt, mm = mm, i = i)
+            opt <- optim(rep(0, ncz), ff, gg, y = y, tt = last.time, mm = method, i = i, method = "BFGS", hessian = TRUE)
         } 
         modes.b[i, ] <- opt$par
         Vars.b[[i]] <- scale * solve(opt$hessian)        
@@ -154,8 +144,8 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
                 proposed.b <- rmvt(1, modes.b[i, ], Vars.b[[i]], 4)
                 dmvt.old <- dmvt(b.old[i, ], modes.b[i, ], Vars.b[[i]], 4, TRUE)
                 dmvt.proposed <- dmvt(proposed.b, modes.b[i, ], Vars.b[[i]], 4, TRUE)
-                a <- min(exp(log.posterior.b(proposed.b, last.time, method, ii = i) + dmvt.old - 
-                        log.posterior.b(b.old[i, ], last.time, method, ii = i) - dmvt.proposed), 1)
+                a <- min(exp(log.posterior.b(proposed.b, y, last.time, method, ii = i) + dmvt.old - 
+                        log.posterior.b(b.old[i, ], y, last.time, method, ii = i) - dmvt.proposed), 1)
                 ind <- runif(1) <= a
                 success.rate[m, i] <- ind
                 if (ind)

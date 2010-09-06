@@ -5,17 +5,25 @@ function (thetas) {
     sigma <- exp(thetas$log.sigma)
     gammas <- thetas$gammas
     alpha <- thetas$alpha
+    Dalpha <- thetas$Dalpha
     sigma.t <- if (is.null(scaleWB)) exp(thetas$log.sigma.t) else scaleWB
     D <- thetas$D
     D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)
-    eta.yxT <- as.vector(Xtime %*% betas)
     eta.tw <- as.vector(WW %*% gammas)
+    if (parameterization %in% c("value", "both")) {
+        Y <- as.vector(Xtime %*% betas) + Ztime.b
+        Ys <- as.vector(Xs %*% betas) + Zsb
+        eta.t <- eta.tw + alpha * Y
+        eta.s <- alpha * Ys
+    }
+    if (parameterization %in% c("slope", "both")) {
+        Y.deriv <- as.vector(Xtime.deriv %*% betas[indFixed]) + Ztime.b.deriv
+        Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + Zsb.deriv
+        eta.t <- if (parameterization == "both") eta.t + Dalpha * Y.deriv else eta.tw + Dalpha * Y.deriv
+        eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+    }
     exp.eta.tw <- exp(eta.tw)
-    Y <- eta.yxT + Ztime.b
-    Ys <- as.vector(Xs %*% betas) + Zsb
-    eta.t <- eta.tw + alpha * Y
-    eta.s <- alpha * Ys
     wk.exp.eta.s <- wk * exp(eta.s)
     exp.eta.tw <- exp(eta.tw)
     exp.eta.tw.P <- exp(eta.tw) * P
@@ -51,21 +59,35 @@ function (thetas) {
     Vii <- d * (sigma.t - 1) / Vi - sigma.t * Vi^(sigma.t - 1)
     sc2 <- numeric(ncx)
     for (i in 1:ncx) {
-        ki <- Vii * exp.eta.tw.P * rowsum(wk.exp.eta.s * alpha * Xs[, i], id.GK, reorder = FALSE)
+        ki <- Vii * exp.eta.tw.P * switch(parameterization,
+            "value" = rowsum(wk.exp.eta.s * alpha * Xs[, i], id.GK, reorder = FALSE),
+            "slope" = {ii <- match(i, indFixed); if (is.na(ii)) 0 else rowsum(wk.exp.eta.s * Dalpha * Xs.deriv[, ii], id.GK, reorder = FALSE)},
+            "both" = {ii <- match(i, indFixed); 
+                rowsum(wk.exp.eta.s * (alpha * Xs[, i] + Dalpha * if (is.na(ii)) 0 else Xs.deriv[, ii]), id.GK, reorder = FALSE)}
+        )
         kii <- c((p.byt * ki) %*% wGH)
-        sc2[i] <- - sum(d * alpha * Xtime[, i] + kii, na.rm = TRUE)
+        sc2[i] <- switch(parameterization,
+            "value" = - sum(d * alpha * Xtime[, i] + kii, na.rm = TRUE),
+            "slope" = {ii <- match(i, indFixed); if (is.na(ii)) 0 else - sum(d * Dalpha * Xtime.deriv[, ii] + kii, na.rm = TRUE)}, 
+            "both" = {ii <- match(i, indFixed); 
+                - sum(d * (alpha * Xtime[, i] + Dalpha * if (is.na(ii)) 0 else Xtime.deriv[, ii]) + kii, na.rm = TRUE)}
+        )
     }    
     score.y <- c(sc1 + sc2, - sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
     Vi <- exp.eta.tw * P * rowsum(wk.exp.eta.s, id.GK, reorder = FALSE); dimnames(Vi) <- NULL
     Vii <- d * (sigma.t - 1) / Vi - sigma.t * Vi^(sigma.t - 1)
     scgammas <- - colSums(WW * (d + c((p.byt * Vii * Vi) %*% wGH)), na.rm = TRUE)
-    scalpha <- - sum((p.byt * (d * Y + Vii * exp.eta.tw * P * rowsum(wk.exp.eta.s * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
-    score.t <- if (is.null(scaleWB)) {
-        scsigmat <- - sigma.t * sum((p.byt * (d / sigma.t + (d - Vi^sigma.t) * log(Vi))) %*% wGH, na.rm = TRUE)
-        c(scgammas, scalpha, scsigmat)
-    } else {
-        c(scgammas, scalpha)
-    }
+    scalpha <- if (parameterization %in% c("value", "both")) {
+        - sum((p.byt * (d * Y + Vii * exp.eta.tw * P * rowsum(wk.exp.eta.s * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+    } else NULL
+    scalpha.D <- if (parameterization %in% c("slope", "both")) {
+        - sum((p.byt * (d * Y.deriv + Vii * exp.eta.tw * P * rowsum(wk.exp.eta.s * Ys.deriv, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+    } else NULL
+    scsigmat <- if (is.null(scaleWB)) {
+         - sigma.t * sum((p.byt * (d / sigma.t + (d - Vi^sigma.t) * log(Vi))) %*% wGH, na.rm = TRUE)
+        
+    } else NULL
+    score.t <- c(scgammas, scalpha, scalpha.D, scsigmat)
     score.b <- if (diag.D) {
         svD <- 1 / D
         svD2 <- svD^2

@@ -32,7 +32,7 @@ survfitJM(object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
   \item{M}{integer denoting how many Monte Carlo samples to use -- see \bold{Details}.}
   \item{CI.levels}{a numeric vector of length two that specifies which quantiles to use for the calculation of confidence interval for the 
     predicted probabilities -- see \bold{Details}.}
-  \item{scale}{a numeric value that controls the acceptance rate of the Metropolis-Hastings algorithm -- see \bold{Details}.}
+  \item{scale}{a numeric scalar that controls the acceptance rate of the Metropolis-Hastings algorithm -- see \bold{Details}.}
 }
 
 \details{
@@ -83,7 +83,10 @@ Predicted probabilities are not computed for joint models with \code{method = "c
 
 \references{
 Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
-\emph{Journal of Statistical Software} \bold{35} (9), 1--22. \url{http://www.jstatsoft.org/v35/i09/}
+\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
+
+Rizopoulos, D. (2010). Dynamic prediction and prospective accuracy in joint models for longitudinal and time-to-event data. 
+\emph{Submitted}.
 }
 
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}

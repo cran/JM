@@ -12,11 +12,21 @@ function (t, b, i) {
         data.id2 <- data.id[id.i, ]
         data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
-        Xs <- model.matrix(object$formYx, mf)
-        Zs <- model.matrix(object$formYz, mf)
+        if (parameterization %in% c("value", "both")) {
+            Xs <- model.matrix(formYx, mf)
+            Zs <- model.matrix(object$formYz, mf)
+            Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * b[id.i, , drop = FALSE]))
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv <- model.matrix(derivForm$fixed, mf)
+            Zs.deriv <- model.matrix(derivForm$random, mf)
+            Ys.deriv <- as.vector(Xs.deriv %*% betas.new[indFixed] + 
+                rowSums(Zs.deriv * b[id.i, indRandom, drop = FALSE]))
+        }
+        tt <- switch(parameterization, "value" = alpha.new * Ys, 
+            "slope" = Dalpha.new * Ys.deriv, "both" = alpha.new * Ys + Dalpha.new * Ys.deriv)
         eta.tw <- as.vector(W %*% gammas.new)
-        Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * b[id.i, , drop = FALSE]))
-        Vi <- exp(log(sigma.t.new) + (sigma.t.new - 1) * log.st + alpha.new * Ys)
+        Vi <- exp(log(sigma.t.new) + (sigma.t.new - 1) * log.st + tt)
         - exp(eta.tw[i]) * P * sum(wk * Vi)
     } else if (method == "weibull-AFT-GH") {
         id.i <- rep(i, each = 15)
@@ -27,11 +37,21 @@ function (t, b, i) {
         data.id2 <- data.id[id.i, ]
         data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
-        Xs <- model.matrix(object$formYx, mf)
-        Zs <- model.matrix(object$formYz, mf)
+        if (parameterization %in% c("value", "both")) {
+            Xs <- model.matrix(formYx, mf)
+            Zs <- model.matrix(object$formYz, mf)
+            Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * b[id.i, , drop = FALSE]))
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv <- model.matrix(derivForm$fixed, mf)
+            Zs.deriv <- model.matrix(derivForm$random, mf)
+            Ys.deriv <- as.vector(Xs.deriv %*% betas.new[indFixed] + 
+                rowSums(Zs.deriv * b[id.i, indRandom, drop = FALSE]))
+        }
+        tt <- switch(parameterization, "value" = alpha.new * Ys, 
+            "slope" = Dalpha.new * Ys.deriv, "both" = alpha.new * Ys + Dalpha.new * Ys.deriv)
         eta.tw <- as.vector(W %*% gammas.new)
-        Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * b[id.i, , drop = FALSE]))
-        Vi <- exp(eta.tw[i]) * P * sum(wk * exp(alpha.new * Ys))
+        Vi <- exp(eta.tw[i]) * P * sum(wk * exp(tt))
         - Vi^sigma.t.new
     } else if (method == "spline-PH-GH") {
         id.i <- rep(i, each = 15)
@@ -43,12 +63,22 @@ function (t, b, i) {
         data.id2 <- data.id[id.i, ]
         data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
-        Xs <- model.matrix(object$formYx, mf)
-        Zs <- model.matrix(object$formYz, mf)
+        if (parameterization %in% c("value", "both")) {
+            Xs <- model.matrix(formYx, mf)
+            Zs <- model.matrix(object$formYz, mf)
+            Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * b[id.i, , drop = FALSE]))
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv <- model.matrix(derivForm$fixed, mf)
+            Zs.deriv <- model.matrix(derivForm$random, mf)
+            Ys.deriv <- as.vector(Xs.deriv %*% betas.new[indFixed] + 
+                rowSums(Zs.deriv * b[id.i, indRandom, drop = FALSE]))
+        }
+        tt <- switch(parameterization, "value" = alpha.new * Ys, 
+            "slope" = Dalpha.new * Ys.deriv, "both" = alpha.new * Ys + Dalpha.new * Ys.deriv)
         eta.tw <- if (!is.null(W)) as.vector(W[i, , drop = FALSE] %*% gammas.new) else 0
-        Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * b[id.i, , drop = FALSE]))
         W2s <- if (length(kn <- object$control$knots) == 1) {
-            splineDesign(unlist(kn, use.names = FALSE), st, ord = object$control$ord)
+            splineDesign(unlist(kn, use.names = FALSE), st, ord = object$control$ord, outer.ok = TRUE)
         } else {
             strt.i <- strt[i]
             w2s <- lapply(kn, function (kn) splineDesign(kn, st, ord = object$control$ord, outer.ok = TRUE))
@@ -56,7 +86,7 @@ function (t, b, i) {
             w2s[-ll] <- lapply(w2s[-ll], function (m) {m[, ] <- 0; m})
             do.call(cbind, w2s)
         }
-        Vi <- exp(c(W2s %*% gammas.bs.new) + alpha.new * Ys)
+        Vi <- exp(c(W2s %*% gammas.bs.new) + tt)
         - exp(eta.tw) * P * sum(wk * Vi)
     } else if (method == "piecewise-PH-GH") {
         wk <- gaussKronrod(7)$wk
@@ -75,15 +105,25 @@ function (t, b, i) {
         data.id2 <- data.id[rep(i, each = nk*Q), ]
         data.id2[timeVar] <- pmax(st - object$y$lag, 0)
         mf <- model.frame(TermsY, data = data.id2)
-        Xs <- model.matrix(object$formYx, mf)
-        Zs <- model.matrix(object$formYz, mf)
+        if (parameterization %in% c("value", "both")) {
+            Xs <- model.matrix(formYx, mf)
+            Zs <- model.matrix(object$formYz, mf)
+            Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * rep(b[i, ], each = nrow(Zs))))
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv <- model.matrix(derivForm$fixed, mf)
+            Zs.deriv <- model.matrix(derivForm$random, mf)
+            Ys.deriv <- as.vector(Xs.deriv %*% betas.new[indFixed] + 
+                rowSums(Zs.deriv * rep(b[i, indRandom], each = nrow(Zs))))
+        }
+        tt <- switch(parameterization, "value" = alpha.new * Ys, 
+            "slope" = Dalpha.new * Ys.deriv, "both" = alpha.new * Ys + Dalpha.new * Ys.deriv)
         P <- P[!is.na(P)]
         ind.K <- rep(seq_len(ind), each = nk)
         wk <- rep(wk, ind)
         wkP <- wk * rep(P, each = nk)
         eta.tw <- if (!is.null(W)) as.vector(W[i, , drop = FALSE] %*% gammas.new) else 0 
-        Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * rep(b[i, ], each = nrow(Zs))))
-        - exp(eta.tw) * sum(xi.new[ind.K] * wkP * exp(alpha.new * Ys))
+        - exp(eta.tw) * sum(xi.new[ind.K] * wkP * exp(tt))
     }
     exp(log.survival)
 }

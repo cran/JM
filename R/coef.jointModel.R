@@ -18,12 +18,19 @@ function (object, process = c("Longitudinal", "Event"), include.splineCoefs = FA
             nw <- ncol(object$x$W)
             gammas <- if (is.null(nw)) NULL else gammas[seq(ng - nw + 1, ng)]
         }
-        out <- c(gammas, "Assoct" = as.vector(object$coefficients$alpha))
+        out <- c(gammas, "Assoct" = as.vector(object$coefficients$alpha), 
+            "Assoct.s" = as.vector(object$coefficients$Dalpha))
         if (object$method == "weibull-AFT-GH")
             out <- - out
-        if ((lag <- object$y$lag) > 0) {
-            ii <- names(out) == "Assoct"
-            names(out)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
+        if ((lag <- object$y$lag) > 0) {        
+            if (object$parameterization %in% c("value", "both")) {
+                ii <- names(gammas) == "Assoct"
+                names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
+            }
+            if (object$parameterization %in% c("slope", "both")) { 
+                jj <- names(gammas) == "Assoct.s"
+                names(gammas)[jj] <- paste("Assoct.s(lag=", lag, ")", sep = "")
+            }
         }
         out
     }

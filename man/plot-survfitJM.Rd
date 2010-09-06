@@ -10,9 +10,10 @@
 
 \usage{
 \method{plot}{survfitJM}(x, estimator = c("both", "mean", "median"), 
-    which = NULL, fun = NULL, conf.int = FALSE, add.last.time.axis.tick = FALSE, 
-    include.y = FALSE, main = NULL, xlab = NULL, ylab = NULL, lty = NULL, 
-    col = NULL, lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, \dots)
+    which = NULL, fun = NULL, conf.int = FALSE, 
+    add.last.time.axis.tick = FALSE, include.y = FALSE, main = NULL, 
+    xlab = NULL, ylab = NULL, lty = NULL, col = NULL, lwd = NULL, 
+    pch = NULL, ask = NULL, legend = FALSE, \dots)
 }
 
 \arguments{
@@ -43,7 +44,10 @@
 
 \references{
 Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
-\emph{Journal of Statistical Software} \bold{35} (9), 1--22. \url{http://www.jstatsoft.org/v35/i09/}
+\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
+
+Rizopoulos, D. (2010). Dynamic prediction and prospective accuracy in joint models for longitudinal and time-to-event data. 
+\emph{Submitted}.
 }
 
 

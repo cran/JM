@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.6-2\cr
-Date: \tab 2010-07-19\cr
+Version: \tab 0.7-0\cr
+Date: \tab 2010-09-06\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -54,14 +54,18 @@ Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 }
 
 \references{
-Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal measurements and event time data.
-\emph{Biostatistics} \bold{1}, 465--480.
+Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal measurements 
+and event time data. \emph{Biostatistics} \bold{1}, 465--480.
 
-Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
-\emph{Journal of Statistical Software} \bold{35} (9), 1--22. \url{http://www.jstatsoft.org/v35/i09/}
+Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
+\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
+
+Rizopoulos, D. (2010). Dynamic prediction and prospective accuracy in joint models for longitudinal 
+and time-to-event data. \emph{Submitted}.
 
 Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
-modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 637--654.
+modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} 
+\bold{71}, 637--654.
 
 Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2010) Multiple-imputation-based residuals and diagnostic 
 plots for joint models of longitudinal and survival outcomes. \emph{Biometrics} \bold{66}, 20--29.

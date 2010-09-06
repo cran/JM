@@ -55,7 +55,8 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
             eta.s <- object$coefficients$alpha * Y2
             if (type == "Marginal") {
                 S <- matrix(0, length(logT), ncol(eta.s))
-                S[unique(indT), ] <- rowsum(lambda0[object$indexes$ind.L1] * exp(eta.s), indT, reorder = FALSE)
+                S[unique(indT), ] <- rowsum(lambda0[object$indexes$ind.L1] * exp(eta.s), 
+                    indT, reorder = FALSE)
             } else {
                 S <- numeric(length(logT))
                 S[unique(indT)] <- tapply(lambda0[object$indexes$ind.L1] * exp(eta.s), indT, sum)
@@ -80,7 +81,8 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
             }
             Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
             eta.s <- object$coefficients$alpha * Ys
-            Haz <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), id.GK, reorder = FALSE)
+            Haz <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), 
+                id.GK, reorder = FALSE)
             switch(scale,
                 "survival" = exp(- Haz),
                 "cumulative-Hazard" = Haz,
@@ -118,7 +120,8 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
             }
             Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
             eta.s <- object$coefficients$alpha * Ys
-            Haz <- exp(eta.tw) * P * rowsum(wk * exp(c(object$x$W2s %*% object$coefficients$gammas.bs) + eta.s), id.GK, reorder = FALSE)
+            Haz <- exp(eta.tw) * P * rowsum(wk * exp(c(object$x$W2s %*% object$coefficients$gammas.bs) + eta.s), 
+                id.GK, reorder = FALSE)
             switch(scale,
                 "survival" = exp(- Haz),
                 "cumulative-Hazard" = Haz,

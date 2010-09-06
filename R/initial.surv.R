@@ -1,34 +1,53 @@
 initial.surv <-
-function (logT, d, X, method, control, extra = NULL) {
+function (logT, d, X, parameterization, method, control, extra = NULL) {
     old <- options(warn = (-1))
     on.exit(options(old))
     if (method == "Cox-PH-GH") {
         Time <- exp(logT)
-        start <- extra$times
-        DD <- data.frame(id = extra$id, start = start, Time = Time[extra$id])
-        stop <- unlist(lapply(split(DD, DD$id), function (x) c(x$start[-1], x$Time[1])))
-        event <- ave(d[extra$id], extra$id, FUN = function(x) c(rep(0, length(x) - 1), x[1]))
-        WW <- if ((nx <- ncol(X)) == 1) extra$y else cbind(X[extra$id, -nx], extra$y)
-        cph <- coxph(Surv(start, stop, event) ~ WW)
+        cph <- if (parameterization == "value") {
+            start <- extra$times
+            DD <- data.frame(id = extra$id, start = start, Time = Time[extra$id])
+            stop <- unlist(lapply(split(DD, DD$id), function (x) c(x$start[-1], x$Time[1])))
+            event <- ave(d[extra$id], extra$id, FUN = function(x) {
+                nx <- length(x)
+                if (nx == 1) x[1] else c(rep(0, nx-1), x[1]) 
+            })
+            WW <- if ((nx <- ncol(X)) == 1) extra$y else cbind(X[extra$id, -nx], extra$y)
+            coxph(Surv(start, stop, event) ~ WW)
+        } else {
+            coxph(Surv(Time, d) ~ X)
+        }
         coefs <- coef(cph)
         nk <- length(coefs)
+        out <- switch(parameterization, 
+            "value" = if (nk > 1) list(gammas = coefs[-nk], alpha = coefs[nk]) else list(alpha = coefs[nk]),
+            "slope" = if (nk > 1) list(gammas = coefs[-nk], Dalpha = coefs[nk]) else list(Dalpha = coefs[nk]),
+            "both" = if (nk > 2) 
+                list(gammas = coefs[-c(nk-1, nk)], alpha = coefs[nk-1], Dalpha = coefs[nk]) else list(alpha = coefs[nk-1], Dalpha = coefs[nk])
+        )
         lambda0 <- basehaz(cph, FALSE)
-        out <- list(alpha = coefs[nk], lambda0 = lambda0$hazard)
-        if (nk > 1)
-            out$gammas <- coefs[-nk]
+        out <- c(out, list(lambda0 = lambda0$hazard))
         out
     } else if (method == "weibull-PH-GH") {
         dat <- data.frame(Time = exp(logT), d = d)
         init.fit <- survreg(Surv(Time, d) ~ X, data = dat)
         coefs <- - init.fit$coef / init.fit$scale
         nk <- length(coefs)
-        list(gammas = coefs[-nk], alpha = coefs[nk], sigma.t = 1 / init.fit$scale)
+        switch(parameterization, 
+            "value" = list(gammas = coefs[-nk], alpha = coefs[nk], sigma.t = 1 / init.fit$scale),
+            "slope" = list(gammas = coefs[-nk], Dalpha = coefs[nk], sigma.t = 1 / init.fit$scale),
+            "both" = list(gammas = coefs[1:(nk-2)], alpha = coefs[nk-1], Dalpha = coefs[nk], sigma.t = 1 / init.fit$scale)
+        )
     } else if (method == "weibull-AFT-GH") {
         dat <- data.frame(Time = exp(logT), d = d)
         init.fit <- survreg(Surv(Time, d) ~ X, data = dat)
         coefs <- - init.fit$coef
         nk <- length(coefs)
-        list(gammas = coefs[-nk], alpha = coefs[nk], sigma.t = 1 / init.fit$scale)    
+        switch(parameterization, 
+            "value" = list(gammas = coefs[-nk], alpha = coefs[nk], sigma.t = 1 / init.fit$scale),
+            "slope" = list(gammas = coefs[-nk], Dalpha = coefs[nk], sigma.t = 1 / init.fit$scale),
+            "both" = list(gammas = coefs[1:(nk-2)], alpha = coefs[nk-1], Dalpha = coefs[nk], sigma.t = 1 / init.fit$scale)
+        )
     } else if (method == "piecewise-PH-GH") {
         n <- nrow(d)
         p <- ncol(d)
@@ -36,31 +55,43 @@ function (logT, d, X, method, control, extra = NULL) {
         dat <- data.frame(Time = c(logT), d = c(d), xi = gl(p, n), XX)
         init.fit <- glm(d ~ . + offset(log(Time)) - Time - 1, family = poisson, data = dat[dat$Time > 0, ])
         out <- list(xi = exp(init.fit$coefficients[seq_len(length(control$knots) + 1)]))
-        start <- extra$times
-        DD <- data.frame(id = extra$id, start = start, Time = extra$Time[extra$id])
-        stop <- unlist(lapply(split(DD, DD$id), function (x) c(x$start[-1], x$Time[1])))
-        dd <- extra$d
-        event <- ave(dd[extra$id], extra$id, FUN = function (x) c(rep(0, length(x) - 1), x[1]))
-        WW <- if ((nx <- ncol(X)) == 1) extra$y else cbind(X[extra$id, -nx], extra$y)
-        tdCox <- coxph(Surv(start, stop, event) ~ WW)
-        coefs <- tdCox$coefficients
+        coefs <- if (parameterization == "value") {
+            start <- extra$times
+            DD <- data.frame(id = extra$id, start = start, Time = extra$Time[extra$id])
+            stop <- unlist(lapply(split(DD, DD$id), function (x) c(x$start[-1], x$Time[1])))
+            dd <- extra$d
+            event <- ave(dd[extra$id], extra$id, FUN = function (x) {
+                nx <- length(x)
+                if (nx == 1) x[1] else c(rep(0, nx-1), x[1]) 
+            })
+            WW <- if ((nx <- ncol(X)) == 1) extra$y else cbind(X[extra$id, -nx], extra$y)
+            coxph(Surv(start, stop, event) ~ WW)$coefficients
+        } else {
+            coxph(Surv(Time, d) ~ X, as.data.frame(extra[c("Time", "d")]))$coefficients
+        }
         nk <- length(coefs)
-        out$alpha = coefs[nk]
-        if (nk > 1)
-            out$gammas <- coefs[seq_len(nk - 1)]
+        out <- c(out, switch(parameterization, 
+            "value" = if (nk > 1) list(gammas = coefs[-nk], alpha = coefs[nk]) else list(alpha = coefs[nk]),
+            "slope" = if (nk > 1) list(gammas = coefs[-nk], Dalpha = coefs[nk]) else list(Dalpha = coefs[nk]),
+            "both" = if (nk > 2) 
+                list(gammas = coefs[1:(nk-2)], alpha = coefs[nk-1], Dalpha = coefs[nk]) else list(alpha = coefs[nk-1], Dalpha = coefs[nk])
+        ))
         out
     } else if (method == "spline-PH-GH" || method == "spline-PH-Laplace") {
         dat <- data.frame(Time = exp(logT), d = d)
         init.fit <- survreg(Surv(Time, d) ~ X, data = dat)
         coefs <- - init.fit$coef / init.fit$scale
         nk <- length(coefs)
-        out <- list(alpha = coefs[nk])
+        out <- switch(parameterization, 
+            "value" = if (nk > 2) list(gammas = coefs[-c(1, nk)], alpha = coefs[nk]) else list(alpha = coefs[nk]),
+            "slope" = if (nk > 2) list(gammas = coefs[-c(1, nk)], Dalpha = coefs[nk]) else list(Dalpha = coefs[nk]),
+            "both" = if (nk > 3) 
+                list(gammas = coefs[-c(1, nk-1, nk)], alpha = coefs[nk-1], Dalpha = coefs[nk]) else list(alpha = coefs[nk-1], Dalpha = coefs[nk])
+        )
         xi <- 1 / init.fit$scale
         phi <- exp(coefs[1])
         logh <- log(phi * xi * exp(logT)^(xi - 1))
         out$gammas.bs <- as.vector(lm.fit(extra$W2, logh)$coefficients)
-        if (nk > 2)
-            out$gammas <- coefs[-c(1, nk)]
         out
     } else if (method == "ch-Laplace" || method == "ch-GH") {
         dat <- data.frame(Time = exp(logT), d = d)

@@ -14,12 +14,12 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
     if (x$method == "Cox-PH-GH") {
         cat("Relative risk model with unspecified baseline risk function\n\n")
     } else if (x$method == "weibull-AFT-GH") {
-        cat("Weibull accelerated failure time model\n\n")
+        cat("Weibull accelerated failure time model\n")
     } else if (x$method == "weibull-PH-GH") {
-        cat("Weibull relative risk model\n\n")
+        cat("Weibull relative risk model\n")
     } else if (x$method == "piecewise-PH-GH") {
-        cat("Relative risk model with piecewise-constant baseline risk function (knots at: ", 
-            paste(round(x$control$knots, 1), collapse = ", "), ")\n\n", sep = "")
+        cat("Relative risk model with piecewise-constant baseline risk function\n\t\t(knots at: ", 
+            paste(round(x$control$knots, 1), collapse = ", "), ")\n", sep = "")
     } else if (x$method == "spline-PH-GH") {
         xx <- if (length(x$control$knots) == 1) {
             kk <- round(unique(x$control$knots[[1]]), 1)
@@ -30,11 +30,13 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
                 paste(kk[-c(1, length(kk))], collapse = ", ")
             }), sep = ": ", collapse = "\n\t\t")
         }
-        cat("Relative risk model with spline baseline risk function (knots at: ", xx, ")\n\n", sep = "")
+        cat("Relative risk model with spline baseline risk function (knots at: ", xx, ")\n", sep = "")
     } else {
         cat("log cumulative baseline hazard with B-splines (internal knots at: ", 
-            paste(round(exp(x$knots[-c(1, length(x$knots))]), 2), collapse = ", "), ")\n\n", sep = "")
+            paste(round(exp(x$knots[-c(1, length(x$knots))]), 2), collapse = ", "), ")\n", sep = "")
     }
+    cat("Parameterization:", switch(x$parameterization, "value" = "time-dependent", 
+        "slope" = "time-dependent slope", "both" = "time-dependent + time-dependent slope"), "\n\n")
     model.sum <- data.frame(log.Lik = x$logLik, AIC = x$AIC, BIC = x$BIC, row.names = "")
     print(model.sum)
     cat("\nVariance Components:\n")

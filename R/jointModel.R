@@ -1,6 +1,7 @@
 jointModel <-
-function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", 
-    "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), lag = 0, scaleWB = NULL, init = NULL, control = list(), ...) {
+function (lmeObject, survObject, timeVar, parameterization = c("value", "slope", "both"), 
+    method = c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), 
+    derivForm = NULL, lag = 0, scaleWB = NULL, init = NULL, control = list(), ...) {
     cl <- match.call()
     if (!inherits(lmeObject, "lme"))
         stop("\n'lmeObject' must inherit from class lme.")
@@ -17,8 +18,18 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     if (length(timeVar) != 1 || !is.character(timeVar))
         stop("\n'timeVar' must be a character string.")
     method <- match.arg(method)
+    parameterization <- match.arg(parameterization)
     if (method == "Cox-PH-GH" && !inherits(survObject, "coxph"))
         stop("\nfor 'method = Cox-PH-GH', 'survObject' must inherit from class coxph.")
+    if (parameterization %in% c("slope", "both") && method %in% c("Cox-PH-GH", "ch-Laplace"))
+        stop("\nthe slope parameterization is not currently available for methods 'Cox-PH-GH' & 'ch-Laplace'.")
+    if (parameterization %in% c("slope", "both") && is.null(derivForm)) {
+        stop("\nwhen parameterization is 'slope' or 'both' you need to specify the 'derivForm' argument.")
+    }
+    if (parameterization %in% c("slope", "both") && !is.list(derivForm)) {
+        stop("\nthe 'derivForm' argument must be a list with components 'fixed' (a formula),\n\t'indFixed'", 
+            "(a numeric vector), 'random' (a formula) and 'indRandom' (a numeric vector).")
+    }
     # survival process
     formT <- formula(survObject)
     if (inherits(survObject, "coxph")) {
@@ -56,7 +67,8 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     con <- list(only.EM = FALSE, iter.EM = 50, iter.qN = 150, optimizer = "optim", tol1 = 1e-03, tol2 = 1e-04, 
         tol3 = sqrt(.Machine$double.eps), numeriDeriv = "fd", eps.Hes = 1e-06, parscale = NULL, step.max = 0.1, 
         backtrackSteps = 2, knots = NULL, lng.in.kn = if (method == "piecewise-PH-GH") 6 else 5, ord = 4, 
-        equal.strata.knots = TRUE, GHk = if (ncol(Z) < 3) 15 else 9, GKk = if (method == "piecewise-PH-GH") 7 else 15, verbose = FALSE)
+        equal.strata.knots = TRUE, GHk = if (ncol(Z) < 3) 15 else 9, 
+        GKk = if (method == "piecewise-PH-GH") 7 else 15, verbose = FALSE)
     if (method == "Cox-PH-GH") {
         con$only.EM <- TRUE
         con$iter.EM <- 200
@@ -74,12 +86,29 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     # extra design matrices for the longitudinal part
     data.id[timeVar] <- pmax(Time - lag, 0)
     mf <- model.frame(lmeObject$terms, data = data.id)
-    Xtime <- model.matrix(formYx, mf)
-    Ztime <- model.matrix(formYz, mf)
-    long <- as.vector(c(Xtime %*% fixef(lmeObject)) + rowSums(Ztime * b))
+    if (parameterization %in% c("value", "both")) {
+        Xtime <- model.matrix(formYx, mf)
+        Ztime <- model.matrix(formYz, mf)
+        long <- as.vector(c(Xtime %*% fixef(lmeObject)) + rowSums(Ztime * b))
+    }
+    if (parameterization %in% c("slope", "both")) {
+        Xtime.deriv <- model.matrix(derivForm$fixed, mf)
+        Ztime.deriv <- model.matrix(derivForm$random, mf)
+        long.deriv <- as.vector(c(Xtime.deriv %*% fixef(lmeObject)[derivForm$indFixed]) + 
+            if (length(derivForm$indRandom) > 1 || derivForm$indRandom) 
+                rowSums(Ztime.deriv * b[, derivForm$indRandom, drop = FALSE])
+            else
+                rep(0, nrow(Ztime.deriv))
+        )
+    }
     # response vectors and design matrices
     y <- list(y = y.long, logT = log(Time), d = d, lag = lag)
-    x <- list(X = X, Xtime = Xtime, Z = Z, Ztime = Ztime, W = W)
+    x <- list(X = X, Z = Z, W = W)
+    x <- switch(parameterization, 
+        "value" = c(x, list(Xtime = Xtime, Ztime = Ztime)),
+        "slope" = c(x, list(Xtime.deriv = Xtime.deriv, Ztime.deriv = Ztime.deriv)),
+        "both" = c(x, list(Xtime = Xtime, Ztime = Ztime, Xtime.deriv = Xtime.deriv, Ztime.deriv = Ztime.deriv))
+    )
     # extra design matrices for 'method = "weibull-AFT-GH"' and 'method = "weibull-PH-GH"'
     # extra design matrices for 'method = "spline-PH-GH"' and 'method = "spline-PH-Laplace"'
     if (method %in% c("weibull-AFT-GH", "weibull-PH-GH", "spline-PH-GH", "spline-PH-Laplace")) {
@@ -90,9 +119,20 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
         data.id2 <- data.id[rep(seq_len(nY), each = con$GKk), ]
         data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
         mf <- model.frame(lmeObject$terms, data = data.id2)
-        Xs <- model.matrix(formYx, mf)
-        Zs <- model.matrix(formYz, mf)
-        x <- c(x, list(Xs = Xs, Zs = Zs, P = P, st = c(t(st)), wk = wk))
+        if (parameterization %in% c("value", "both")) {
+            Xs <- model.matrix(formYx, mf)
+            Zs <- model.matrix(formYz, mf)
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv <- model.matrix(derivForm$fixed, mf)
+            Zs.deriv <- model.matrix(derivForm$random, mf)
+        }
+        x <- c(x, list(P = P, st = c(t(st)), wk = wk))
+        x <- switch(parameterization,
+            "value" = c(x, list(Xs = Xs, Zs = Zs)),
+            "slope" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv)),
+            "both" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv, Xs = Xs, Zs = Zs))
+        )
         if (method == "spline-PH-GH" || method == "spline-PH-Laplace") {
             strt <- if (is.null(survObject$strata)) gl(1, nT) else survObject$strata
             nstrt <- length(levels(strt))
@@ -168,15 +208,26 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
         for (i in seq_len(nY)) {
             st[i, ] <- rep(P[i, ], each = nk) * skQ + rep(P1[i, ], each = nk)
         }
-        data.id2 <- data.id[rep(seq_len(nY), each = nk*Q), ]
-        data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
-        mf <- model.frame(lmeObject$terms, data = data.id2)
-        Xs <- model.matrix(formYx, mf)
-        Zs <- model.matrix(formYz, mf)
         y <- c(y, list(ind.D = ind))
         id.GK <- rep(1:nY, rowSums(!is.na(st)))
         P <- c(t(P))
-        x <- c(x, list(Xs = Xs, Zs = Zs, P = P[!is.na(P)], st = st[!is.na(st)], wk = wk, id.GK = id.GK, Q = Q))
+        data.id2 <- data.id[rep(seq_len(nY), each = nk*Q), ]
+        data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
+        mf <- model.frame(lmeObject$terms, data = data.id2)
+        if (parameterization %in% c("value", "both")) {
+            Xs <- model.matrix(formYx, mf)
+            Zs <- model.matrix(formYz, mf)
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv <- model.matrix(derivForm$fixed, mf)
+            Zs.deriv <- model.matrix(derivForm$random, mf)
+        }
+        x <- c(x, list(P = P[!is.na(P)], st = st[!is.na(st)], wk = wk, id.GK = id.GK, Q = Q))
+        x <- switch(parameterization,
+            "value" = c(x, list(Xs = Xs, Zs = Zs)),
+            "slope" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv)),
+            "both" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv, Xs = Xs, Zs = Zs))
+        )
     }
     # extra design matrices for 'method = "Cox-PH-GH"' with event times prior to observed time for the ith subject
     if (method == "Cox-PH-GH") {
@@ -187,9 +238,20 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
         data.id2 <- data.id[indT, ]
         data.id2[timeVar] <- pmax(unlist(times, use.names = FALSE) - lag, 0)
         mf <- model.frame(lmeObject$terms, data = data.id2)
-        Xtime2 <- model.matrix(formYx, mf)
-        Ztime2 <- model.matrix(formYz, mf)
-        x <- c(x, list(Xtime2 = Xtime2, Ztime2 = Ztime2, indT = indT))
+        if (parameterization %in% c("value", "both")) {
+            Xtime2 <- model.matrix(formYx, mf)
+            Ztime2 <- model.matrix(formYz, mf)
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xtime2.deriv <- model.matrix(derivForm$fixed, mf)
+            Ztime2.deriv <- model.matrix(derivForm$random, mf)
+        }
+        x <- c(x, list(indT = indT))
+        x <- switch(parameterization,
+            "value" = c(x, list(Xtime2 = Xtime2, Ztime2 = Ztime2)),
+            "slope" = c(x, list(Xtime2.deriv = Xtime2.deriv, Ztime2.deriv = Ztime2.deriv)),
+            "both" = c(x, list(Xtime2.deriv = Xtime2.deriv, Ztime2.deriv = Ztime2.deriv, Xtime2 = Xtime2, Ztime2 = Ztime2))
+        )
     }
     # initial values
     VC <- lapply(pdMatrix(lmeObject$modelStruct$reStruct), "*", lmeObject$sigma^2)[[1]]
@@ -197,12 +259,15 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     con$det.inv.chol.VC <- det(con$inv.chol.VC)
     if (all(VC[upper.tri(VC)] == 0))
         VC <- diag(VC)
-    init.surv <- if (method == "piecewise-PH-GH") {
-        initial.surv(T, D, if (is.null(W)) as.matrix(long) else cbind(W, long), method, con, 
-            extra = list(Time = Time, d = d, y = y$y, id = id, times = data[[timeVar]]))
+    WW <- if (is.null(W)) {
+        switch(parameterization, "value" = as.matrix(long), "slope" = as.matrix(long.deriv), "both" = cbind(long, long.deriv))
     } else {
-        initial.surv(log(Time), d, if (is.null(W)) as.matrix(long) else cbind(W, long), method, con, 
-            extra = list(y = y$y, id = id, times = data[[timeVar]], W2 = x$W2))
+        switch(parameterization, "value" = cbind(W, long), "slope" = cbind(W, long.deriv), "both" = cbind(W, long, long.deriv))
+    }
+    init.surv <- if (method == "piecewise-PH-GH") {
+        initial.surv(T, D, WW, parameterization, method, con, extra = list(Time = Time, d = d, y = y$y, id = id, times = data[[timeVar]]))
+    } else {
+        initial.surv(log(Time), d, WW, parameterization, method, con, extra = list(y = y$y, id = id, times = data[[timeVar]], W2 = x$W2))
     }
     if (method == "Cox-PH-GH" && length(init.surv$lambda0) < length(unqT))
         init.surv$lambda0 <- basehaz(survObject)$hazard
@@ -218,12 +283,12 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     }
     # joint model fit
     out <- switch(method,
-        "Cox-PH-GH" = phGH.fit(x, y, id, initial.values, con),
-        "weibull-AFT-GH" = weibullAFTGH.fit(x, y, id, initial.values, scaleWB, con),
-        "weibull-PH-GH" = weibullPHGH.fit(x, y, id, initial.values, scaleWB, con),
-        "piecewise-PH-GH" = piecewisePHGH.fit(x, y, id, initial.values, con),
-        "spline-PH-GH" = splinePHGH.fit(x, y, id, initial.values, con),
-        "ch-Laplace" = chLaplace.fit(x, y, id, initial.values, b, con))
+        "Cox-PH-GH" = phGH.fit(x, y, id, initial.values, parameterization, derivForm, con),
+        "weibull-AFT-GH" = weibullAFTGH.fit(x, y, id, initial.values, scaleWB, parameterization, derivForm, con),
+        "weibull-PH-GH" = weibullPHGH.fit(x, y, id, initial.values, scaleWB, parameterization, derivForm, con),
+        "piecewise-PH-GH" = piecewisePHGH.fit(x, y, id, initial.values, parameterization, derivForm, con),
+        "spline-PH-GH" = splinePHGH.fit(x, y, id, initial.values, parameterization, derivForm, con),
+        "ch-Laplace" = chLaplace.fit(x, y, id, initial.values, b, parameterization, derivForm, con))
     # check for problems with the Hessian at convergence
     H <- out$Hessian
     if (any(is.na(H) | !is.finite(H))) {
@@ -246,6 +311,8 @@ function (lmeObject, survObject, timeVar, method = c("weibull-AFT-GH", "weibull-
     out$formT <- formT
     out$timeVar <- timeVar
     out$control <- con
+    out$parameterization <- parameterization
+    out$derivForm <- derivForm
     out$call <- cl
     class(out) <- "jointModel"
     out

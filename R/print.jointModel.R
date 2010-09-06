@@ -4,7 +4,6 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
         stop("Use only with 'jointModel' objects.\n")
     cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
     cat("Variance Components:\n")
-    names(x$coefficients$alpha) <- ""
     D <- x$coefficients$D
     ncz <- nrow(D)
     diag.D <- ncz != ncol(D)
@@ -39,13 +38,20 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
         nw <- ncol(x$x$W)
         gammas <- if (is.null(nw)) NULL else gammas[seq(ng - nw + 1, ng)]
     }
-    gammas <- c(if (x$method == "weibull-AFT-GH") -gammas else gammas, 
-        "Assoct" = if (x$method == "weibull-AFT-GH") -as.vector(x$coefficients$alpha) else as.vector(x$coefficients$alpha), 
-        if (x$method == "piecewise-PH-GH") x$coefficients$xi else NULL, 
-        if (x$method == "spline-PH-GH") x$coefficients$gammas.bs else NULL)
+    gammas <- c(gammas, "Assoct" = as.vector(x$coefficients$alpha), 
+        "Assoct.s" = as.vector(x$coefficients$Dalpha), x$coefficients$xi, 
+        x$coefficients$gammas.bs)
+    if (x$method == "weibull-AFT-GH")
+        gammas <- -gammas
     if ((lag <- x$y$lag) > 0) {
-        ii <- names(gammas) == "Assoct"
-        names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
+        if (x$parameterization %in% c("value", "both")) {
+            ii <- names(gammas) == "Assoct"
+            names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
+        }
+        if (x$parameterization %in% c("slope", "both")) { 
+            jj <- names(gammas) == "Assoct.s"
+            names(gammas)[jj] <- paste("Assoct.s(lag=", lag, ")", sep = "")
+        }
     }
     print(lapply(list("Longitudinal Process" = x$coefficients$betas, "Event Process" = gammas), 
         round, digits = digits))

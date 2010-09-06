@@ -11,9 +11,12 @@ data under a maximum likelihood approach. Various options for the survival model
 
 \usage{
 jointModel(lmeObject, survObject, timeVar, 
-    method = c("weibull-AFT-GH", "weibull-PH-GH", 
-    "piecewise-PH-GH", "Cox-PH-GH", "spline-PH-GH", "ch-Laplace"), 
-    lag = 0, scaleWB = NULL, init = NULL, control = list(), \dots)
+  parameterization = c("value", "slope", "both"),
+  method = c("weibull-AFT-GH", "weibull-PH-GH", 
+    "piecewise-PH-GH", "Cox-PH-GH", "spline-PH-GH", 
+    "ch-Laplace"),
+  derivForm = NULL, lag = 0, scaleWB = NULL,
+  init = NULL, control = list(), \dots)
 }
 
 \arguments{
@@ -22,8 +25,16 @@ jointModel(lmeObject, survObject, timeVar,
     or \code{survreg()}, you need to specify the argument \code{x = TRUE} such that the design matrix is contained in 
     the object fit. See \bold{Examples}.}
   \item{timeVar}{a character string indicating the time variable in the linear mixed effects model.}
+  \item{parameterization}{a character string indicating the type of parameterization. See \bold{Details}}
   \item{method}{a character string specifying the type of joint model to fit. See \bold{Details}.}
-  \item{lag}{a numeric value denoting a lag effect in the time-dependent covariate represented by the mixed model; default is 0.}
+  \item{derivForm}{a list with components \code{fixed} a formula representing the derivative of the fixed-effects part of the 
+    liner mixed model with respect to time, \code{indFixed} a numeric vector indicating which fixed effects of \code{lmeObject} 
+    correspond to the derivative, \code{random} a formula representing the derivative of the random-effects part of the 
+    liner mixed model with respect to time, and \code{indRamdom} a numeric vector indicating which random effects of \code{lmeObject} 
+    correspond to the derivative. When a random intercepts linear mixed model is assumed, then \code{random = ~ 1} and 
+    \code{indRandom = FALSE}. Required only when \code{parameterization == "derivative"} or \code{parameterization == "both"}. 
+    See \bold{Examples}.}
+  \item{lag}{a numeric scalar denoting a lag effect in the time-dependent covariate represented by the mixed model; default is 0.}
   \item{scaleWB}{a numeric scalar denoting a fixed value for the scale parameter of the Weibull hazard; used only when 
     \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}. The default \code{NULL} means that the scale parameter is estimated.}
   \item{init}{a list of user-specified initial values. The initial values list must have the following components:
@@ -99,17 +110,22 @@ jointModel(lmeObject, survObject, timeVar,
 \details{
 Function \code{jointModel} fits joint models for longitudinal and survival data (more detailed information about the formulation of these
 models can be found in Rizopoulos (2010)). For the longitudinal responses the linear mixed effects model represented by the \code{lmeObject} is 
-assumed. For the survival times three options are available. In particular, let \eqn{T_i} denote the time-to-event for the \eqn{i}th sample unit, 
-\eqn{w_i} denotes the vector of baseline covariates in \code{survObject}, with associated parameter vector \eqn{\gamma}, \eqn{m_i(t)} the value 
-of the longitudinal outcome at time point \eqn{t} as approximated by the linear mixed model (i.e., \eqn{m_i(t)} equals the fixed effects part 
-\code{+} random effects part of the linear mixed effects model for sample unit \eqn{i}), and \eqn{\alpha} the association parameter. Then, 
-for \code{method = "weibull-AFT-GH"} a time-dependent Weibull model under the accelerated failure time formulation is assumed. For 
-\code{method = "weibull-PH-GH"} a time-dependent relative risk model is postulated with a Weibull baseline risk function. For 
-\code{method = "piecewise-PH-GH"} a time-dependent relative risk model is postulated with a piecewise constant baseline risk function.
-For \code{method = "spline-PH-GH"} a time-dependent relative risk model is assumed in which the log baseline risk function is approximated
-using B-splines. For \code{method = "ch-Laplace"} an additive model on the log cumulative hazard scale is assumed 
-(see Rizopoulos et al., 2009 for more info). Finally, for \code{method = "Cox-PH-GH"} a time-dependent relative risk model 
-is assumed where the baseline risk function is left unspecified (Wulfsohn and Tsiatis, 1997).
+assumed. For the survival times let \eqn{w_i} denote the vector of baseline covariates in \code{survObject}, with associated parameter vector 
+\eqn{\gamma}, \eqn{m_i(t)} the value of the longitudinal outcome at time point \eqn{t} as approximated by the linear mixed model 
+(i.e., \eqn{m_i(t)} equals the fixed-effects part \code{+} random-effects part of the linear mixed effects model for sample unit \eqn{i}), 
+\eqn{\alpha} the association parameter for \eqn{m_i(t)}, \eqn{m_i'(t)} the derivative of \eqn{m_i(t)} with respect to \eqn{t}, and 
+\eqn{\alpha_d} the association parameter for \eqn{m_i'(t)}. Then, for \code{method = "weibull-AFT-GH"} a time-dependent Weibull model under 
+the accelerated failure time formulation is assumed. For \code{method = "weibull-PH-GH"} a time-dependent relative risk model is postulated 
+with a Weibull baseline risk function. For \code{method = "piecewise-PH-GH"} a time-dependent relative risk model is postulated with a 
+piecewise constant baseline risk function. For \code{method = "spline-PH-GH"} a time-dependent relative risk model is assumed in which the 
+log baseline risk function is approximated using B-splines. For \code{method = "ch-Laplace"} an additive model on the log cumulative hazard 
+scale is assumed (see Rizopoulos et al., 2009 for more info). Finally, for \code{method = "Cox-PH-GH"} a time-dependent relative risk model 
+is assumed where the baseline risk function is left unspecified (Wulfsohn and Tsiatis, 1997). For all these options the linear predictor for the
+survival submodel is written as \deqn{\eta = \gamma^\top w_i + \alpha m_i\{min(t-k, 0)\},}{eta = gamma' w_i + alpha m_i{min(t-k,0)},} when 
+\code{parameterization = "value"}, \deqn{\eta = \gamma^\top w_i + \alpha_s m_i'\{min(t-k, 0)\},}{eta = gamma' w_i + alpha m_i'{min(t-k, 0)}} 
+when \code{parameterization = "slope"}, and \deqn{\eta = \gamma^\top w_i + \alpha m_i\{min(t-k, 0)\} + \alpha_s m_i'\{min(t-k, 0)\},}{eta = 
+gamma' w_i + alpha m_i{min(t-k, 0)} + \alpha_s m_i'{min(t-k, 0)},} when \code{parameterization = "both"}, where in all the above the value 
+of \eqn{k} is specified by the \code{lag} argument and \eqn{m_i'(t) = d m_i(t) / dt}.
 
 For \code{method = "spline-PH-GH"} it is also allowed to include stratification factors. These should be included in the specification of
 the \code{survObject} using function \code{strata()}. Note that in this case \code{survObject} must only be a 'coxph' object.
@@ -117,12 +133,12 @@ the \code{survObject} using function \code{strata()}. Note that in this case \co
 For all survival models except for the time-dependent proportional hazards model, the optimization algorithm starts 
 with EM iterations, and if convergence is not achieved, it switches to quasi-Newton iterations (i.e., BFGS in 
 \code{optim()} or \code{nlminb()}, depending on the value of the \code{optimizer} control argument). For \code{method = "Cox-PH-GH"} only the 
-EM algorithm is used. During the EM iterations, convergence is declared if either of the following two conditions is satisfied: (i) \eqn{ L(\theta^{it}) - L(\theta^{it - 1}) < tol_3 
-\{ | L(\theta^{it - 1}) | + tol_3 \} }, or (ii) \eqn{ \max \{ | \theta^{it} - \theta^{it - 1} | / ( | \theta^{it - 1} | 
-+ tol_1) \} < tol_2}, where \eqn{\theta^{it}} and \eqn{\theta^{it - 1}} is the vector of parameter values at the current 
-and previous iterations, respectively, and \eqn{L(.)} is the log-likelihood function. The values for \eqn{tol_1}, 
-\eqn{tol_2} and \eqn{tol_3} are specified via the \code{control} argument. During the quasi-Newton iterations, the 
-default convergence criteria of either \code{optim()} or \code{nlminb()} are used.
+EM algorithm is used. During the EM iterations, convergence is declared if either of the following two conditions is satisfied: (i) 
+\eqn{ L(\theta^{it}) - L(\theta^{it - 1}) < tol_3 \{ | L(\theta^{it - 1}) | + tol_3 \} }, or (ii) 
+\eqn{ \max \{ | \theta^{it} - \theta^{it - 1} | / ( | \theta^{it - 1} | + tol_1) \} < tol_2}, where \eqn{\theta^{it}} and 
+\eqn{\theta^{it - 1}} is the vector of parameter values at the current and previous iterations, respectively, and \eqn{L(.)} is the 
+log-likelihood function. The values for \eqn{tol_1}, \eqn{tol_2} and \eqn{tol_3} are specified via the \code{control} argument. During the 
+quasi-Newton iterations, the default convergence criteria of either \code{optim()} or \code{nlminb()} are used.
 
 The required integrals are approximated using the Gauss-Hermite quadrature rule for \code{method = "weibull-AFT-GH"}, 
 \code{method = "weibull-PH-GH"}, \code{method = "piecewise-PH-GH"}, \code{method = "spline-PH-GH"} and \code{method = "Cox-PH-GH"}, 
@@ -142,11 +158,12 @@ Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal 
 Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and longitudinal data: Likelihood 
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
-Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
-\emph{Journal of Statistical Software} \bold{35} (9), 1--22. \url{http://www.jstatsoft.org/v35/i09/}
+Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
+\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
 
-Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
-modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 637--654.
+Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximations for the joint
+modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 
+637--654.
 
 Rizopoulos, D., Verbeke, G. and Molenberghs, G. (2010) Multiple-imputation-based residuals and diagnostic plots
 for joint models of longitudinal and survival outcomes. \emph{Biometrics} \bold{66}, 20--29.
@@ -161,11 +178,11 @@ Wulfsohn, M. and Tsiatis, A. (1997) A joint model for survival and longitudinal 
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \note{
-1. The \code{lmeObject} should represent a linear mixed model with a simple random-effects structure, i.e., only the 
-\code{pdDiag()} class is currently allowed.
+1. The \code{lmeObject} argument should represent a linear mixed model object with a simple random-effects 
+structure, i.e., only the \code{pdDiag()} class is currently allowed.
 
-2. The \code{lmeObject} should not contain any within-group correlation structure (i.e., \code{correlation} argument of
-\code{lme()}) or within-group heteroscedasticity structure (i.e., \code{weights} argument of \code{lme()}).
+2. The \code{lmeObject} object should not contain any within-group correlation structure (i.e., \code{correlation} 
+argument of \code{lme()}) or within-group heteroscedasticity structure (i.e., \code{weights} argument of \code{lme()}).
 
 3. It is assumed that the linear mixed effects model \code{lmeObject} and the survival model \code{survObject} have been 
 fitted to the same subjects. Moreover, it is assumed that the ordering of the subjects is the same for both 
@@ -175,13 +192,14 @@ measurements, and so on.
 
 4. In the \code{print} and \code{summary} generic functions for class \code{jointModel}, the estimated coefficients (and
 standard errors for the \code{summary} generic) for the event process are augmented with the element "Assoct" that 
-corresponds to the association parameter \eqn{\alpha} (see \bold{Details}).
+corresponds to the association parameter \eqn{\alpha} and the element "Assoct.s" that corresponds to the parameter 
+\eqn{\alpha_s} when \code{parameterization} is \code{"slope"} or \code{"both"} (see \bold{Details}).
 
 5. The standard errors returned by the \code{summary} generic function for class \code{jointModel} when 
 \code{method = "Cox-PH-GH"} are based on the profile score vector (i.e., given the NPMLE for the unspecified baseline 
 hazard). Hsieh et al. (2006) have noted that these standard errors are underestimated.
 
-6. For more examples of \code{jointModel()} check \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
+6. For more examples and additional material check \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
 }
 
 \seealso{
@@ -194,6 +212,7 @@ hazard). Hsieh et al. (2006) have noted that these standard errors are underesti
     \code{\link{residuals.jointModel}},
     \code{\link{plot.jointModel}},
     \code{\link{survfitJM}},
+    \code{\link{rocJM}},
     \code{\link{dynC}}
 }
 
@@ -216,6 +235,22 @@ fitSURV <- survreg(Surv(years, status2) ~ drug, data = pbc2.id, x = TRUE)
 fitJOINT <- jointModel(fitLME, fitSURV, timeVar = "year")
 fitJOINT
 summary(fitJOINT)
+
+# a joint model in which the risk for and event depends both on the true value of
+# marker and the true value of the slope of the longitudinal trajectory
+lmeFit <- lme(sqrt(CD4) ~ obstime * drug, random = ~ obstime | patient, data = aids)
+coxFit <- coxph(Surv(Time, death) ~ drug, data = aids.id, x = TRUE)
+
+# to fit this model we need to specify the 'derivForm' argument, which is a list
+# with first component the derivative of the fixed-effects formula of 'lmeFit' with
+# respect to 'obstime', second component the indicator of which fixed-effects 
+# coefficients correspond to the previous defined formula, third component the 
+# derivative of the random-effects formula of 'lmeFit' with respect to 'obstime', 
+# and fourth component the indicator of which random-effects correspond to the 
+# previous defined formula
+dForm <- list(fixed = ~ 1 + drug, indFixed = c(2, 4), random = ~ 1, indRandom = 2)
+jointModel(lmeFit, coxFit, timeVar = timeVar, method = "spline-PH-GH",
+  parameterization = "both", derivForm = dForm)
 }
 
 # linear mixed model fit

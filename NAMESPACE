@@ -1,6 +1,6 @@
 # Exported functions
 export(anova.jointModel, coef.jointModel, dynC, fitted.jointModel, fixef.jointModel, jointModel, plot.jointModel, 
-	 plot.survfitJM, ranef.jointModel, residuals.jointModel, survfitJM, wald.strata, weibull.frailty)
+	 plot.survfitJM, ranef.jointModel, residuals.jointModel, rocJM, survfitJM, wald.strata, weibull.frailty)
 
 # Imported functions
 importFrom(nlme, fixed.effects)
@@ -19,10 +19,12 @@ S3method(fixef, jointModel)
 S3method(logLik, jointModel)
 S3method(logLik, weibull.frailty)
 S3method(plot, jointModel)
+S3method(plot, rocJM)
 S3method(plot, survfitJM)
 S3method(print, aov.jointModel)
 S3method(print, dynC)
 S3method(print, jointModel)
+S3method(print, rocJM)
 S3method(print, summary.jointModel)
 S3method(print, summary.weibull.frailty)
 S3method(print, survfitJM)

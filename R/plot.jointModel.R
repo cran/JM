@@ -26,6 +26,11 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
         W1 <- x$x$W
         gammas <- x$coefficients$gammas
         alpha <- x$coefficients$alpha
+        Dalpha <- x$coefficients$Dalpha
+        parameterization <- x$parameterization
+        derivForm <- x$derivForm
+        indFixed <- derivForm$indFixed
+        indRandom <- derivForm$indRandom
         fitT <- if (method == "Cox-PH-GH") {
             lambda0 <- x$coefficients$lambda0[, "basehaz"]
             unqT <- x$coefficients$lambda0[, "time"]
@@ -66,12 +71,25 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 mf <- model.frame(x$termsY, data = data.id)
-                Xs <- model.matrix(x$formYx, mf)
-                Zs <- model.matrix(x$formYz, mf)
+                if (parameterization %in% c("value", "both")) {
+                    Xs <- model.matrix(x$formYx, mf)
+                    Zs <- model.matrix(x$formYz, mf)
+                    Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
+                    eta.s <- alpha * Ys
+                }
+                if (parameterization %in% c("slope", "both")) {
+                    Xs.deriv <- model.matrix(derivForm$fixed, mf)
+                    Zs.deriv <- model.matrix(derivForm$random, mf)
+                    Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
+                        if (indRandom) 
+                            rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
+                        else
+                            0
+                    eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+                }
                 log.st <- log(c(t(st)))
-                Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
-                eta.s <- alpha * Ys
-                Haz[, i] <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), id.GK, reorder = FALSE)
+                Haz[, i] <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), 
+                    id.GK, reorder = FALSE)
             }
             list("survival" = exp(- Haz),
                  "cumulative-Hazard" = Haz,
@@ -92,11 +110,23 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 mf <- model.frame(x$termsY, data = data.id)
-                Xs <- model.matrix(x$formYx, mf)
-                Zs <- model.matrix(x$formYz, mf)
+                if (parameterization %in% c("value", "both")) {
+                    Xs <- model.matrix(x$formYx, mf)
+                    Zs <- model.matrix(x$formYz, mf)
+                    Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
+                    eta.s <- alpha * Ys
+                }
+                if (parameterization %in% c("slope", "both")) {
+                    Xs.deriv <- model.matrix(derivForm$fixed, mf)
+                    Zs.deriv <- model.matrix(derivForm$random, mf)
+                    Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
+                        if (indRandom) 
+                            rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
+                        else
+                            0
+                    eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+                }
                 log.st <- log(c(t(st)))
-                Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
-                eta.s <- alpha * Ys
                 Vi <- exp(eta.tw) * P * rowsum(wk * exp(eta.s), id.GK, reorder = FALSE); dimnames(Vi) <- NULL
                 Haz[, i] <- Vi^sigma.t
             }
@@ -130,12 +160,24 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 }
                 data.id2 <- x$data.id[rep(1:n, each = nk*Q), ]
                 data.id2[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
-                mf <- model.frame(x$termsY, data = data.id2)
-                Xs <- model.matrix(x$formYx, mf)
-                Zs <- model.matrix(x$formYz, mf)
                 id.GK <- rep(1:n, rowSums(!is.na(st)))
-                Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
-                eta.s <- alpha * Ys
+                mf <- model.frame(x$termsY, data = data.id2)
+                if (parameterization %in% c("value", "both")) {
+                    Xs <- model.matrix(x$formYx, mf)
+                    Zs <- model.matrix(x$formYz, mf)
+                    Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
+                    eta.s <- alpha * Ys
+                }
+                if (parameterization %in% c("slope", "both")) {
+                    Xs.deriv <- model.matrix(derivForm$fixed, mf)
+                    Zs.deriv <- model.matrix(derivForm$random, mf)
+                    Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
+                        if (indRandom) 
+                            rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
+                        else
+                            0
+                    eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+                }
                 ind.K <- rep(unlist(lapply(ind.D, seq_len)), each = nk)
                 wk <- unlist(lapply(ind.D, function (n) rep(gaussKronrod(x$control$GKk)$wk, n)))
                 P <- c(t(P))
@@ -160,20 +202,32 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 mf <- model.frame(x$termsY, data = data.id)
-                Xs <- model.matrix(x$formYx, mf)
-                Zs <- model.matrix(x$formYz, mf)
+                if (parameterization %in% c("value", "both")) {
+                    Xs <- model.matrix(x$formYx, mf)
+                    Zs <- model.matrix(x$formYz, mf)
+                    Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
+                    eta.s <- alpha * Ys
+                }
+                if (parameterization %in% c("slope", "both")) {
+                    Xs.deriv <- model.matrix(derivForm$fixed, mf)
+                    Zs.deriv <- model.matrix(derivForm$random, mf)
+                    Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
+                        if (indRandom) 
+                            rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
+                        else
+                            0
+                    eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+                }
                 strt <- x$y$strata
                 split.Time <- split(c(t(st)), rep(strt, each = x$control$GKk))
-                W2s <- mapply(function (k, t) splineDesign(k, t, ord = x$control$ord, outer.ok = TRUE), x$control$knots, split.Time, SIMPLIFY = FALSE)
+                W2s <- mapply(function (k, t) splineDesign(k, t, ord = x$control$ord, outer.ok = TRUE), 
+                    x$control$knots, split.Time, SIMPLIFY = FALSE)
                 W2s <- mapply(function (w2s, ind) {
                     out <- matrix(0, n * x$control$GKk, ncol(w2s))
                     out[strt == ind, ] <- w2s
                     out
                 }, W2s, levels(strt), SIMPLIFY = FALSE)
                 W2s <- do.call(cbind, W2s)
-                #W2s <- splineDesign(x$control$knots, c(t(st)), ord = x$control$ord)
-                Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
-                eta.s <- alpha * Ys
                 eta.ws <- c(W2s %*% gammas.bs)
                 Haz[, i] <- exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
             }

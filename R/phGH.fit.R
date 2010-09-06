@@ -1,5 +1,5 @@
 phGH.fit <-
-function (x, y, id, initial.values, control) {
+function (x, y, id, initial.values, parameterization, derivForm, control) {
     # response vectors
     logT <- as.vector(y$logT)
     d <- as.vector(y$d)

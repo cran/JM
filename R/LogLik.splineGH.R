@@ -6,16 +6,24 @@ function (thetas) {
     gammas <- thetas$gammas
     gammas.bs <- thetas$gammas.bs
     alpha <- thetas$alpha
+    Dalpha <- thetas$Dalpha
     D <- thetas$D
     D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)
-    eta.yxT <- as.vector(Xtime %*% betas)
     eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, n)
     eta.tw2 <- as.vector(W2 %*% gammas.bs)
-    Y <- eta.yxT + Ztime.b
-    Ys <- as.vector(Xs %*% betas) + Zsb
-    eta.t <- eta.tw2 + eta.tw1 + alpha * Y
-    eta.s <- alpha * Ys
+    if (parameterization %in% c("value", "both")) {
+        Y <- as.vector(Xtime %*% betas) + Ztime.b
+        Ys <- as.vector(Xs %*% betas) + Zsb
+        eta.t <- eta.tw2 + eta.tw1 + alpha * Y
+        eta.s <- alpha * Ys
+    }
+    if (parameterization %in% c("slope", "both")) {
+        Y.deriv <- as.vector(Xtime.deriv %*% betas[indFixed]) + Ztime.b.deriv
+        Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + Zsb.deriv
+        eta.t <- if (parameterization == "both") eta.t + Dalpha * Y.deriv else eta.tw2 + eta.tw1 + Dalpha * Y.deriv
+        eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+    }
     eta.ws <- as.vector(W2s %*% gammas.bs)
     mu.y <- eta.yx + Ztb
     logNorm <- dnorm(y, mu.y, sigma, TRUE)

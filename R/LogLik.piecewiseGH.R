@@ -1,19 +1,28 @@
 LogLik.piecewiseGH <-
 function (thetas) {
-    betas <- thetas[1:ncx]
-    sigma <- exp(thetas[ncx + 1])
-    gammas <- if (!is.null(WW)) thetas[seq(ncx + 2, ncx + 1 + ncww)] else NULL
-    alpha <- thetas[ncx + ncww + 2]
-    xi <- exp(thetas[seq(ncx + ncww + 3, ncx + ncww + 2 + Q)])
-    D <- thetas[seq(ncx + ncww + Q + 3, length(thetas))]
+    thetas <- relist(thetas, skeleton = list.thetas)
+    betas <- thetas$betas
+    sigma <- exp(thetas$log.sigma)
+    gammas <- thetas$gammas
+    alpha <- thetas$alpha
+    Dalpha <- thetas$Dalpha
+    xi <- exp(thetas$log.xi)
+    D <- thetas$D
     D <- if (diag.D) exp(D) else chol.transf(D)
     eta.yx <- as.vector(X %*% betas)
-    eta.yxT <- as.vector(Xtime %*% betas)
     eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0
-    Y <- eta.yxT + Ztime.b
-    Ys <- as.vector(Xs %*% betas) + Zsb
-    eta.t <- eta.tw + alpha * Y
-    eta.s <- alpha * Ys
+    if (parameterization %in% c("value", "both")) {
+        Y <- as.vector(Xtime %*% betas) + Ztime.b
+        Ys <- as.vector(Xs %*% betas) + Zsb
+        eta.t <- eta.tw + alpha * Y
+        eta.s <- alpha * Ys
+    }
+    if (parameterization %in% c("slope", "both")) {
+        Y.deriv <- as.vector(Xtime.deriv %*% betas[indFixed]) + Ztime.b.deriv
+        Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + Zsb.deriv
+        eta.t <- if (parameterization == "both") eta.t + Dalpha * Y.deriv else eta.tw + Dalpha * Y.deriv
+        eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+    }
     mu.y <- eta.yx + Ztb
     logNorm <- dnorm(y, mu.y, sigma, TRUE)
     log.p.yb <- rowsum(logNorm, id)    
