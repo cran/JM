@@ -66,8 +66,7 @@ fitLME.alt <- lme(sqrt(CD4) ~ obstime * drug - drug,
 # cox model fit with treatment effect
 fitCOX.alt <- coxph(Surv(Time, death) ~ drug, 
     data = aids.id, x = TRUE)
-# joint model fit, under the additive log cumulative hazard model 
-# with treatment effect
+# joint model fit with treatment effect
 fitJOINT.alt <- jointModel(fitLME.alt, fitCOX.alt, timeVar = "obstime", 
     method = "weibull-PH-GH")
 

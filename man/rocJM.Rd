@@ -39,7 +39,7 @@ rocJM(object, dt, data, idVar = "id", cc = NULL, min.cc = NULL,
 
 \details{
 (\bold{Note:} the following contain some math formulas, which are better viewed in the pdf version of the manual
-accessible at \url{http://cran.r-project.org/web/packages/JM/JM.pdf}.)
+accessible at \url{http://cran.r-project.org/package=JM}.)
 
 Assume that we have collected longitudinal measurements \eqn{Y_i(t) = \{y_i(s); 0 \leq s \leq t\}} up to time point \eqn{t} for
 subject \eqn{i}. We are interested in events occurring in the medically relevant time frame \eqn{(t, t + \Delta t]} within which the
@@ -108,8 +108,8 @@ More details can be found in Rizopoulos (2010a).
 Heagerty, P. and Zheng, Y. (2005). Survival model predictive accuracy and ROC curves.
 \emph{Biometrics} \bold{61}, 92--105.
 
-Rizopoulos, D. (2010a). Dynamic prediction and prospective accuracy in joint models for longitudinal 
-and time-to-event data. \emph{Submitted}.
+Rizopoulos, D. (2010a). Dynamic predictions and prospective accuracy in joint models for longitudinal 
+and time-to-event data. \emph{Biometrics}, accepted.
 
 Rizopoulos, D. (2010b) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}

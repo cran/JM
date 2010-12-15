@@ -27,6 +27,8 @@ function (object, process = c("Longitudinal", "Event"),
             as.vector(y - fitted.vals) / object$coefficients$sigma
         } else {
             D <- object$coefficients$D
+            if (nrow(D) != ncol(D))
+                D <- diag(c(D))
             unlist(lapply(split(cbind(Z, as.vector(y - fitted.vals)), id), function (x) {
                 M <- matrix(x, ncol = ncz + 1)
                 z <- M[, - (ncz + 1), drop = FALSE]
@@ -46,12 +48,15 @@ function (object, process = c("Longitudinal", "Event"),
             Ztime <- object$x$Ztime
             Xs <- object$x$Xs
             Zs <- object$x$Zs
+            Ws.intF.vl <- object$x$Ws.intF.vl
+            Ws.intF.sl <- object$x$Ws.intF.sl
             P <- object$x$P
             wk <- object$x$wk
             method <- object$method
             W1 <- object$x$W
             WW <- if (method == "Cox-PH-GH") {
-                stop("multiple-imputation-based residuals are not available for joint models with method = 'Cox-PH-GH'.\n")
+                stop("multiple-imputation-based residuals are not available ", 
+                    "for joint models with method = 'Cox-PH-GH'.\n")
             } else if (method == "piecewise-PH-GH") {
                 ind.D <- object$y$ind.D
                 nk <- object$control$GKk
@@ -75,13 +80,14 @@ function (object, process = c("Longitudinal", "Event"),
             ncww <- if (is.null(WW)) 0 else ncol(WW)
             n <- length(logT)
             ni <- as.vector(tapply(id, id, length))
-            obs.times <- if (!object$timeVar %in% colnames(X)) {
+            obs.times <- if (!object$timeVar %in% names(object$data)) {
                 if (is.null(ot <- attr(time.points, "obs.times")))
-                    stop("could not extract observed times from either the design matrix for the longitudinal measurements or\n\tthe 'time.points' argument.\n")
+                    stop("could not extract observed times from either the design ", 
+                        "matrix for the longitudinal measurements or\n\tthe 'time.points' argument.\n")
                 else
                     ot
             } else { 
-                X[, object$timeVar]
+                object$data[[object$timeVar]]
             }
             environment(MI.fixed.times) <- environment(MI.random.times) <- environment()
             if (inherits(time.points, "weibull.frailty")) {
@@ -96,14 +102,17 @@ function (object, process = c("Longitudinal", "Event"),
             if (object$method == "weibull-AFT-GH") {
                 log(fits)
             } else {
-                warning("AFT residuals are only calculated for the Weibull AFT model; martingale residuals are calculated instead.\n")
+                warning("AFT residuals are only calculated for the Weibull AFT model; ",
+                    "martingale residuals are calculated instead.\n")
                 object$y$d - fits
             }
         } else if (type == "CoxSnell") {
-            if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH", "spline-PH-GH", "ch-Laplace")) {
+            if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", 
+                "piecewise-PH-GH", "spline-PH-GH", "ch-Laplace")) {
                 fits
             } else {
-                warning("CoxSnell residuals are only calculated for the parametric survival models; martingale residuals are calculated instead.\n")
+                warning("CoxSnell residuals are only calculated for the parametric survival ",
+                    "models; martingale residuals are calculated instead.\n")
                 object$y$d - fits                
             }
         } else {

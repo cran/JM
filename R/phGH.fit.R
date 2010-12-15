@@ -12,12 +12,18 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     Ztime <- x$Ztime
     Ztime2 <- x$Ztime2
     WW <- x$W
+    WintF.vl <- x$WintF.vl
+    WintF.sl <- x$WintF.sl
+    Ws.intF.vl <- x$Ws.intF.vl
+    Ws.intF.sl <- x$Ws.intF.sl
     dimnames(X) <- dimnames(Xtime) <- dimnames(Xtime2) <- NULL
     dimnames(Z) <- dimnames(Ztime) <- dimnames(Ztime2) <- dimnames(WW) <- NULL
     attr(X, "assign") <- attr(X, "contrasts") <- NULL
     attr(Xtime, "assign") <- attr(Xtime, "contrasts") <- NULL
     attr(Xtime2, "assign") <- attr(Xtime2, "contrasts") <- NULL    
     attr(Z, "assign") <- attr(Ztime, "assign") <- NULL
+    WintF.vl <- dropAttr(WintF.vl); WintF.sl <- dropAttr(WintF.sl)
+    Ws.intF.vl <- dropAttr(Ws.intF.vl); Ws.intF.sl <- dropAttr(Ws.intF.sl)
     # sample size settings
     ncx <- ncol(X)
     ncz <- ncol(Z)
@@ -41,15 +47,36 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     ind.T0 <- match(Time, unqT)
     # Gauss-Hermite quadrature rule components
     GH <- gauher(control$GHk)
-    b <- as.matrix(expand.grid(lapply(1:ncz, function (k, u) u$x, u = GH)))
+    b <- as.matrix(expand.grid(rep(list(GH$x), ncz)))
     k <- nrow(b)
-    wGH <- as.matrix(expand.grid(lapply(1:ncz, function (k, u) u$w, u = GH)))
-    wGH <- 2^(ncz/2) * apply(wGH, 1, prod) * exp(rowSums(b * b)) * control$det.inv.chol.VC
-    b <- sqrt(2) * t(control$inv.chol.VC %*% t(b)); dimnames(b) <- NULL
+    wGH <- as.matrix(expand.grid(rep(list(GH$w), ncz)))    
+    wGH <- 2^(ncz/2) * apply(wGH, 1, prod) * exp(rowSums(b * b))
+    if (control$typeGH == "simple") {
+        b <- sqrt(2) * t(control$inv.chol.VC %*% t(b))
+        wGH <- wGH * control$det.inv.chol.VC
+    } else { 
+        b <- sqrt(2) * b
+       VCdets <- control$det.inv.chol.VCs
+    }
+    dimnames(b) <- NULL
     b2 <- if (ncz == 1) b * b else t(apply(b, 1, function (x) x %o% x))
     Ztb <- Z %*% t(b)
     Ztime.b <- Ztime %*% t(b)
     Ztime2.b <- Ztime2 %*% t(b)
+    # pseudo-adaptive Gauss-Hermite
+    if (control$typeGH != "simple") {
+        lis.b <- vector("list", n)
+        for (i in 1:n)
+            lis.b[[i]] <- t(control$inv.chol.VCs[[i]] %*% t(b)) + 
+                rep(control$ranef[i, ], each = k)
+        lis.b2 <- lapply(lis.b, function (b) if (ncz == 1) b * b else
+            t(apply(b, 1, function (x) x %o% x)))
+        for (i in 1:n) {
+            Ztb[id == i, ] <- Z[id == i, , drop = FALSE] %*% t(lis.b[[i]])
+            Ztime.b[i, ] <- Ztime[i, , drop = FALSE] %*% t(lis.b[[i]])
+            Ztime2.b[i, ] <- Ztime2[i, , drop = FALSE] %*% t(lis.b[[i]])
+        }
+    }
     # initial values
     betas <- as.vector(initial.values$betas)
     sigma <- initial.values$sigma
@@ -70,7 +97,7 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     T.mat <- matrix(0, iter + 1, ncww + 1)
     B.mat <- if (diag.D) matrix(0, iter + 1, ncz) else matrix(0, iter + 1, ncz * ncz)
     lgLik <- numeric(iter + 1)
-    conv <- FALSE
+    conv <- TRUE
     for (it in 1:iter) {
         # save parameter values in matrix
         Y.mat[it, ] <- c(betas, sigma)
@@ -99,23 +126,33 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
         S[unq.indT, ] <- rowsum(lambda0[ind.L1] * exp.eta.s, indT, reorder = FALSE); dimnames(S) <- NULL
         log.survival <- - exp(eta.tw) * S
         log.p.tb <- d * log.hazard + log.survival
-        log.p.b <- if (ncz == 1) {
-            dnorm(b, sd = sqrt(D), log = TRUE)
+        log.p.b <- if (control$typeGH == "simple") {
+            rep(dmvnorm(b, rep(0, ncz), D, TRUE), each = n)
         } else {
-            if (diag.D) {
-                rowSums(dnorm(b, sd = rep(sqrt(D), each = k), log = TRUE))
-            } else {
-                dmvnorm(b, rep(0, ncz), D, TRUE)
-            }
+            matrix(dmvnorm(do.call(rbind, lis.b), rep(0, ncz), D, TRUE), n, k, byrow = TRUE)
         }
-        p.ytb <- exp((log.p.yb + log.p.tb) + rep(log.p.b, each = n))
+        p.ytb <- exp(log.p.yb + log.p.tb + log.p.b)
+        if (control$typeGH != "simple")
+            p.ytb <- p.ytb * VCdets
         p.yt <- c(p.ytb %*% wGH)
         p.byt <- p.ytb / p.yt
-        post.b <- p.byt %*% (b * wGH)
-        post.vb <- if (ncz == 1) {
-            c(p.byt %*% (b2 * wGH)) - c(post.b * post.b)
+        post.b <- if (control$typeGH == "simple") {
+            p.byt %*% (b * wGH)
         } else {
-            (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
+            sapply(seq_len(ncz), function (i)
+                (p.byt * t(sapply(lis.b, "[", seq_len(k), i))) %*% wGH)
+        }
+        post.vb <- if (control$typeGH == "simple") { 
+            if (ncz == 1) {
+                c(p.byt %*% (b2 * wGH)) - c(post.b * post.b)
+            } else {
+                (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
+            }
+        } else {
+            dd <- sapply(seq_len(ncz^2), function (i)
+                (p.byt * t(sapply(lis.b2, "[", seq_len(k), i))) %*% wGH)
+            bb <- apply(post.b, 1, function (x) x %o% x)
+            dd - if (ncz == 1) c(bb) else t(bb)
         }
         
         # compute log-likelihood
@@ -142,7 +179,7 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
                 check1 <- max(abs(thets2 - thets1) / (abs(thets1) + control$tol1)) < control$tol2
                 check2 <- (lgLik[it] - lgLik[it - 1]) < control$tol3 * (abs(lgLik[it - 1]) + control$tol3)
                 if (check1 || check2) {
-                    conv <- TRUE
+                    conv <- FALSE
                     if (control$verbose)
                         cat("\n\nconverged!\n")
                     break
@@ -187,7 +224,11 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
             mu <- y - eta.yx
             tr.tZZvarb <- sum(ZtZ * post.vb, na.rm = TRUE)
             sigman <- sqrt(c(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / N)
-            Dn <- matrix(colMeans(p.byt %*% (b2 * wGH), na.rm = TRUE), ncz, ncz)
+            Dn <- if (control$typeGH == "simple") {
+                matrix(colMeans(p.byt %*% (b2 * wGH), na.rm = TRUE), ncz, ncz)
+            } else {
+                matrix(colMeans(dd, na.rm = TRUE), ncz, ncz)
+            }
             Dn <- if (diag.D) diag(Dn) else 0.5 * (Dn + t(Dn))
             Hbetas <- nearPD(fd.vec(betas, gr.longPH))
             scbetas <- gr.longPH(betas)

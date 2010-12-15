@@ -43,15 +43,28 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
         x$coefficients$gammas.bs)
     if (x$method == "weibull-AFT-GH")
         gammas <- -gammas
+    jj <- grep("Assoct[!^\\.s]", names(gammas))
+    ii <- setdiff(grep("Assoct", names(gammas)), jj)
+    nn <- names(x$coefficients$alpha)
+    if (length(ii) > 1) {
+        names(gammas)[ii] <- if (length(nn) == 1) "Assoct" else {
+            if (nn[1] == "") 
+                c("Assoct", paste("Assoct", nn[-1], sep = ":"))
+            else
+                paste("Assoct", nn, sep = ":")
+        }
+    }
+    if (length(jj) > 1) {
+        names(gammas)[jj] <- if (length(nn) == 1) "Assoct.s" else {
+            if (nn[1] == "") 
+                c("Assoct.s", paste("Assoct.s", nn[-1], sep = ":"))
+            else
+                paste("Assoct.s", nn, sep = ":")
+        }
+    }
     if ((lag <- x$y$lag) > 0) {
-        if (x$parameterization %in% c("value", "both")) {
-            ii <- names(gammas) == "Assoct"
-            names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
-        }
-        if (x$parameterization %in% c("slope", "both")) { 
-            jj <- names(gammas) == "Assoct.s"
-            names(gammas)[jj] <- paste("Assoct.s(lag=", lag, ")", sep = "")
-        }
+        kk <- grep("Assoct", names(gammas), fixed = TRUE)
+        names(gammas)[kk] <- paste(names(gammas)[kk], "(lag=", lag, ")", sep = "")
     }
     print(lapply(list("Longitudinal Process" = x$coefficients$betas, "Event Process" = gammas), 
         round, digits = digits))

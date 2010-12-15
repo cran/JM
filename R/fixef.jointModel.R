@@ -17,15 +17,28 @@ function (object, process = c("Longitudinal", "Event"),
             "Assoct.s" = as.vector(object$coefficients$Dalpha))
         if (object$method == "weibull-AFT-GH")
             out <- - out
-        if ((lag <- object$y$lag) > 0) {        
-            if (object$parameterization %in% c("value", "both")) {
-                ii <- names(gammas) == "Assoct"
-                names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
+        jj <- grep("Assoct[!^\\.s]", names(out))
+        ii <- setdiff(grep("Assoct", names(out)), jj)
+        nn <- names(object$coefficients$alpha)
+        if (length(ii) > 1) {
+            names(out)[ii] <- if (length(nn) == 1) "Assoct" else {
+                if (nn[1] == "") 
+                    c("Assoct", paste("Assoct", nn[-1], sep = ":"))
+                else
+                    paste("Assoct", nn, sep = ":")
             }
-            if (object$parameterization %in% c("slope", "both")) { 
-                jj <- names(gammas) == "Assoct.s"
-                names(gammas)[jj] <- paste("Assoct.s(lag=", lag, ")", sep = "")
+        }
+        if (length(jj) > 1) {
+            names(out)[jj] <- if (length(nn) == 1) "Assoct.s" else {
+                if (nn[1] == "") 
+                    c("Assoct.s", paste("Assoct.s", nn[-1], sep = ":"))
+                else
+                    paste("Assoct.s", nn, sep = ":")
             }
+        }
+        if ((lag <- object$y$lag) > 0) {
+            kk <- grep("Assoct", names(out), fixed = TRUE)
+            names(out)[kk] <- paste(names(out)[kk], "(lag=", lag, ")", sep = "")
         }
         out
     }

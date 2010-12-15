@@ -40,15 +40,28 @@ function (object, ...) {
         gammas <- c(gms, "Assoct" = as.vector(object$coefficients$alpha))
         indT <- seq(length(betas) + 2 + ng - nw, length(betas) + ng + 2)
     }
+    jj <- grep("Assoct[!^\\.s]", names(gammas))
+    ii <- setdiff(grep("Assoct", names(gammas)), jj)
+    nn <- names(object$coefficients$alpha)
+    if (length(ii) > 1) {
+        names(gammas)[ii] <- if (length(nn) == 1) "Assoct" else {
+            if (nn[1] == "") 
+                c("Assoct", paste("Assoct", nn[-1], sep = ":"))
+            else
+                paste("Assoct", nn, sep = ":")
+        }
+    }
+    if (length(jj) > 1) {
+        names(gammas)[jj] <- if (length(nn) == 1) "Assoct.s" else {
+            if (nn[1] == "") 
+                c("Assoct.s", paste("Assoct.s", nn[-1], sep = ":"))
+            else
+                paste("Assoct.s", nn, sep = ":")
+        }
+    }
     if ((lag <- object$y$lag) > 0) {
-        if (object$parameterization %in% c("value", "both")) {
-            ii <- names(gammas) == "Assoct"
-            names(gammas)[ii] <- paste("Assoct(lag=", lag, ")", sep = "")
-        }
-        if (object$parameterization %in% c("slope", "both")) { 
-            jj <- names(gammas) == "Assoct.s"
-            names(gammas)[jj] <- paste("Assoct.s(lag=", lag, ")", sep = "")
-        }
+        kk <- grep("Assoct", names(gammas), fixed = TRUE)
+        names(gammas)[kk] <- paste(names(gammas)[kk], "(lag=", lag, ")", sep = "")
     }
     sds <- if (length(indT) > 1) sqrt(diag(VarCov[indT, indT])) else sqrt(VarCov[indT, indT])
     if (!is.null(object$scaleWB))

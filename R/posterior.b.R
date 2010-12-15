@@ -7,8 +7,19 @@ function (b) {
     log.p.yb <- as.vector(tapply(logNorm, id.miss, sum))
     log.p.tb <- if (method == "weibull-PH-GH") {
         id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
-        Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
-        eta.s <- alpha.new * Ys.new
+        if (parameterization %in% c("value", "both")) {
+            Ys.new <- as.vector(Xs.missO %*% betas.new) + 
+                rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+            eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Ys.deriv.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
+                rowSums(Zs.deriv.missO * b[id.GK3, indRandom, drop = FALSE])
+            eta.s <- if (parameterization == "both")
+                eta.s + c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
+            else 
+                c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
+        }
         wk <- rep(wk, n.missO)
         log.hazard <- log(sigma.t.new) + (sigma.t.new - 1) * logT.missO + eta.t
         Vi <- exp(log(sigma.t.new) + (sigma.t.new - 1) * log.st.missO + eta.s)
@@ -16,8 +27,19 @@ function (b) {
         d.missO * log.hazard + log.survival
     } else if (method == "weibull-AFT-GH") {
         id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
-        Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
-        eta.s <- alpha.new * Ys.new
+        if (parameterization %in% c("value", "both")) {
+            Ys.new <- as.vector(Xs.missO %*% betas.new) + 
+                rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+            eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Ys.deriv.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
+                rowSums(Zs.deriv.missO * b[id.GK3, indRandom, drop = FALSE])
+            eta.s <- if (parameterization == "both")
+                eta.s + c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
+            else 
+                c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
+        }
         wk <- rep(wk, n.missO)
         Vi <- exp(eta.tw) * P.missO * as.vector(tapply(wk * exp(eta.s), id.GK3, sum))
         log.hazard <- log(sigma.t.new) + (sigma.t.new - 1) * log(Vi) + eta.t
@@ -25,8 +47,19 @@ function (b) {
         d.missO * log.hazard + log.survival
     } else if (method == "spline-PH-GH") {
         id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
-        Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
-        eta.s <- alpha.new * Ys.new
+        if (parameterization %in% c("value", "both")) {
+            Ys.new <- as.vector(Xs.missO %*% betas.new) + 
+                rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+            eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Ys.deriv.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
+                rowSums(Zs.deriv.missO * b[id.GK3, indRandom, drop = FALSE])
+            eta.s <- if (parameterization == "both")
+                eta.s + c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
+            else 
+                c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
+        }
         wk <- rep(wk, n.missO)
         log.hazard <- c(W2.missO %*% gammas.bs.new) + eta.t
         Vi <- exp(c(W2s.missO %*% gammas.bs.new) + eta.s)
@@ -36,8 +69,19 @@ function (b) {
         ii <- object$x$id.GK[id.GK]
         nn <- as.vector(tapply(ii, ii, length))
         id.GK3 <- rep(seq_len(n.missO), nn)
-        Ys.new <- as.vector(Xs.missO %*% betas.new) +rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
-        eta.s <- alpha.new * Ys.new
+        if (parameterization %in% c("value", "both")) {
+            Ys.new <- as.vector(Xs.missO %*% betas.new) + 
+                rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+            eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Ys.deriv.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
+                rowSums(Zs.deriv.missO * b[id.GK3, indRandom, drop = FALSE])
+            eta.s <- if (parameterization == "both")
+                eta.s + c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
+            else 
+                c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
+        }
         log.hazard <- log(xi.new[ind.D.missO]) + eta.t
         log.survival <- - exp(eta.tw) * as.vector(tapply(xi.new[ind.K.missO] * wkP.missO * exp(eta.s), id.GK3, sum))
         d.missO * log.hazard + log.survival

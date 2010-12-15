@@ -3,8 +3,19 @@ function (betas) {
     eta.yx <- as.vector(X %*% betas)
     eta.yxT <- as.vector(Xtime %*% betas)
     eta.tw <- as.vector(WW %*% gammas)
-    Ys <- as.vector(Xs %*% betas) + Zsb
-    eta.s <- alpha * Ys
+    if (parameterization %in% c("value", "both")) {
+        Ys <- as.vector(Xs %*% betas) + Zsb
+        Ws.intF.vl.alph <- c(Ws.intF.vl %*% alpha)
+        eta.s <- Ws.intF.vl.alph * Ys
+    }
+    if (parameterization %in% c("slope", "both")) {
+        Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + Zsb.deriv
+        Ws.intF.sl.alph <- c(Ws.intF.sl %*% Dalpha)
+        eta.s <- if (parameterization == "both")
+            eta.s + Ws.intF.sl.alph * Ys.deriv
+        else
+            Ws.intF.sl.alph * Ys.deriv
+    }
     wk.exp.eta.s <- wk * exp(eta.s)
     exp.eta.tw.P <- exp(eta.tw) * P
     H1 <- XtX / sigma^2
@@ -14,27 +25,30 @@ function (betas) {
     for (i in 1:ncx) {
         for (j in 1:ncx) {
             XX <- if (parameterization == "value") {
-                alpha^2 * Xs[, i] * Xs[, j]
+                Ws.intF.vl.alph^2 * Xs[, i] * Xs[, j]
             } else if (parameterization == "slope") {
                 if (i %in% indFixed && j %in% indFixed) {
                     ii <- match(i, indFixed)
                     jj <- match(j, indFixed)
-                    Dalpha^2 * Xs.deriv[, ii] * Xs.deriv[, jj]
+                    Ws.intF.sl.alph^2 * Xs.deriv[, ii] * Xs.deriv[, jj]
                 } else
                     0
             } else {
                 if (i %in% indFixed && j %in% indFixed) {
                     ii <- match(i, indFixed)
                     jj <- match(j, indFixed)
-                    (alpha * Xs[, i] + Dalpha * Xs.deriv[, ii]) * (alpha * Xs[, j] + Dalpha * Xs.deriv[, jj])
+                    (Ws.intF.vl.alph * Xs[, i] + Ws.intF.sl.alph * Xs.deriv[, ii]) * 
+                        (Ws.intF.vl.alph * Xs[, j] + Ws.intF.sl.alph * Xs.deriv[, jj])
                 } else if (i %in% indFixed && !j %in% indFixed) {
                     ii <- match(i, indFixed)
-                    (alpha * Xs[, i] + Dalpha * Xs.deriv[, ii]) * (alpha * Xs[, j])
+                    (Ws.intF.vl.alph * Xs[, i] + Ws.intF.sl.alph * Xs.deriv[, ii]) * 
+                        (Ws.intF.vl.alph * Xs[, j])
                 } else if (!i %in% indFixed && j %in% indFixed) {
                     jj <- match(j, indFixed)
-                    (alpha * Xs[, i]) * (alpha * Xs[, j] + Dalpha * Xs.deriv[, jj])
+                    (Ws.intF.vl.alph * Xs[, i]) * (Ws.intF.vl.alph * Xs[, j] + 
+                        Ws.intF.sl.alph * Xs.deriv[, jj])
                 } else {
-                    alpha^2 * Xs[, i] * Xs[, j]
+                    Ws.intF.vl.alph^2 * Xs[, i] * Xs[, j]
                 }
             }
             ki <- Vii * exp.eta.tw.P * rowsum(wk.exp.eta.s * XX, id.GK, reorder = FALSE)#alpha * Xs[, i]

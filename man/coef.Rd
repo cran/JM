@@ -21,7 +21,7 @@
   \item{process}{for which model (i.e., linear mixed model or survival model) to extract the estimated 
     coefficients.}
   \item{include.splineCoefs}{logical; if \code{TRUE} and the method argument in \code{jointModel()} is 
-    \code{"ph-GH"} or \code{"ch-Laplace"}, the estimated B-spline coefficients are included as well.}
+    \code{"ch-Laplace"}, the estimated B-spline coefficients are included as well.}
   \item{\dots}{additional arguments; currently none is used.}
 }
 

@@ -1,5 +1,8 @@
 MI.fixed.times <-
 function (time.points) {
+    parameterization <- object$parameterization
+    indFixed <- object$derivForm$indFixed
+    indRandom <- object$derivForm$indRandom
     # indexes for missing data
     if (is.null(time.points))
         time.points <- sort(unique(obs.times))
@@ -30,6 +33,8 @@ function (time.points) {
         log.st.missO <- log.st[id.GK]
         Xs.missO <- Xs[id.GK, , drop = FALSE]
         Zs.missO <- Zs[id.GK, , drop = FALSE]
+        Ws.intF.vl.missO <- Ws.intF.vl[id.GK, , drop = FALSE]
+        Ws.intF.sl.missO <- Ws.intF.sl[id.GK, , drop = FALSE]
     }
     if (method == "spline-PH-GH") {
         P.missO <- P[unq.id.miss]
@@ -37,6 +42,8 @@ function (time.points) {
         Zs.missO <- Zs[id.GK, , drop = FALSE]
         W2s.missO <- W2s[id.GK, , drop = FALSE] 
         W2.missO <- W2[unq.id.miss, , drop = FALSE]
+        Ws.intF.vl.missO <- Ws.intF.vl[id.GK, , drop = FALSE]
+        Ws.intF.sl.missO <- Ws.intF.sl[id.GK, , drop = FALSE]
     }
     if (method == "piecewise-PH-GH") {
         st.missO <- st[id.GK]
@@ -45,33 +52,50 @@ function (time.points) {
         wkP.missO <- wkP[id.GK]
         Xs.missO <- Xs[id.GK, , drop = FALSE]
         Zs.missO <- Zs[id.GK, , drop = FALSE]
+        Ws.intF.vl.missO <- Ws.intF.vl[id.GK, , drop = FALSE]
+        Ws.intF.sl.missO <- Ws.intF.sl[id.GK, , drop = FALSE]
     }
     WW.missO <- WW[unq.id.miss, , drop = FALSE]
     # observed data corresponding to patients with
     # one or more missing values
-    mis.times <- unlist(lapply(split(obs.times, id), function (x) time.points[!time.points %in% x]))
+    mis.times <- unlist(lapply(split(obs.times, id), 
+        function (x) time.points[!time.points %in% x]))
     dataM <- object$data[unq.id.miss, ]
     dataM <- dataM[id2.miss, ]
     dataM[object$timeVar] <- pmax(mis.times - object$y$lag, 0)
-    mf <- model.frame(object$termsY, data = dataM)
-    X.missM <- model.matrix(object$formYx, mf)
-    Z.missM <- model.matrix(object$formYz, mf)
+    mfX <- model.frame(object$termsYx, data = dataM)
+    mfZ <- model.frame(object$termsYz, data = dataM)
+    X.missM <- model.matrix(object$formYx, mfX)
+    Z.missM <- model.matrix(object$formYz, mfZ)
     N.missM <- nrow(X.missM)
     n.missO <- nrow(Ztime.missO)
     # Estimated MLEs
     D <- object$coefficients$D
     diag.D <- ncz != ncol(D)
-    list.thetas <- if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") {
-        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
-            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, log.sigma.t = log(object$coefficients$sigma.t),
+    list.thetas <- if (object$method == "weibull-PH-GH" || 
+        object$method == "weibull-AFT-GH") {
+        list(betas = object$coefficients$betas, 
+            log.sigma = log(object$coefficients$sigma), 
+            gammas = object$coefficients$gammas, 
+            alpha = object$coefficients$alpha,
+            Dalpha = object$coefficients$Dalpha, 
+            log.sigma.t = log(object$coefficients$sigma.t),
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "spline-PH-GH") {
-        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
-            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, gammas.bs = object$coefficients$gammas.bs, 
+        list(betas = object$coefficients$betas, 
+            log.sigma = log(object$coefficients$sigma),
+            gammas = object$coefficients$gammas, 
+            alpha = object$coefficients$alpha, 
+            Dalpha = object$coefficients$Dalpha,
+            gammas.bs = object$coefficients$gammas.bs, 
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "piecewise-PH-GH") {
-        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
-            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, log.xi = log(object$coefficients$xi),
+        list(betas = object$coefficients$betas, 
+            log.sigma = log(object$coefficients$sigma),
+            gammas = object$coefficients$gammas,
+            alpha = object$coefficients$alpha,
+            Dalpha = object$coefficients$Dalpha,
+            log.xi = log(object$coefficients$xi),
             D = if (diag.D) log(D) else chol.transf(D))
     }
     if (!is.null(object$scaleWB))
@@ -86,7 +110,8 @@ function (time.points) {
     fitted.valsM <- if (type == "Marginal" || type == "stand-Marginal") {
         as.vector(X.missM %*% object$coefficients$betas)
     } else {
-        as.vector(X.missM %*% object$coefficients$betas + rowSums(Z.missM * EBs[id2.miss, , drop = FALSE]))
+        as.vector(X.missM %*% object$coefficients$betas + 
+            rowSums(Z.missM * EBs[id2.miss, , drop = FALSE]))
     }   
     current.b <- b.new <- EBs
     resid.valsM <- matrix(0, N.missM, M)
@@ -101,10 +126,14 @@ function (time.points) {
         sigma.new <- exp(thetas.new$log.sigma)
         gammas.new <- thetas.new$gammas
         alpha.new <- thetas.new$alpha
+        Dalpha.new <- thetas.new$Dalpha
         D.new <- thetas.new$D
         D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
         if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH")
-            sigma.t.new <- if (is.null(object$scaleWB)) exp(thetas.new$log.sigma.t) else object$scaleWB
+            sigma.t.new <- if (is.null(object$scaleWB)) 
+                exp(thetas.new$log.sigma.t)
+            else
+                object$scaleWB
         if (object$method == "spline-PH-GH")
             gammas.bs.new <- thetas.new$gammas.bs
         if (object$method == "piecewise-PH-GH")
@@ -116,26 +145,31 @@ function (time.points) {
         dmvt.current <- dmvt.proposed <- numeric(n.missO)
         for (i in 1:n.missO) {
             proposed.b[i, ] <- rmvt(1, EBs[i, ], Var[[i]], 4)
-            tt <- dmvt(rbind(current.b[i, ], proposed.b[i, ]), EBs[i, ], Var[[i]], 4, TRUE)
+            tt <- dmvt(rbind(current.b[i, ], proposed.b[i, ]), 
+                EBs[i, ], Var[[i]], 4, TRUE)
             dmvt.current[i] <- tt[1]
             dmvt.proposed[i] <- tt[2]
         }
-        a <- pmin(exp(posterior.b(proposed.b) + dmvt.current - posterior.b(current.b) - dmvt.proposed), 1)
+        a <- pmin(exp(posterior.b(proposed.b) + dmvt.current - 
+            posterior.b(current.b) - dmvt.proposed), 1)
         ind <- runif(n.missO) <= a
         b.new[ind, ] <- proposed.b[ind, ]
         current.b <- b.new
         # Step3: Simulate new Y_i^m and calculate residuals
-        mu <- as.vector(X.missM %*% betas.new + rowSums(Z.missM * b.new[id2.miss, , drop = FALSE]))
+        mu <- as.vector(X.missM %*% betas.new + 
+            rowSums(Z.missM * b.new[id2.miss, , drop = FALSE]))
         y.new <- rnorm(N.missM, mu, sigma.new)
         resid.valsM[, m] <- y.new - fitted.valsM
     }
     mean.resid.valsM <- rowMeans(resid.valsM)
     if (type == "stand-Subject") {
-        var.resid.valsM <- object$coefficients$sigma^2 + apply(resid.valsM, 1, var)
+        var.resid.valsM <- object$coefficients$sigma^2 + 
+            apply(resid.valsM, 1, var)
         mean.resid.valsM <- mean.resid.valsM / sqrt(var.resid.valsM)
     }
     if (type == "stand-Marginal") {
-        mean.resid.valsM <- unlist(lapply(split(cbind(Z.missM, resid.valsM), id2.miss), function (x) {
+        mean.resid.valsM <- unlist(lapply(split(cbind(Z.missM, 
+            resid.valsM), id2.miss), function (x) {
             MM <- matrix(x, ncol = ncz + M)
             z <- MM[, 1:ncz, drop = FALSE]
             res <- MM[, -(1:ncz), drop = FALSE]

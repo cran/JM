@@ -4,14 +4,24 @@ function (betas) {
     if (parameterization %in% c("value", "both")) {
         Y <- as.vector(Xtime %*% betas) + Ztime.b
         Ys <- as.vector(Xs %*% betas) + Zsb
-        eta.t <- eta.tw + alpha * Y
-        eta.s <- alpha * Ys
+        WintF.vl.alph <- c(WintF.vl %*% alpha)
+        Ws.intF.vl.alph <- c(Ws.intF.vl %*% alpha)
+        eta.t <- eta.tw + WintF.vl.alph * Y
+        eta.s <- Ws.intF.vl.alph * Ys
     }
     if (parameterization %in% c("slope", "both")) {
         Y.deriv <- as.vector(Xtime.deriv %*% betas[indFixed]) + Ztime.b.deriv
         Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + Zsb.deriv
-        eta.t <- if (parameterization == "both") eta.t + Dalpha * Y.deriv else eta.tw + Dalpha * Y.deriv
-        eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+        WintF.sl.alph <- c(WintF.sl %*% Dalpha)
+        Ws.intF.sl.alph <- c(Ws.intF.sl %*% Dalpha)
+        eta.t <- if (parameterization == "both")
+            eta.t + WintF.sl.alph * Y.deriv
+        else
+            eta.tw + WintF.sl.alph * Y.deriv
+        eta.s <- if (parameterization == "both")
+            eta.s + Ws.intF.sl.alph * Ys.deriv
+        else
+            Ws.intF.sl.alph * Ys.deriv
     }
     mu.y <- eta.yx + Ztb
     logNorm <- dnorm(y, mu.y, sigma, TRUE)

@@ -6,10 +6,14 @@ function (thetas) {
     Dalpha <- thetas$Dalpha
     xi <- exp(thetas$log.xi)
     eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0
-    eta.t <- switch(parameterization, "value" = eta.tw + alpha * Y, 
-        "slope" = eta.tw + Dalpha * Y.deriv, "both" = eta.tw + alpha * Y + Dalpha * Y.deriv)    
-    eta.s <- switch(parameterization, "value" = alpha * Ys, "slope" = Dalpha * Ys.deriv, 
-        "both" = alpha * Ys + Dalpha * Ys.deriv)
+    eta.t <- switch(parameterization, 
+        "value" = eta.tw + c(WintF.vl %*% alpha) * Y, 
+        "slope" = eta.tw + c(WintF.sl %*% Dalpha) * Y.deriv, 
+        "both" = eta.tw + c(WintF.vl %*% alpha) * Y + c(WintF.sl %*% Dalpha) * Y.deriv)    
+    eta.s <- switch(parameterization, 
+        "value" = c(Ws.intF.vl %*% alpha) * Ys, 
+        "slope" = c(Ws.intF.sl %*% Dalpha) * Ys.deriv, 
+        "both" = c(Ws.intF.vl %*% alpha) * Ys + c(Ws.intF.sl %*% Dalpha) * Ys.deriv)
     log.hazard <- log(xi[ind.D]) + eta.t
     log.survival <- - exp(eta.tw) * rowsum(xi[ind.K] * wkP * exp(eta.s), id.GK, reorder = FALSE)
     dimnames(log.survival) <- NULL

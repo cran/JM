@@ -60,7 +60,7 @@ survfitJM(object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
   quantiles (to produce a confidence interval).
 
   If \code{simulate = FALSE}, then survival probabilities are estimated using the formula \deqn{Pr(T_i > u | T_i > t, \hat{b}_i, x_i; 
-    \hat{\theta})}{Pr(T_i > u | T_i > t, hat{b}_i, x_i; hat{\theta})}, where \eqn{\hat{\theta}} denotes the MLEs as above, and \eqn{\hat{b}_i} 
+    \hat{\theta}),}{Pr(T_i > u | T_i > t, hat{b}_i, x_i; hat{\theta}),} where \eqn{\hat{\theta}} denotes the MLEs as above, and \eqn{\hat{b}_i}
     denotes the empirical Bayes estimates.
 }
 

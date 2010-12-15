@@ -15,14 +15,20 @@ function (thetas) {
     if (parameterization %in% c("value", "both")) {
         Y <- as.vector(Xtime %*% betas) + Ztime.b
         Ys <- as.vector(Xs %*% betas) + Zsb
-        eta.t <- eta.tw2 + eta.tw1 + alpha * Y
-        eta.s <- alpha * Ys
+        eta.t <- eta.tw2 + eta.tw1 + c(WintF.vl %*% alpha) * Y
+        eta.s <- c(Ws.intF.vl %*% alpha) * Ys
     }
     if (parameterization %in% c("slope", "both")) {
         Y.deriv <- as.vector(Xtime.deriv %*% betas[indFixed]) + Ztime.b.deriv
         Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + Zsb.deriv
-        eta.t <- if (parameterization == "both") eta.t + Dalpha * Y.deriv else eta.tw2 + eta.tw1 + Dalpha * Y.deriv
-        eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+        eta.t <- if (parameterization == "both")
+            eta.t + c(WintF.sl %*% Dalpha) * Y.deriv
+        else
+            eta.tw2 + eta.tw1 + c(WintF.sl %*% Dalpha) * Y.deriv
+        eta.s <- if (parameterization == "both")
+            eta.s + c(Ws.intF.sl %*% Dalpha) * Ys.deriv
+        else
+            c(Ws.intF.sl %*% Dalpha) * Ys.deriv
     }
     eta.ws <- as.vector(W2s %*% gammas.bs)
     mu.y <- eta.yx + Ztb
@@ -32,16 +38,15 @@ function (thetas) {
     log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
     dimnames(log.survival) <- NULL
     log.p.tb <- d * log.hazard + log.survival
-    log.p.b <- if (ncz == 1) {
-        dnorm(b, sd = sqrt(D), log = TRUE)
+    log.p.b <- if (control$typeGH == "simple") {
+        rep(dmvnorm(b, rep(0, ncz), D, TRUE), each = n)
     } else {
-        if (diag.D) {
-            rowSums(dnorm(b, sd = rep(sqrt(D), each = k), log = TRUE))
-        } else {
-            dmvnorm(b, rep(0, ncz), D, TRUE)
-        }
+        matrix(dmvnorm(do.call(rbind, lis.b), rep(0, ncz), D, TRUE), n, k, byrow = TRUE)
     }
-    p.ytb <- exp((log.p.yb + log.p.tb) + rep(log.p.b, each = n)); dimnames(p.ytb) <- NULL
+    p.ytb <- exp(log.p.yb + log.p.tb + log.p.b)
+    if (control$typeGH != "simple")
+        p.ytb <- p.ytb * VCdets
+    dimnames(p.ytb) <- NULL
     p.yt <- c(p.ytb %*% wGH)
     log.p.yt <- log(p.yt)
     - sum(log.p.yt[is.finite(log.p.yt)], na.rm = TRUE)

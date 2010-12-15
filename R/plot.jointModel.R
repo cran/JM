@@ -43,9 +43,10 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 indT <- rep(1:nrow(x$data.id), ind.len)
                 data.id2 <- x$data.id[indT, ]
                 data.id2[x$timeVar] <- pmax(unlist(times, use.names = FALSE) - x$y$lag, 0)
-                mf <- model.frame(x$termsY, data = data.id2)
-                Xtime2 <- model.matrix(x$formYx, mf)
-                Ztime2 <- model.matrix(x$formYz, mf)
+                mfX <- model.frame(x$termsYx, data = data.id2)
+                mfZ <- model.frame(x$termsYz, data = data.id2)
+                Xtime2 <- model.matrix(x$formYx, mfX)
+                Ztime2 <- model.matrix(x$formYz, mfZ)
                 nk <- as.vector(sapply(split(indT, indT), length))
                 ind.L1 <- unlist(lapply(nk, seq, from = 1))
                 Y2 <- c(Xtime2 %*% x$coefficients$betas + rowSums(Ztime2 * x$EB$post.b[indT, ]))
@@ -70,22 +71,26 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
-                mf <- model.frame(x$termsY, data = data.id)
+                mfX <- model.frame(x$termsYx, data = data.id)
+                mfZ <- model.frame(x$termsYz, data = data.id)
                 if (parameterization %in% c("value", "both")) {
-                    Xs <- model.matrix(x$formYx, mf)
-                    Zs <- model.matrix(x$formYz, mf)
+                    Xs <- model.matrix(x$formYx, mfX)
+                    Zs <- model.matrix(x$formYz, mfZ)
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
-                    eta.s <- alpha * Ys
+                    eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
                 if (parameterization %in% c("slope", "both")) {
-                    Xs.deriv <- model.matrix(derivForm$fixed, mf)
-                    Zs.deriv <- model.matrix(derivForm$random, mf)
+                    Xs.deriv <- model.matrix(derivForm$fixed, mfX)
+                    Zs.deriv <- model.matrix(derivForm$random, mfZ)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
                         else
                             0
-                    eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+                    eta.s <- if (parameterization == "both")
+                        eta.s + c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv
+                    else
+                        c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv
                 }
                 log.st <- log(c(t(st)))
                 Haz[, i] <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), 
@@ -109,22 +114,26 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
-                mf <- model.frame(x$termsY, data = data.id)
+                mfX <- model.frame(x$termsYx, data = data.id)
+                mfZ <- model.frame(x$termsYz, data = data.id)
                 if (parameterization %in% c("value", "both")) {
-                    Xs <- model.matrix(x$formYx, mf)
-                    Zs <- model.matrix(x$formYz, mf)
+                    Xs <- model.matrix(x$formYx, mfX)
+                    Zs <- model.matrix(x$formYz, mfZ)
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
-                    eta.s <- alpha * Ys
+                    eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
                 if (parameterization %in% c("slope", "both")) {
-                    Xs.deriv <- model.matrix(derivForm$fixed, mf)
-                    Zs.deriv <- model.matrix(derivForm$random, mf)
+                    Xs.deriv <- model.matrix(derivForm$fixed, mfX)
+                    Zs.deriv <- model.matrix(derivForm$random, mfZ)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
                         else
                             0
-                    eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+                    eta.s <- if (parameterization == "both")
+                        eta.s + c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv
+                    else
+                        c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv
                 }
                 log.st <- log(c(t(st)))
                 Vi <- exp(eta.tw) * P * rowsum(wk * exp(eta.s), id.GK, reorder = FALSE); dimnames(Vi) <- NULL
@@ -161,22 +170,26 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 data.id2 <- x$data.id[rep(1:n, each = nk*Q), ]
                 data.id2[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 id.GK <- rep(1:n, rowSums(!is.na(st)))
-                mf <- model.frame(x$termsY, data = data.id2)
+                mfX <- model.frame(x$termsYx, data = data.id2)
+                mfZ <- model.frame(x$termsYz, data = data.id2)
                 if (parameterization %in% c("value", "both")) {
-                    Xs <- model.matrix(x$formYx, mf)
-                    Zs <- model.matrix(x$formYz, mf)
+                    Xs <- model.matrix(x$formYx, mfX)
+                    Zs <- model.matrix(x$formYz, mfZ)
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
-                    eta.s <- alpha * Ys
+                    eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
                 if (parameterization %in% c("slope", "both")) {
-                    Xs.deriv <- model.matrix(derivForm$fixed, mf)
-                    Zs.deriv <- model.matrix(derivForm$random, mf)
+                    Xs.deriv <- model.matrix(derivForm$fixed, mfX)
+                    Zs.deriv <- model.matrix(derivForm$random, mfZ)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
                         else
                             0
-                    eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+                    eta.s <- if (parameterization == "both") 
+                        eta.s + c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv 
+                    else 
+                        c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv
                 }
                 ind.K <- rep(unlist(lapply(ind.D, seq_len)), each = nk)
                 wk <- unlist(lapply(ind.D, function (n) rep(gaussKronrod(x$control$GKk)$wk, n)))
@@ -201,22 +214,26 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
-                mf <- model.frame(x$termsY, data = data.id)
+                mfX <- model.frame(x$termsYx, data = data.id)
+                mfZ <- model.frame(x$termsYz, data = data.id)
                 if (parameterization %in% c("value", "both")) {
-                    Xs <- model.matrix(x$formYx, mf)
-                    Zs <- model.matrix(x$formYz, mf)
+                    Xs <- model.matrix(x$formYx, mfX)
+                    Zs <- model.matrix(x$formYz, mfZ)
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
-                    eta.s <- alpha * Ys
+                    eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
                 if (parameterization %in% c("slope", "both")) {
-                    Xs.deriv <- model.matrix(derivForm$fixed, mf)
-                    Zs.deriv <- model.matrix(derivForm$random, mf)
+                    Xs.deriv <- model.matrix(derivForm$fixed, mfX)
+                    Zs.deriv <- model.matrix(derivForm$random, mfZ)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
                         else
                             0
-                    eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+                    eta.s <- if (parameterization == "both")
+                        eta.s + c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv
+                    else
+                        c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv
                 }
                 strt <- x$y$strata
                 split.Time <- split(c(t(st)), rep(strt, each = x$control$GKk))

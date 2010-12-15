@@ -27,24 +27,34 @@ function (thetas) {
     S[unq.indT, ] <- rowsum(Int, indT, reorder = FALSE)
     log.survival <- - exp.eta.tw * S
     log.p.tb <- d * log.hazard + log.survival
-    log.p.b <- if (ncz == 1) {
-        dnorm(b, sd = sqrt(D), log = TRUE)
+    log.p.b <- if (control$typeGH == "simple") {
+        rep(dmvnorm(b, rep(0, ncz), D, TRUE), each = n)
     } else {
-        if (diag.D) {
-            rowSums(dnorm(b, sd = rep(sqrt(D), each = k), log = TRUE))
-        } else {
-            dmvnorm(b, rep(0, ncz), D, TRUE)
-        }
+        matrix(dmvnorm(do.call(rbind, lis.b), rep(0, ncz), D, TRUE), n, k, byrow = TRUE)
     }
-    p.ytb <- exp((log.p.yb + log.p.tb) + rep(log.p.b, each = n))
+    p.ytb <- exp(log.p.yb + log.p.tb + log.p.b)
+    if (control$typeGH != "simple")
+        p.ytb <- p.ytb * VCdets
     dimnames(p.ytb) <- NULL
     p.yt <- c(p.ytb %*% wGH)
     p.byt <- p.ytb / p.yt
-    post.b <- p.byt %*% (b * wGH)
-    post.vb <- if (ncz == 1) {
-            c(p.byt %*% (b2 * wGH)) - c(post.b * post.b)
+    post.b <- if (control$typeGH == "simple") {
+        p.byt %*% (b * wGH)
     } else {
+        sapply(seq_len(ncz), function (i)
+            (p.byt * t(sapply(lis.b, "[", seq_len(k), i))) %*% wGH)
+    }
+    post.vb <- if (control$typeGH == "simple") { 
+        if (ncz == 1) {
+            c(p.byt %*% (b2 * wGH)) - c(post.b * post.b)
+        } else {
             (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
+        }
+    } else {
+        dd <- sapply(seq_len(ncz^2), function (i)
+            (p.byt * t(sapply(lis.b2, "[", seq_len(k), i))) %*% wGH)
+        bb <- apply(post.b, 1, function (x) x %o% x)
+        dd - if (ncz == 1) c(bb) else t(bb)
     }
     Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
     mu <- y - eta.yx

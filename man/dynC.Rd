@@ -72,7 +72,7 @@ developing models, evaluating assumptions and adequacy, and measuring and reduci
 \emph{Statistics in Medicine} \bold{15}, 361--387.
 
 Rizopoulos, D. (2010). Dynamic predictions and prospective accuracy in joint models for 
-longitudinal and time-to-event data. \emph{Submitted}.
+longitudinal and time-to-event data. \emph{Biometrics}, accepted.
 }
 
 \author{
@@ -91,7 +91,8 @@ fitLME <- lme(sqrt(CD4) ~ obstime + obstime:(drug + AZT + prevOI + gender),
     random = ~ obstime | patient, data = aids)
 fitSURV <- coxph(Surv(Time, death) ~ drug + AZT + prevOI + gender, 
     data = aids.id, x = TRUE)
-fit.aids <- jointModel(fitLME, fitSURV, timeVar = "obstime", method = "piecewise-PH-GH")
+fit.aids <- jointModel(fitLME, fitSURV, timeVar = "obstime", 
+    method = "piecewise-PH-GH")
 
 # the following will take some time to execute...
 C.JMaids1 <- dynC(fit.aids, dt = 2, data = aids, idVar = "patient")

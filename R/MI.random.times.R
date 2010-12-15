@@ -1,5 +1,8 @@
 MI.random.times <-
 function (time.points) {
+    parameterization <- object$parameterization
+    indFixed <- object$derivForm$indFixed
+    indRandom <- object$derivForm$indRandom
     # indexes for missing data
     t.max <- if (is.null(tt <- attr(time.points, "t.max"))) max(obs.times) else tt
     max.visits <- if (is.null(tt <- attr(time.points, "max.visits"))) max(ni) * 5 else tt
@@ -11,6 +14,8 @@ function (time.points) {
     Z.missO <- Z
     Xtime.missO <- Xtime
     Ztime.missO <- Ztime
+    Ws.intF.vl.missO <- Ws.intF.vl
+    Ws.intF.sl.missO <- Ws.intF.sl
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
         P.missO <- P
         log.st.missO <- log.st
@@ -39,16 +44,25 @@ function (time.points) {
     D <- object$coefficients$D
     diag.D <- ncz != ncol(D)
     list.thetas <- if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH") {
-        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
-            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, log.sigma.t = log(object$coefficients$sigma.t),
+        list(betas = object$coefficients$betas, 
+            log.sigma = log(object$coefficients$sigma),
+            gammas = object$coefficients$gammas, 
+            alpha = object$coefficients$alpha, 
+            log.sigma.t = log(object$coefficients$sigma.t),
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "spline-PH-GH") {
-        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
-            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, gammas.bs = object$coefficients$gammas.bs, 
+        list(betas = object$coefficients$betas, 
+            log.sigma = log(object$coefficients$sigma),
+            gammas = object$coefficients$gammas, 
+            alpha = object$coefficients$alpha, 
+            gammas.bs = object$coefficients$gammas.bs, 
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "piecewise-PH-GH") {
-        list(betas = object$coefficients$betas, log.sigma = log(object$coefficients$sigma),
-            gammas = object$coefficients$gammas, alpha = object$coefficients$alpha, log.xi = log(object$coefficients$xi),
+        list(betas = object$coefficients$betas, 
+            log.sigma = log(object$coefficients$sigma),
+            gammas = object$coefficients$gammas,
+            alpha = object$coefficients$alpha,
+            log.xi = log(object$coefficients$xi),
             D = if (diag.D) log(D) else chol.transf(D))
     }
     if (!is.null(object$scaleWB))
@@ -72,8 +86,10 @@ function (time.points) {
     n.vs.more <- length(id.mrvisits)
     n.vs <- n.vs.one + n.vs.more
     # Estimated MLEs (Visiting Model)
-    thetas.vs <- c(time.points$coefficients$betas, log(time.points$coefficients$scale), 
-        log(time.points$coefficients$shape), log(time.points$coefficients$var.frailty))
+    thetas.vs <- c(time.points$coefficients$betas, 
+        log(time.points$coefficients$scale), 
+        log(time.points$coefficients$shape), 
+        log(time.points$coefficients$var.frailty))
     Var.vs <- vcov(time.points)
     p.vs <- length(thetas.vs)
     # current value for random effects
@@ -96,7 +112,10 @@ function (time.points) {
         D.new <- thetas.new$D
         D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
         if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH")
-            sigma.t.new <- if (is.null(object$scaleWB)) exp(thetas.new$log.sigma.t) else object$scaleWB
+            sigma.t.new <- if (is.null(object$scaleWB)) 
+                exp(thetas.new$log.sigma.t)
+            else
+                object$scaleWB
         if (object$method == "spline-PH-GH")
             gammas.bs.new <- thetas.new$gammas.bs
         if (object$method == "piecewise-PH-GH")
@@ -145,9 +164,10 @@ function (time.points) {
             ind.tmax <- new.visit > t.max
             dataM <- object$data.id
             dataM[object$timeVar] <- pmax(new.visit - object$y$lag, 0)
-            mf <- model.frame(object$termsY, data = dataM, na.action = NULL)
-            X.missM <- model.matrix(object$formYx, mf)
-            Z.missM.lis[[ii]] <- Z.missM <- model.matrix(object$formYz, mf)
+            mfX <- model.frame(object$termsYx, data = dataM, na.action = NULL)
+            mfZ <- model.frame(object$termsYz, data = dataM, na.action = NULL)
+            X.missM <- model.matrix(object$formYx, mfX)
+            Z.missM.lis[[ii]] <- Z.missM <- model.matrix(object$formYz, mfZ)
             fitted.valsM[, ii] <- if (type == "Marginal" || type == "stand-Marginal") {
                 as.vector(X.missM %*% object$coefficients$betas)
             } else {

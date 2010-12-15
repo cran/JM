@@ -26,17 +26,25 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     }
     method <- object$method
     timeVar <- object$timeVar
+    interFact <- object$interFact
     parameterization <- object$parameterization
     derivForm <- object$derivForm
     indFixed <- derivForm$indFixed
     indRandom <- derivForm$indRandom
     id <- as.numeric(unclass(data[[idVar]]))
-    id <- match(id, unique(id))    
-    TermsY <- delete.response(object$termsY)
-    mfY <- model.frame(TermsY, data = data)
-    formYx <- reformulate(attr(TermsY, "term.labels"))
-    X <- model.matrix(formYx, mfY)
-    Z <- model.matrix(object$formYz, mfY)
+    id <- match(id, unique(id))
+    TermsX <- delete.response(object$termsYx)
+    TermsZ <- object$termsYz
+    mfX <- model.frame(TermsX, data = data)
+    mfZ <- model.frame(TermsZ, data = data)
+    formYx <- reformulate(attr(TermsX, "term.labels"))
+    formYz <- object$formYz
+    #TermsY <- delete.response(object$termsY)
+    #mfY <- model.frame(TermsY, data = data)
+    #formYx <- reformulate(attr(TermsY, "term.labels"))
+    #formYz <- object$formYz
+    X <- model.matrix(formYx, mfX)
+    Z <- model.matrix(formYz, mfZ)
     TermsT <- object$termsT
     data.id <- data[!duplicated(id), ]
     mfT <- model.frame(delete.response(TermsT), data = data.id)
@@ -49,17 +57,25 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
         if (length(tt)) reformulate(tt) else reformulate("1")
     }
     W <- model.matrix(formT, mfT)
-    obs.times <- split(mfY[[timeVar]], id)
-    last.time <- tapply(mfY[[timeVar]], id, tail, n = 1)
+    WintF.vl <- WintF.sl <- as.matrix(rep(1, nrow(data.id)))
+    if (!is.null(interFact)) {
+        if (!is.null(interFact$value))
+            WintF.vl <- model.matrix(interFact$value, data = data.id)
+        if (!is.null(interFact$slope))
+            WintF.sl <- model.matrix(interFact$slope, data = data.id)
+    }
+    obs.times <- split(data[[timeVar]], id)
+    last.time <- tapply(data[[timeVar]], id, tail, n = 1)
     tDt <- lapply(last.time, function (t) {s <- t + dt; s[s > t]})
     n <- object$n
     n.tp <- length(last.time)
     ncx <- ncol(X)
+    ncz <- ncol(Z)
     ncww <- ncol(W)
     betas <- object$coefficients$betas
     sigma <- object$coefficients$sigma
     D <- object$coefficients$D
-    diag.D <- (ncz <- ncol(D)) == 1 & nrow(D) > 1
+    diag.D <- ncol(D) == 1 & nrow(D) > 1
     D <- if (diag.D) diag(c(D)) else D
     gammas <- object$coefficients$gammas
     alpha <- object$coefficients$alpha
@@ -91,7 +107,7 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
     thetas <- unlist(as.relistable(list.thetas))
     Var.thetas <- vcov(object)
-    environment(log.posterior.b) <- environment(S.b) <- environment(h.b) <- environment()
+    environment(log.posterior.b) <- environment(S.b) <- environment(ModelMats) <- environment()
     # Simulate
     directionSmaller <- if (method == "weibull-AFT-GH") alpha > 0 else alpha < 0
     out <- vector("list", M)
@@ -101,6 +117,12 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
         dim(b.old) <- dim(b.new) <- c(1, ncz)
     y.new <- numeric(nrow(data))
     survTimes <- c(outer(dt, last.time, "+"))
+    # construct model matrices to calculate the survival functions
+    survMats <- survMats.last <- vector("list", n.tp)
+    for (i in seq_len(n.tp)) {
+        survMats[[i]] <- lapply(tDt[[i]], ModelMats, ii = i)
+        survMats.last[[i]] <- ModelMats(last.time[i], ii = i)  
+    }
     for (m in 1:M) {
         # Step 1: simulate new parameter values
         thetas.new <- mvrnorm(1, thetas, Var.thetas)
@@ -113,7 +135,10 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
         D.new <- thetas.new$D
         D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
         if (method == "weibull-PH-GH" || method == "weibull-AFT-GH") {
-            sigma.t.new <- if (is.null(object$scaleWB)) exp(thetas.new$log.sigma.t) else object$scaleWB
+            sigma.t.new <- if (is.null(object$scaleWB)) 
+                exp(thetas.new$log.sigma.t)
+            else
+                object$scaleWB
         } else if (method == "piecewise-PH-GH") {
             xi.new <- exp(thetas.new$log.xi)
         } else if (method == "spline-PH-GH") {
@@ -130,24 +155,28 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
             y.new[id.i] <- rnorm(length(mu.new), mu.new, sigma.new)
             # Step 3: simulate new random effects values
             if (length(tDt[[i]])) {
-                ff <- function (b, y, tt, mm, i) -log.posterior.b(b, y = y, time = tt, method = mm, ii = i)
+                ff <- function (b, y, tt, mm, i) -log.posterior.b(b, y = y, Mats = tt, method = mm, ii = i)
                 gg <- function (b, y, tt, mm, i) cd(b, ff, y = y, tt = tt, mm = mm, i = i)
-                opt <- optim(rep(0, ncz), ff, gg, y = y.new, tt = last.time, mm = method, i = i, 
+                opt <- optim(rep(0, ncz), ff, gg, y = y.new, tt = survMats.last, mm = method, i = i, 
                     method = "BFGS", hessian = TRUE)
                 mode.b <- opt$par
                 var.b <- scale * solve(opt$hessian)
                 proposed.b <- rmvt(1, mode.b, var.b, 4)
                 dmvt.old <- dmvt(b.old[i, ], mode.b, var.b, 4, TRUE)
                 dmvt.proposed <- dmvt(proposed.b, mode.b, var.b, 4, TRUE)
-                a <- min(exp(log.posterior.b(proposed.b, y.new, last.time, method, ii = i) + dmvt.old - 
-                    log.posterior.b(b.old[i, ], y.new, last.time, method, ii = i) - dmvt.proposed), 1)
+                a <- min(exp(log.posterior.b(proposed.b, y.new, survMats.last, method, ii = i) + dmvt.old - 
+                    log.posterior.b(b.old[i, ], y.new, survMats.last, method, ii = i) - dmvt.proposed), 1)
                 ind <- runif(1) <= a
                 success.rate[m, i] <- ind
                 if (ind)
                     b.new[i, ] <- proposed.b
                 # Step 4a: compute Pr(T > t_k | T > t_{k - 1}, b.new; theta.new)
-                S.last <- S.b(last.time[i], b.new, i)
-                S.pred <- sapply(tDt[[i]], S.b, b = b.new, i = i)
+                #S.last <- S.b(last.time[i], b.new, i)
+                #S.pred <- sapply(tDt[[i]], S.b, b = b.new, i = i)
+                S.last <- S.b(last.time[i], b.new[i, ], i, survMats.last[[i]])
+                S.pred <- numeric(length(tDt[[i]]))
+                for (l in seq_along(S.pred))
+                    S.pred[l] <- S.b(tDt[[i]][l], b.new[i, ], i, survMats[[i]][[l]])
                 pi.dt.t[[i]] <- S.pred / S.last
                 # Step 4b: compute Pr(y(t) <= c | b.new; theta.new)
                 mu.new <- as.vector(x.i %*% betas.new) + rowSums(z.i * rep(b.new[i, ], each = nrow(z.i)))                

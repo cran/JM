@@ -14,14 +14,24 @@ function (thetas) {
     if (parameterization %in% c("value", "both")) {
         Y <- as.vector(Xtime %*% betas) + Ztime.b
         Ys <- as.vector(Xs %*% betas) + Zsb
-        eta.t <- eta.tw + alpha * Y
-        eta.s <- alpha * Ys
+        WintF.vl.alph <- c(WintF.vl %*% alpha)
+        Ws.intF.vl.alph <- c(Ws.intF.vl %*% alpha)
+        eta.t <- eta.tw + WintF.vl.alph * Y
+        eta.s <- Ws.intF.vl.alph * Ys
     }
     if (parameterization %in% c("slope", "both")) {
         Y.deriv <- as.vector(Xtime.deriv %*% betas[indFixed]) + Ztime.b.deriv
         Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + Zsb.deriv
-        eta.t <- if (parameterization == "both") eta.t + Dalpha * Y.deriv else eta.tw + Dalpha * Y.deriv
-        eta.s <- if (parameterization == "both") eta.s + Dalpha * Ys.deriv else Dalpha * Ys.deriv
+        WintF.sl.alph <- c(WintF.sl %*% Dalpha)
+        Ws.intF.sl.alph <- c(Ws.intF.sl %*% Dalpha)
+        eta.t <- if (parameterization == "both")
+            eta.t + WintF.sl.alph * Y.deriv
+        else
+            eta.tw + WintF.sl.alph * Y.deriv
+        eta.s <- if (parameterization == "both")
+            eta.s + Ws.intF.sl.alph * Ys.deriv
+        else
+            Ws.intF.sl.alph * Ys.deriv
     }
     exp.eta.tw <- exp(eta.tw)
     wk.exp.eta.s <- wk * exp(eta.s)
@@ -34,23 +44,34 @@ function (thetas) {
     log.hazard <- log(sigma.t) + (sigma.t - 1) * log(Vi) + eta.t
     log.survival <- - Vi^sigma.t
     log.p.tb <- d * log.hazard + log.survival
-    log.p.b <- if (ncz == 1) {
-        dnorm(b, sd = sqrt(D), log = TRUE)
+    log.p.b <- if (control$typeGH == "simple") {
+        rep(dmvnorm(b, rep(0, ncz), D, TRUE), each = n)
     } else {
-        if (diag.D) {
-            rowSums(dnorm(b, sd = rep(sqrt(D), each = k), log = TRUE))
-        } else {
-            dmvnorm(b, rep(0, ncz), D, TRUE)
-        }
+        matrix(dmvnorm(do.call(rbind, lis.b), rep(0, ncz), D, TRUE), n, k, byrow = TRUE)
     }
-    p.ytb <- exp((log.p.yb + log.p.tb) + rep(log.p.b, each = n)); dimnames(p.ytb) <- NULL
+    p.ytb <- exp(log.p.yb + log.p.tb + log.p.b)
+    if (control$typeGH != "simple")
+        p.ytb <- p.ytb * VCdets
+    dimnames(p.ytb) <- NULL
     p.yt <- c(p.ytb %*% wGH)
     p.byt <- p.ytb / p.yt
-    post.b <- p.byt %*% (b * wGH)
-    post.vb <- if (ncz == 1) {
-            c(p.byt %*% (b2 * wGH)) - c(post.b * post.b)
+    post.b <- if (control$typeGH == "simple") {
+        p.byt %*% (b * wGH)
     } else {
+        sapply(seq_len(ncz), function (i)
+            (p.byt * t(sapply(lis.b, "[", seq_len(k), i))) %*% wGH)
+    }
+    post.vb <- if (control$typeGH == "simple") { 
+        if (ncz == 1) {
+            c(p.byt %*% (b2 * wGH)) - c(post.b * post.b)
+        } else {
             (p.byt %*% (b2 * wGH)) - t(apply(post.b, 1, function (x) x %o% x))
+        }
+    } else {
+        dd <- sapply(seq_len(ncz^2), function (i)
+            (p.byt * t(sapply(lis.b2, "[", seq_len(k), i))) %*% wGH)
+        bb <- apply(post.b, 1, function (x) x %o% x)
+        dd - if (ncz == 1) c(bb) else t(bb)
     }
     Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
     mu <- y - eta.yx
@@ -60,28 +81,41 @@ function (thetas) {
     sc2 <- numeric(ncx)
     for (i in 1:ncx) {
         ki <- Vii * exp.eta.tw.P * switch(parameterization,
-            "value" = rowsum(wk.exp.eta.s * alpha * Xs[, i], id.GK, reorder = FALSE),
-            "slope" = {ii <- match(i, indFixed); if (is.na(ii)) 0 else rowsum(wk.exp.eta.s * Dalpha * Xs.deriv[, ii], id.GK, reorder = FALSE)},
+            "value" = rowsum(wk.exp.eta.s * Ws.intF.vl.alph * Xs[, i], id.GK, reorder = FALSE),
+            "slope" = {ii <- match(i, indFixed); if (is.na(ii)) 0 else 
+                rowsum(wk.exp.eta.s * Ws.intF.sl.alph * Xs.deriv[, ii], id.GK, reorder = FALSE)},
             "both" = {ii <- match(i, indFixed); 
-                rowsum(wk.exp.eta.s * (alpha * Xs[, i] + Dalpha * if (is.na(ii)) 0 else Xs.deriv[, ii]), id.GK, reorder = FALSE)}
+                rowsum(wk.exp.eta.s * (Ws.intF.vl.alph * Xs[, i] + 
+                    Ws.intF.sl.alph * if (is.na(ii)) 0 else Xs.deriv[, ii]), id.GK, reorder = FALSE)}
         )
         kii <- c((p.byt * ki) %*% wGH)
         sc2[i] <- switch(parameterization,
-            "value" = - sum(d * alpha * Xtime[, i] + kii, na.rm = TRUE),
-            "slope" = {ii <- match(i, indFixed); if (is.na(ii)) 0 else - sum(d * Dalpha * Xtime.deriv[, ii] + kii, na.rm = TRUE)}, 
+            "value" = - sum(d * WintF.vl.alph * Xtime[, i] + kii, na.rm = TRUE),
+            "slope" = {ii <- match(i, indFixed); 
+                if (is.na(ii)) 0 else - sum(d * WintF.sl.alph * Xtime.deriv[, ii] + kii, na.rm = TRUE)}, 
             "both" = {ii <- match(i, indFixed); 
-                - sum(d * (alpha * Xtime[, i] + Dalpha * if (is.na(ii)) 0 else Xtime.deriv[, ii]) + kii, na.rm = TRUE)}
+                - sum(d * (WintF.vl.alph * Xtime[, i] + 
+                    WintF.sl.alph * if (is.na(ii)) 0 else Xtime.deriv[, ii]) + kii, na.rm = TRUE)}
         )
     }    
-    score.y <- c(sc1 + sc2, - sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
+    score.y <- c(sc1 + sc2, - sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + 
+        crossprod(Zb) + tr.tZZvarb) / sigma^3))
     Vi <- exp.eta.tw * P * rowsum(wk.exp.eta.s, id.GK, reorder = FALSE); dimnames(Vi) <- NULL
     Vii <- d * (sigma.t - 1) / Vi - sigma.t * Vi^(sigma.t - 1)
     scgammas <- - colSums(WW * (d + c((p.byt * Vii * Vi) %*% wGH)), na.rm = TRUE)
     scalpha <- if (parameterization %in% c("value", "both")) {
-        - sum((p.byt * (d * Y + Vii * exp.eta.tw * P * rowsum(wk.exp.eta.s * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+        rr <- numeric(ncol(WintF.vl))
+        for (l in seq_along(rr)) 
+            rr[l] <- - sum((p.byt * (d * WintF.vl[, l] * Y + Vii * exp.eta.tw * P * 
+            rowsum(wk.exp.eta.s * Ws.intF.vl[, l] * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+        rr
     } else NULL
     scalpha.D <- if (parameterization %in% c("slope", "both")) {
-        - sum((p.byt * (d * Y.deriv + Vii * exp.eta.tw * P * rowsum(wk.exp.eta.s * Ys.deriv, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+        rr <- numeric(ncol(WintF.sl))
+        for (l in seq_along(rr)) 
+            rr[l] <- - sum((p.byt * (d * WintF.sl[, l] * Y.deriv + Vii * exp.eta.tw * P * 
+            rowsum(wk.exp.eta.s * Ws.intF.sl[, l] * Ys.deriv, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+        rr
     } else NULL
     scsigmat <- if (is.null(scaleWB)) {
          - sigma.t * sum((p.byt * (d / sigma.t + (d - Vi^sigma.t) * log(Vi))) %*% wGH, na.rm = TRUE)
@@ -105,7 +139,8 @@ function (thetas) {
         for (i in seq_along(dD)) {
             D.mat <- D2[i, ]
             dim(D.mat) <- c(ncz, ncz)
-            out[i] <- sum(D2[i, ] * cS.postVB, na.rm = TRUE) + sum((post.b %*% D.mat) * post.b, na.rm = TRUE)   
+            out[i] <- sum(D2[i, ] * cS.postVB, na.rm = TRUE) + 
+                sum((post.b %*% D.mat) * post.b, na.rm = TRUE)   
         }
         J <- jacobian2(attr(D, "L"), ncz)
         drop(0.5 * (n * D1 - out) %*% J)

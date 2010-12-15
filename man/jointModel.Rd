@@ -12,10 +12,11 @@ data under a maximum likelihood approach. Various options for the survival model
 \usage{
 jointModel(lmeObject, survObject, timeVar, 
   parameterization = c("value", "slope", "both"),
-  method = c("weibull-AFT-GH", "weibull-PH-GH", 
-    "piecewise-PH-GH", "Cox-PH-GH", "spline-PH-GH", 
+  method = c("weibull-PH-GH", "weibull-PH-aGH", "weibull-AFT-GH", 
+    "weibull-AFT-aGH", "piecewise-PH-GH", "piecewise-PH-aGH", 
+    "Cox-PH-GH", "Cox-PH-aGH", "spline-PH-GH", "spline-PH-aGH", 
     "ch-Laplace"),
-  derivForm = NULL, lag = 0, scaleWB = NULL,
+  interFact = NULL, derivForm = NULL, lag = 0, scaleWB = NULL,
   init = NULL, control = list(), \dots)
 }
 
@@ -27,16 +28,21 @@ jointModel(lmeObject, survObject, timeVar,
   \item{timeVar}{a character string indicating the time variable in the linear mixed effects model.}
   \item{parameterization}{a character string indicating the type of parameterization. See \bold{Details}}
   \item{method}{a character string specifying the type of joint model to fit. See \bold{Details}.}
+  \item{interFact}{a list with components \code{value} a formula for the interaction terms corresponding to the
+    \code{value} parameterization, \code{slope} a formula for the interaction terms corresponding to the
+    \code{slope} parameterization, \code{data} a data frame containing these variables (this should have the same
+    number of rows and ordering of subjects, as the one in \code{survObject}).}
   \item{derivForm}{a list with components \code{fixed} a formula representing the derivative of the fixed-effects part of the 
     liner mixed model with respect to time, \code{indFixed} a numeric vector indicating which fixed effects of \code{lmeObject} 
     correspond to the derivative, \code{random} a formula representing the derivative of the random-effects part of the 
     liner mixed model with respect to time, and \code{indRamdom} a numeric vector indicating which random effects of \code{lmeObject} 
     correspond to the derivative. When a random intercepts linear mixed model is assumed, then \code{random = ~ 1} and 
-    \code{indRandom = FALSE}. Required only when \code{parameterization == "derivative"} or \code{parameterization == "both"}. 
+    \code{indRandom = FALSE}. Required only when \code{parameterization == "slope"} or \code{parameterization == "both"}. 
     See \bold{Examples}.}
   \item{lag}{a numeric scalar denoting a lag effect in the time-dependent covariate represented by the mixed model; default is 0.}
   \item{scaleWB}{a numeric scalar denoting a fixed value for the scale parameter of the Weibull hazard; used only when 
-    \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}. The default \code{NULL} means that the scale parameter is estimated.}
+    \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}. The default \code{NULL} means that the scale 
+    parameter is estimated.}
   \item{init}{a list of user-specified initial values. The initial values list must have the following components:
     \describe{
         \item{betas}{the vector of fixed effects for the linear mixed effects model.}
@@ -44,7 +50,8 @@ jointModel(lmeObject, survObject, timeVar,
         \item{D}{the variance-covariance matrix of the random effects.}
         \item{gammas}{the vector of baseline covariates for the survival model. For \code{method = "ch-Laplace"} this vector should 
             first contain initial values for the sorted B-spline coefficients used to model the log cumulative baseline hazard.}
-        \item{alpha}{the association parameter.}
+        \item{alpha}{the association parameters.}
+        \item{Dalpha}{the association parameters for the true slopes parameterization}
         \item{xi}{the vector of baseline risk function values within the intervals specified by the knots; specified only 
             when \code{method = "piecewise-PH-GH"}.}
         \item{gammas.bs}{the vector of spline coefficients; specified only when \code{method = "spline-PH-GH"}.}
@@ -95,11 +102,17 @@ jointModel(lmeObject, survObject, timeVar,
             baseline risk function in different strata when \code{method = "spline-PH-GH"}.}
         \item{ord}{a positive integer denoting the order of the B-splines used to approximate the log cumulative hazard
             (default is 4); relevant only when \code{method = "spline-PH-GH"} or \code{method = "ch-Laplace"}.}
+        \item{typeGH}{a character string indicating the type of Gauss-Hermite rule to be used. Options are "simple"
+            and "adaptive". The default is "simple" but it is turned to adaptive when the user specifies in the
+            \code{method} argument an option that contains \code{aGH}.}
         \item{GHk}{the number of Gauss-Hermite quadrature points used to approximate the integrals over the random 
-            effects. The default is 15 for one- or two-dimensional integration and 9 otherwise.}
+            effects. The default is 15 for one- or two-dimensional integration and for \eqn{N < 2000}, and 9 otherwise for the 
+            simple Gauss-Hermite rule, and 5 for one-, two-dimensional or three-dimensional integration and for \eqn{N < 2000}, 
+            and 3 otherwise for the pseudo adaptive Gauss-Hermite rule, where \eqn{N} denotes the total number of longitudinal
+            measurements.}
         \item{GKk}{the number of Gauss-Kronrod points used to approximate the integral involved in the calculation of the survival function. Two 
-            options are available, namely 7 or 15. For \code{method = "weibull-PH-GH"} and \code{method = "weibull-AFT-GH"} 15 are used, 
-            whereas for \code{method = "piecewise-PH-GH"} 7.}
+            options are available, namely 7 or 15. For \code{method = "weibull-PH-GH"}, \code{method = "weibull-AFT-GH"} and
+            \code{method = "spline-PH-GH"} 15 are used, whereas for \code{method = "piecewise-PH-GH"} 7.}
         \item{verbose}{logical; if \code{TRUE}, the parameter estimates and the log-likelihood value are printed during
             the optimization procedure. Default is \code{FALSE}.}
     }
@@ -125,7 +138,10 @@ survival submodel is written as \deqn{\eta = \gamma^\top w_i + \alpha m_i\{min(t
 \code{parameterization = "value"}, \deqn{\eta = \gamma^\top w_i + \alpha_s m_i'\{min(t-k, 0)\},}{eta = gamma' w_i + alpha m_i'{min(t-k, 0)}} 
 when \code{parameterization = "slope"}, and \deqn{\eta = \gamma^\top w_i + \alpha m_i\{min(t-k, 0)\} + \alpha_s m_i'\{min(t-k, 0)\},}{eta = 
 gamma' w_i + alpha m_i{min(t-k, 0)} + \alpha_s m_i'{min(t-k, 0)},} when \code{parameterization = "both"}, where in all the above the value 
-of \eqn{k} is specified by the \code{lag} argument and \eqn{m_i'(t) = d m_i(t) / dt}.
+of \eqn{k} is specified by the \code{lag} argument and \eqn{m_i'(t) = d m_i(t) / dt}. If \code{interFact} is specified, then
+\eqn{m_i\{min(t-k, 0)\}} and/or \eqn{m_i'\{min(t-k, 0)\}} are multiplied with the design matrices derived from the formulas
+supplied as the first two arguments of \code{interFact}, respectively. In this case \eqn{\alpha} and/or \eqn{\alpha_s} become vectors of
+association parameters.
 
 For \code{method = "spline-PH-GH"} it is also allowed to include stratification factors. These should be included in the specification of
 the \code{survObject} using function \code{strata()}. Note that in this case \code{survObject} must only be a 'coxph' object.
@@ -140,11 +156,12 @@ EM algorithm is used. During the EM iterations, convergence is declared if eithe
 log-likelihood function. The values for \eqn{tol_1}, \eqn{tol_2} and \eqn{tol_3} are specified via the \code{control} argument. During the 
 quasi-Newton iterations, the default convergence criteria of either \code{optim()} or \code{nlminb()} are used.
 
-The required integrals are approximated using the Gauss-Hermite quadrature rule for \code{method = "weibull-AFT-GH"}, 
-\code{method = "weibull-PH-GH"}, \code{method = "piecewise-PH-GH"}, \code{method = "spline-PH-GH"} and \code{method = "Cox-PH-GH"}, 
-whereas for \code{method = "ch-Laplace"} the fully exponential Laplace approximation described in Rizopoulos et al. (2009) is used. 
-This last option is more suitable when high-dimensional random effects vectors are considered (e.g., when modelling nonlinear 
-subject-specific trajectories with splines or high-order polynomials).
+The required integrals are approximated using the standard Gauss-Hermite quadrature rule when the chosen option for the \code{method}
+argument contains the string "GH", and the (pseudo) adaptive Gauss-Hermite rule when the chosen option for the \code{method}
+argument contains the string "aGH". For \code{method = "ch-Laplace"} the fully exponential Laplace approximation described in 
+Rizopoulos et al. (2009) is used.  The (pseudo) adaptive Gauss-Hermite and the Laplace approximation are particularly useful when 
+high-dimensional random effects vectors are considered (e.g., when modelling nonlinear subject-specific trajectories with splines 
+or high-order polynomials).
 }
 
 \value{
@@ -158,8 +175,14 @@ Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal 
 Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and longitudinal data: Likelihood 
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
+Rizopoulos, D. (2011). Pseudo-adaptive Gaussian quadrature integration in joint models for longitudinal 
+and time-to-event data. \emph{In progress}.
+
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
+
+Rizopoulos, D. (2010). Dynamic prediction and prospective accuracy in joint models for longitudinal 
+and time-to-event data. \emph{Biometrics}, accepted.
 
 Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximations for the joint
 modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} \bold{71}, 
@@ -236,6 +259,13 @@ fitJOINT <- jointModel(fitLME, fitSURV, timeVar = "year")
 fitJOINT
 summary(fitJOINT)
 
+# we also include an interaction term of log(serBilir) with drug
+fitJOINT <- jointModel(fitLME, fitSURV, timeVar = "year",
+    interFact = list(value = ~ drug, data = pbc2.id))
+fitJOINT
+summary(fitJOINT)
+
+
 # a joint model in which the risk for and event depends both on the true value of
 # marker and the true value of the slope of the longitudinal trajectory
 lmeFit <- lme(sqrt(CD4) ~ obstime * drug, random = ~ obstime | patient, data = aids)
@@ -258,7 +288,7 @@ fitLME <- lme(sqrt(CD4) ~ obstime * drug - drug,
     random = ~ 1 | patient, data = aids)
 # cox model fit
 fitCOX <- coxph(Surv(Time, death) ~ drug, data = aids.id, x = TRUE)
-# joint model fit
+# joint model fit with a spline approximate baseline hazard
 fitJOINT <- jointModel(fitLME, fitCOX, 
     timeVar = "obstime", method = "spline-PH-GH")
 fitJOINT

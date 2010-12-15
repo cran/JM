@@ -1,6 +1,7 @@
 fitted.jointModel <-
-function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Subject", "EventTime"), 
-    scale = c("survival", "cumulative-Hazard", "log-cumulative-Hazard"), M = 200, ...) {
+function (object, process = c("Longitudinal", "Event"), 
+        type = c("Marginal", "Subject", "EventTime"), scale = c("survival", 
+        "cumulative-Hazard", "log-cumulative-Hazard"), M = 200, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
     process <- match.arg(process)
@@ -23,7 +24,7 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
         W1 <- object$x$W
         Y <- if (type == "Marginal") {
             D <- object$coefficients$D
-            diag.D <- (ncz <- ncol(D)) == 1 & nrow(D) > 1
+            diag.D <- ncol(D) == 1 & (ncz <- nrow(D)) > 1
             b <- mvrnorm(M, rep(0, ncz), if (diag.D) diag(c(D)) else D)
             if (method == "Cox-PH-GH") {
                 Zb <- object$x$Ztime2 %*% t(b)
@@ -42,10 +43,11 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
         gammas <- object$coefficients$gammas
         alpha <- object$coefficients$alpha
         logT <- object$y$logT
+        parameterization <- object$parameterization
         fitT <- if (method == "Cox-PH-GH") {
             indT <- object$indexes$indT
             lambda0 <- object$coefficients$lambda0[, "basehaz"]
-            eta.tw <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, )
+            eta.tw <- if (!is.null(W1)) as.vector(W1 %*% gammas) else 0
             Ztime2b <- if (type == "Marginal") {
                 object$x$Ztime2 %*% t(b)
             } else {
@@ -74,15 +76,28 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
             log.st <- log(object$x$st)
             wk <- rep(object$x$wk, length(logT))
             id.GK <- rep(seq_along(logT), each = object$control$GKk)
-            Zsb <- if (type == "Marginal") {
-                object$x$Zs %*% t(b)
-            } else {
-                rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+            if (parameterization %in% c("value", "both")) {
+                Zsb <- if (type == "Marginal")
+                    object$x$Zs %*% t(b)
+                else
+                    rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+                Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
+                eta.s <- c(object$x$Ws.intF.vl %*% object$coefficients$alpha) * Ys
             }
-            Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
-            eta.s <- object$coefficients$alpha * Ys
-            Haz <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + (sigma.t - 1) * log.st + eta.s), 
-                id.GK, reorder = FALSE)
+            if (parameterization %in% c("slope", "both")) {
+                Zsb <- if (type == "Marginal")
+                    object$x$Zs.deriv %*% t(b[, object$derivForm$indRandom, drop = FALSE])
+                else
+                    rowSums(object$x$Zs.deriv * object$EB$post.b[id.GK, object$derivForm$indRandom, drop = FALSE])
+                Ys <- c(object$x$Xs.deriv %*% 
+                    object$coefficients$betas[object$derivForm$indFixed]) + Zsb
+                eta.s <- if (parameterization == "both")
+                    eta.s + c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv 
+                else
+                    c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv
+            }
+            Haz <- exp(eta.tw) * P * rowsum(wk * exp(log(sigma.t) + 
+                (sigma.t - 1) * log.st + eta.s), id.GK, reorder = FALSE)
             switch(scale,
                 "survival" = exp(- Haz),
                 "cumulative-Hazard" = Haz,
@@ -95,13 +110,26 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
             log.st <- log(object$x$st)
             wk <- rep(object$x$wk, length(logT))
             id.GK <- rep(seq_along(logT), each = object$control$GKk)
-            Zsb <- if (type == "Marginal") {
-                object$x$Zs %*% t(b)
-            } else {
-                rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+            if (parameterization %in% c("value", "both")) {
+                Zsb <- if (type == "Marginal")
+                    object$x$Zs %*% t(b)
+                else
+                    rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+                Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
+                eta.s <- c(object$x$Ws.intF.vl %*% object$coefficients$alpha) * Ys
             }
-            Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
-            eta.s <- object$coefficients$alpha * Ys
+            if (parameterization %in% c("slope", "both")) {
+                Zsb <- if (type == "Marginal")
+                    object$x$Zs.deriv %*% t(b[, object$derivForm$indRandom, drop = FALSE])
+                else
+                    rowSums(object$x$Zs.deriv * object$EB$post.b[id.GK, object$derivForm$indRandom, drop = FALSE])
+                Ys <- c(object$x$Xs.deriv %*% 
+                    object$coefficients$betas[object$derivForm$indFixed]) + Zsb
+                eta.s <- if (parameterization == "both")
+                    eta.s + c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv 
+                else
+                    c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv
+            }            
             Vi <- exp(eta.tw) * P * rowsum(wk * exp(eta.s), id.GK, reorder = FALSE); dimnames(Vi) <- NULL            
             Haz <- Vi^sigma.t
             switch(scale,
@@ -113,13 +141,26 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
             P <- object$x$P
             wk <- rep(object$x$wk, length(logT))
             id.GK <- rep(seq_along(logT), each = object$control$GKk)
-            Zsb <- if (type == "Marginal") {
-                object$x$Zs %*% t(b)
-            } else {
-                rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+            if (parameterization %in% c("value", "both")) {
+                Zsb <- if (type == "Marginal")
+                    object$x$Zs %*% t(b)
+                else
+                    rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+                Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
+                eta.s <- c(object$x$Ws.intF.vl %*% object$coefficients$alpha) * Ys
             }
-            Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
-            eta.s <- object$coefficients$alpha * Ys
+            if (parameterization %in% c("slope", "both")) {
+                Zsb <- if (type == "Marginal")
+                    object$x$Zs.deriv %*% t(b[, object$derivForm$indRandom, drop = FALSE])
+                else
+                    rowSums(object$x$Zs.deriv * object$EB$post.b[id.GK, object$derivForm$indRandom, drop = FALSE])
+                Ys <- c(object$x$Xs.deriv %*% 
+                    object$coefficients$betas[object$derivForm$indFixed]) + Zsb
+                eta.s <- if (parameterization == "both")
+                    eta.s + c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv 
+                else
+                    c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv
+            }
             Haz <- exp(eta.tw) * P * rowsum(wk * exp(c(object$x$W2s %*% object$coefficients$gammas.bs) + eta.s), 
                 id.GK, reorder = FALSE)
             switch(scale,
@@ -136,13 +177,26 @@ function (object, process = c("Longitudinal", "Event"), type = c("Marginal", "Su
             wk <- unlist(lapply(object$y$ind.D, function (n) rep(object$x$wk, n)))
             P <- c(t(object$x$P))
             wkP <- wk * rep(P[!is.na(P)], each = nk)
-            Zsb <- if (type == "Marginal") {
-                object$x$Zs %*% t(b)
-            } else {
-                rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+            if (parameterization %in% c("value", "both")) {
+                Zsb <- if (type == "Marginal")
+                    object$x$Zs %*% t(b)
+                else
+                    rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+                Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
+                eta.s <- c(object$x$Ws.intF.vl %*% object$coefficients$alpha) * Ys
             }
-            Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
-            eta.s <- object$coefficients$alpha * Ys
+            if (parameterization %in% c("slope", "both")) {
+                Zsb <- if (type == "Marginal")
+                    object$x$Zs.deriv %*% t(b[, object$derivForm$indRandom, drop = FALSE])
+                else
+                    rowSums(object$x$Zs.deriv * object$EB$post.b[id.GK, object$derivForm$indRandom, drop = FALSE])
+                Ys <- c(object$x$Xs.deriv %*% 
+                    object$coefficients$betas[object$derivForm$indFixed]) + Zsb
+                eta.s <- if (parameterization == "both")
+                    eta.s + c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv 
+                else
+                    c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv
+            }
             Haz <- exp(eta.tw) * rowsum(xi[ind.K] * wkP * exp(eta.s), id.GK, reorder = FALSE)
             switch(scale,
                 "survival" = exp(- Haz),

@@ -17,14 +17,17 @@ joint model for longitudinal and time-to-event data. Objects of this class have 
     \describe{
         \item{betas}{the vector of fixed effects for the linear mixed effects model.}
         \item{sigma}{the measurement error standard deviation for the linear mixed effects model.}
-        \item{gammas}{the vector of baseline covariates for the survival model. For \code{method = "ch-GH"} and
-            \code{method = "ch-Laplace"} this vector contains as first elements the sorted B-spline
-            coefficients used to model the log cumulative baseline hazard.}
-        \item{alpha}{the association parameter.}
+        \item{gammas}{the vector of baseline covariates for the survival model.}
+        \item{alpha}{the association parameter(s).}
+        \item{Dalpha}{the association parameter(s) corresponding to the slope of the true trajectory.}
         \item{sigma.t}{the scale parameter for the Weibull survival model; returned only when
-            \code{method = "weibull-GH"}.}
+            \code{method = "weibull-PH-GH"} or \code{method = "weibull-AFT-GH"}.}
+        \item{xi}{the parameter of the piecewise constant baseline hazard; returned only when
+            \code{method = "piecewise-PH-GH"}.}
+        \item{gamma.bs}{the coefficients of the B-splines use to approximate the baseline hazard;
+            returned only when \code{method = "spline-PH-GH"}.}
         \item{lambda0}{a two-column numeric matrix with the first column containing the estimated baseline hazard values,
-            and the second the unique sorted event times; returned only when \code{method = "ph-GH"}.}
+            and the second the unique sorted event times; returned only when \code{method = "Cox-PH-GH"}.}
         \item{D}{the variance-covariance matrix of the random effects.}
     }
   }
@@ -40,11 +43,11 @@ joint model for longitudinal and time-to-event data. Objects of this class have 
             evaluated at the observed event times).}
         \item{Ztime2b}{the estimated random effects part of the linear predictor for the survival outcome (i.e.,
             for the \eqn{i}th sample unit is evaluated at all event times that are less or equal to the \eqn{i}th
-            observed event time); returned only when \code{method = "ph-GH"}.}
+            observed event time); returned only when \code{method = "Cox-PH-GH"}.}
     }
   }
-  \item{knots}{the numeric vector of the knots positions for the log times used in the B-splines approximation of the
-    log cumulative baseline hazard; returned only when \code{method = "ch-GH"} or \code{method = "ch-Laplace"}.}
+  \item{knots}{the numeric vector of the knots positions; returned only when \code{method = "spline-PH-GH"},
+    \code{method = "piecewise-PH-GH"} or \code{method = "ch-Laplace"}.}
   \item{iters}{the number of iterations in the optimization algorithm.}
   \item{convergence}{convergence identifier: 0 corresponds to successful convergence, whereas 1 to a problem
     (i.e., when 1, usually more iterations are required).}
@@ -66,6 +69,7 @@ joint model for longitudinal and time-to-event data. Objects of this class have 
   \item{timeVar}{the value of the \code{timeVar} argument}
   \item{control}{the value of the \code{control} argument.}
   \item{parameterization}{the value of the \code{parameterization} argument.}
+  \item{interFact}{the value of the \code{interFact} argument}
   \item{derivForm}{the value of the \code{derivForm} argument.}
   \item{lag}{the value of the \code{lag} argument.}
   \item{call}{the matched call.}

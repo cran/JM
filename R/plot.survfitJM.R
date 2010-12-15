@@ -7,7 +7,8 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
     if (is.null(which))
         which <- seq_along(x$summaries)
     if (conf.int && is.null(x$success.rate)) {
-        warning("\na confidence interval can be included only when argument 'simulate' of survfitJM() was set to TRUE.")
+        warning("a confidence interval can be included only when argument", 
+            "'simulate' of survfitJM() was set to TRUE.")
         conf.int <- FALSE
     }
     if (is.null(ask))
@@ -68,8 +69,10 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
         if (add.last.time.axis.tick)
             axis(1, at = round(x$last.time[ii], 1))
         if (legend) {
-            lab <- switch(estimator, both = c("Mean", "Median", "Lower limit", "Upper limit"), 
-                mean = c("Mean", "Lower limit", "Upper limit"), median = c("Median", "Lower limit", "Upper limit"))
+            lab <- switch(estimator, both = c("Mean", "Median"), 
+                    mean = "Mean", median = "Median")
+            if (conf.int)
+                lab <- c(lab, "Lower limit", "Upper limit")
             legend("left", lab, lwd = lwd, lty = lty, col = col, bty = "n", ...)
         }
         if (include.y)
