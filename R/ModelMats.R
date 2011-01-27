@@ -8,17 +8,19 @@ function (time, ii) {
         st <- P * (sk + 1)
         data.id2 <- data.id[id.GK, ]
         data.id2[timeVar] <- pmax(st - lag, 0)
-        mfX <- model.frame(TermsX, data = data.id2)
-        mfZ <- model.frame(TermsZ, data = data.id2)
         out <- list(st = st, wk = wk, P = P)
         if (parameterization %in% c("value", "both")) {
+            mfX <- model.frame(TermsX, data = data.id2)
+            mfZ <- model.frame(TermsZ, data = data.id2)
             out$Xs <- model.matrix(formYx, mfX)
             out$Zs <- model.matrix(formYz, mfZ)
             out$Ws.intF.vl <- WintF.vl[id.GK, , drop = FALSE]
         }
         if (parameterization %in% c("slope", "both")) {
-            out$Xs.deriv <- model.matrix(derivForm$fixed, mfX)
-            out$Zs.deriv <- model.matrix(derivForm$random, mfZ)
+            mfX.deriv <- model.frame(TermsX.deriv, data = data.id2)
+            mfZ.deriv <- model.frame(TermsZ.deriv, data = data.id2)
+            out$Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+            out$Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
             out$Ws.intF.sl <- WintF.sl[id.GK, , drop = FALSE]
         }      
     }
@@ -48,8 +50,8 @@ function (time, ii) {
             out$Ws.intF.vl <- WintF.vl[id.GK, , drop = FALSE]
         }
         if (parameterization %in% c("slope", "both")) {
-            out$Xs.deriv <- model.matrix(derivForm$fixed, mfX)
-            out$Zs.deriv <- model.matrix(derivForm$random, mfZ)
+            out$Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+            out$Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
             out$Ws.intF.sl <- WintF.sl[id.GK, , drop = FALSE]
         }
     }

@@ -88,6 +88,46 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     data.id <- data[!duplicated(id), ]
     if (!timeVar %in% names(data))
         stop("\n'timeVar' does not correspond to one of the columns in the model.frame of 'lmeObject'.")
+    # extra design matrices for the longitudinal part
+    data.id[timeVar] <- pmax(Time - lag, 0)
+    if (parameterization %in% c("value", "both")) {
+        mfX.id <- model.frame(TermsX, data = data.id)
+        mfZ.id <- model.frame(TermsZ, data = data.id)
+        Xtime <- model.matrix(formYx, mfX.id)
+        Ztime <- model.matrix(formYz, mfZ.id)
+        long <- c(X %*% fixef(lmeObject)) + rowSums(Z * b[id, ])
+    }
+    if (parameterization %in% c("slope", "both")) {
+        mfX.deriv <- model.frame(terms(derivForm$fixed), data = data)
+        TermsX.deriv <- attr(mfX.deriv, "terms")
+        mfZ.deriv <- model.frame(terms(derivForm$random), data = data)
+        TermsZ.deriv <- attr(mfZ.deriv, "terms")
+        mfX.deriv.id <- model.frame(TermsX.deriv, data = data.id)
+        mfZ.deriv.id <- model.frame(TermsZ.deriv, data = data.id)      
+        Xtime.deriv <- model.matrix(derivForm$fixed, mfX.deriv.id)
+        Ztime.deriv <- model.matrix(derivForm$random, mfZ.deriv.id)
+        Xderiv <- model.matrix(derivForm$fixed, mfX.deriv)
+        Zderiv <- model.matrix(derivForm$random, mfZ.deriv)        
+        long.deriv <- as.vector(c(Xderiv %*% fixef(lmeObject)[derivForm$indFixed]) + 
+            if (length(derivForm$indRandom) > 1 || derivForm$indRandom) 
+                rowSums(Zderiv * b[id, derivForm$indRandom, drop = FALSE])
+            else
+                rep(0, nrow(Zderiv))
+        )
+    }
+    if (parameterization == "value")
+        long.deriv <- NULL
+    if (parameterization == "slope")
+        long <- NULL        
+    # response vectors and design matrices
+    y <- list(y = y.long, logT = log(Time), d = d, lag = lag)
+    x <- list(X = X, Z = Z, W = W, WintF.vl = WintF.vl, WintF.sl = WintF.sl)
+    x <- switch(parameterization, 
+        "value" = c(x, list(Xtime = Xtime, Ztime = Ztime)),
+        "slope" = c(x, list(Xtime.deriv = Xtime.deriv, Ztime.deriv = Ztime.deriv)),
+        "both" = c(x, list(Xtime = Xtime, Ztime = Ztime, Xtime.deriv = Xtime.deriv, 
+            Ztime.deriv = Ztime.deriv))
+    )
     # control values
     ind.noadapt <- method. %in% c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", 
         "Cox-PH-GH", "spline-PH-GH")
@@ -114,40 +154,6 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         stop("with method 'Cox-PH-GH' only the EM algorithm is used.\n")
     if (method == "Cox-PH-GH" && any(!is.na(match(c("iter.qN", "optimizer"), namc))))
         warning("method 'Cox-PH-GH' uses only the EM algorithm.\n")
-    # extra design matrices for the longitudinal part
-    data.id[timeVar] <- pmax(Time - lag, 0)
-    mfX.id <- model.frame(TermsX, data = data.id)
-    mfZ.id <- model.frame(TermsZ, data = data.id)
-    if (parameterization %in% c("value", "both")) {
-        Xtime <- model.matrix(formYx, mfX.id)
-        Ztime <- model.matrix(formYz, mfZ.id)
-        long <- c(X %*% fixef(lmeObject)) + rowSums(Z * b[id, ])
-    }
-    if (parameterization %in% c("slope", "both")) {
-        Xtime.deriv <- model.matrix(derivForm$fixed, mfX.id)
-        Ztime.deriv <- model.matrix(derivForm$random, mfZ.id)
-        Xderiv <- model.matrix(derivForm$fixed, mfX)
-        Zderiv <- model.matrix(derivForm$random, mfZ)        
-        long.deriv <- as.vector(c(Xderiv %*% fixef(lmeObject)[derivForm$indFixed]) + 
-            if (length(derivForm$indRandom) > 1 || derivForm$indRandom) 
-                rowSums(Zderiv * b[id, derivForm$indRandom, drop = FALSE])
-            else
-                rep(0, nrow(Zderiv))
-        )
-    }
-    if (parameterization == "value")
-        long.deriv <- NULL
-    if (parameterization == "slope")
-        long <- NULL        
-    # response vectors and design matrices
-    y <- list(y = y.long, logT = log(Time), d = d, lag = lag)
-    x <- list(X = X, Z = Z, W = W, WintF.vl = WintF.vl, WintF.sl = WintF.sl)
-    x <- switch(parameterization, 
-        "value" = c(x, list(Xtime = Xtime, Ztime = Ztime)),
-        "slope" = c(x, list(Xtime.deriv = Xtime.deriv, Ztime.deriv = Ztime.deriv)),
-        "both" = c(x, list(Xtime = Xtime, Ztime = Ztime, Xtime.deriv = Xtime.deriv, 
-            Ztime.deriv = Ztime.deriv))
-    )
     # extra design matrices for 'method = "weibull-AFT-GH"' and 'method = "weibull-PH-GH"'
     # extra design matrices for 'method = "spline-PH-GH"' and 'method = "spline-PH-Laplace"'
     if (method %in% c("weibull-AFT-GH", "weibull-PH-GH", "spline-PH-GH", "spline-PH-Laplace")) {
@@ -158,15 +164,17 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         id.GK <- rep(seq_len(nY), each = con$GKk)
         data.id2 <- data.id[id.GK, ]
         data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
-        mfX <- model.frame(TermsX, data = data.id2)
-        mfZ <- model.frame(TermsZ, data = data.id2)
         if (parameterization %in% c("value", "both")) {
+            mfX <- model.frame(TermsX, data = data.id2)
+            mfZ <- model.frame(TermsZ, data = data.id2)
             Xs <- model.matrix(formYx, mfX)
             Zs <- model.matrix(formYz, mfZ)
         }
         if (parameterization %in% c("slope", "both")) {
-            Xs.deriv <- model.matrix(derivForm$fixed, mfX)
-            Zs.deriv <- model.matrix(derivForm$random, mfZ)
+            mfX.deriv <- model.frame(TermsX.deriv, data = data.id2)
+            mfZ.deriv <- model.frame(TermsZ.deriv, data = data.id2)
+            Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+            Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
         }
         Ws.intF.vl <- WintF.vl[id.GK, , drop = FALSE]
         Ws.intF.sl <- WintF.sl[id.GK, , drop = FALSE]
@@ -258,15 +266,17 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         data.id2 <- data.id[rep(seq_len(nY), each = nk*Q), ]
         data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
         data.id2 <- data.id2[!is.na(data.id2[[timeVar]]), ]
-        mfX <- model.frame(TermsX, data = data.id2)
-        mfZ <- model.frame(TermsZ, data = data.id2)
         if (parameterization %in% c("value", "both")) {
+            mfX <- model.frame(TermsX, data = data.id2)
+            mfZ <- model.frame(TermsZ, data = data.id2)
             Xs <- model.matrix(formYx, mfX)
             Zs <- model.matrix(formYz, mfZ)
         }
         if (parameterization %in% c("slope", "both")) {
-            Xs.deriv <- model.matrix(derivForm$fixed, mfX)
-            Zs.deriv <- model.matrix(derivForm$random, mfZ)
+            mfX.deriv <- model.frame(TermsX.deriv, data = data.id2)
+            mfZ.deriv <- model.frame(TermsZ.deriv, data = data.id2)
+            Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+            Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
         }
         Ws.intF.vl <- WintF.vl[id.GK, , drop = FALSE]
         Ws.intF.sl <- WintF.sl[id.GK, , drop = FALSE]
@@ -286,15 +296,17 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         indT <- rep(1:nrow(data.id), ind.len)
         data.id2 <- data.id[indT, ]
         data.id2[timeVar] <- pmax(unlist(times, use.names = FALSE) - lag, 0)
-        mfX <- model.frame(TermsX, data = data.id2)
-        mfZ <- model.frame(TermsZ, data = data.id2)
         if (parameterization %in% c("value", "both")) {
+            mfX <- model.frame(TermsX, data = data.id2)
+            mfZ <- model.frame(TermsZ, data = data.id2)
             Xtime2 <- model.matrix(formYx, mfX)
             Ztime2 <- model.matrix(formYz, mfZ)
         }
         if (parameterization %in% c("slope", "both")) {
-            Xtime2.deriv <- model.matrix(derivForm$fixed, mfX)
-            Ztime2.deriv <- model.matrix(derivForm$random, mfZ)
+            mfX.deriv <- model.frame(TermsX.deriv, data = data.id2)
+            mfZ.deriv <- model.frame(TermsZ.deriv, data = data.id2)
+            Xtime2.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+            Ztime2.deriv <- model.matrix(derivForm$random, mfZ.deriv)
         }
         x <- c(x, list(indT = indT))
         x <- switch(parameterization,
@@ -367,6 +379,10 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     out$method <- method
     out$termsYx <- TermsX
     out$termsYz <- TermsZ
+    if (parameterization %in% c("slope", "both")) {
+        out$termsYx.deriv <- TermsX.deriv
+        out$termsYz.deriv <- TermsZ.deriv
+    }
     out$termsT <- survObject$terms
     out$formYx <- formYx
     out$formYz <- formYz

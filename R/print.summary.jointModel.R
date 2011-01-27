@@ -35,9 +35,9 @@ function (x, digits = max(4, getOption("digits") - 4),
             }), sep = ": ", collapse = "\n\t\t")
         }
         if (printKnots)
-            cat("Relative risk model with spline baseline risk function (knots at: ", xx, ")\n", sep = "")
+            cat("Relative risk model with spline-approximated baseline risk function (knots at: ", xx, ")\n", sep = "")
         else 
-            cat("Relative risk model with spline baseline risk function\n")
+            cat("Relative risk model with spline-approximated baseline risk function\n")
     } else {
         cat("log cumulative baseline hazard with B-splines (internal knots at: ", 
             paste(round(exp(x$knots[-c(1, length(x$knots))]), 2), collapse = ", "), ")\n", sep = "")

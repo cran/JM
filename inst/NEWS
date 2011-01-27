@@ -1,3 +1,12 @@
+Changes in version: JM_0.8-1
+
+  * the new function xtable.jointModel() in conjunction with the xtable package can be used to produce a LaTeX table with the results of joint modeling analysis.
+  
+  * the new function simulateJM() and the simulate() method for objects of class 'jointModel' can be used to simulate data from a joint model.
+
+
+==============================
+
 Changes in version: JM_0.8-0
 
   * the new argument 'interFact' added in jointModel() allows the specification of interaction terms between the longitudinal outcome and baseline covariates.

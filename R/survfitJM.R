@@ -20,6 +20,8 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     id <- match(id, unique(id))    
     TermsX <- object$termsYx
     TermsZ <- object$termsYz
+    TermsX.deriv <- object$termsYx.deriv
+    TermsZ.deriv <- object$termsYz.deriv
     mfX <- model.frame(TermsX, data = newdata)
     mfZ <- model.frame(TermsZ, data = newdata)
     formYx <- reformulate(attr(delete.response(TermsX), "term.labels"))

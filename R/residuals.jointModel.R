@@ -48,6 +48,8 @@ function (object, process = c("Longitudinal", "Event"),
             Ztime <- object$x$Ztime
             Xs <- object$x$Xs
             Zs <- object$x$Zs
+            Xs.deriv <- object$x$Xs.deriv
+            Zs.deriv <- object$x$Zs.deriv
             Ws.intF.vl <- object$x$Ws.intF.vl
             Ws.intF.sl <- object$x$Ws.intF.sl
             P <- object$x$P

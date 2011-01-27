@@ -5,12 +5,14 @@ function (Time, d, W, WintF.vl, WintF.sl, id, times, method,
     on.exit(options(old))
     if (!is.null(long)) {
         long.id <- tapply(long, id, tail, 1)
-        longD.id <- NULL
+        if (parameterization == "value") 
+            longD.id <- NULL
     }
     if (!is.null(long.deriv)) {
         longD.id <- tapply(long.deriv, id, tail, 1)
-        long.id <- NULL
-    }       
+        if (parameterization == "slope") 
+            long.id <- NULL
+    }
     WW <- cbind(W, long.id, longD.id)
     if (method %in% c("Cox-PH-GH", "weibull-PH-GH", "piecewise-PH-GH", "spline-PH-GH", "spline-PH-Laplace")) {
         DD <- data.frame(id = id, Time = Time[id], d = d[id], times = times)

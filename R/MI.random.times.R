@@ -19,13 +19,25 @@ function (time.points) {
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
         P.missO <- P
         log.st.missO <- log.st
-        Xs.missO <- Xs
-        Zs.missO <- Zs
+        if (parameterization %in% c("value", "both")) {
+            Xs.missO <- Xs
+            Zs.missO <- Zs
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv.missO <- Xs.deriv
+            Zs.deriv.missO <- Zs.deriv
+        }
     }
     if (method == "spline-PH-GH") {
         P.missO <- P
-        Xs.missO <- Xs
-        Zs.missO <- Zs
+        if (parameterization %in% c("value", "both")) {
+            Xs.missO <- Xs
+            Zs.missO <- Zs
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv.missO <- Xs.deriv
+            Zs.deriv.missO <- Zs.deriv
+        }
         W2s.missO <- W2s
         W2.missO <- W2
     }
@@ -34,8 +46,14 @@ function (time.points) {
         ind.D.missO <- ind.D
         ind.K.missO <- ind.K
         wkP.missO <- wkP
-        Xs.missO <- Xs
-        Zs.missO <- Zs
+        if (parameterization %in% c("value", "both")) {
+            Xs.missO <- Xs
+            Zs.missO <- Zs
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv.missO <- Xs.deriv
+            Zs.deriv.missO <- Zs.deriv
+        }
     }
     WW.missO <- WW
     n.missO <- nrow(Ztime.missO)
@@ -47,14 +65,16 @@ function (time.points) {
         list(betas = object$coefficients$betas, 
             log.sigma = log(object$coefficients$sigma),
             gammas = object$coefficients$gammas, 
-            alpha = object$coefficients$alpha, 
+            alpha = object$coefficients$alpha,
+            Dalpha = object$coefficients$Dalpha, 
             log.sigma.t = log(object$coefficients$sigma.t),
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "spline-PH-GH") {
         list(betas = object$coefficients$betas, 
             log.sigma = log(object$coefficients$sigma),
             gammas = object$coefficients$gammas, 
-            alpha = object$coefficients$alpha, 
+            alpha = object$coefficients$alpha,
+            Dalpha = object$coefficients$Dalpha, 
             gammas.bs = object$coefficients$gammas.bs, 
             D = if (diag.D) log(D) else chol.transf(D))
     } else if (object$method == "piecewise-PH-GH") {
@@ -62,6 +82,7 @@ function (time.points) {
             log.sigma = log(object$coefficients$sigma),
             gammas = object$coefficients$gammas,
             alpha = object$coefficients$alpha,
+            Dalpha = object$coefficients$Dalpha,
             log.xi = log(object$coefficients$xi),
             D = if (diag.D) log(D) else chol.transf(D))
     }
@@ -109,6 +130,7 @@ function (time.points) {
         sigma.new <- exp(thetas.new$log.sigma)
         gammas.new <- thetas.new$gammas
         alpha.new <- thetas.new$alpha
+        Dalpha.new <- thetas.new$Dalpha
         D.new <- thetas.new$D
         D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
         if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH")

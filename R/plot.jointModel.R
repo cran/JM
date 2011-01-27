@@ -71,8 +71,6 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
-                mfX <- model.frame(x$termsYx, data = data.id)
-                mfZ <- model.frame(x$termsYz, data = data.id)
                 if (parameterization %in% c("value", "both")) {
                     Xs <- model.matrix(x$formYx, mfX)
                     Zs <- model.matrix(x$formYz, mfZ)
@@ -80,8 +78,10 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
                 if (parameterization %in% c("slope", "both")) {
-                    Xs.deriv <- model.matrix(derivForm$fixed, mfX)
-                    Zs.deriv <- model.matrix(derivForm$random, mfZ)
+                    mfX.deriv <- model.frame(x$termsYx.deriv, data = data.id)
+                    mfZ.deriv <- model.frame(x$termsYz.deriv, data = data.id)
+                    Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+                    Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
@@ -114,17 +114,19 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
-                mfX <- model.frame(x$termsYx, data = data.id)
-                mfZ <- model.frame(x$termsYz, data = data.id)
                 if (parameterization %in% c("value", "both")) {
+                    mfX <- model.frame(x$termsYx, data = data.id)
+                    mfZ <- model.frame(x$termsYz, data = data.id)
                     Xs <- model.matrix(x$formYx, mfX)
                     Zs <- model.matrix(x$formYz, mfZ)
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
                     eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
                 if (parameterization %in% c("slope", "both")) {
-                    Xs.deriv <- model.matrix(derivForm$fixed, mfX)
-                    Zs.deriv <- model.matrix(derivForm$random, mfZ)
+                    mfX.deriv <- model.frame(x$termsYx.deriv, data = data.id)
+                    mfZ.deriv <- model.frame(x$termsYz.deriv, data = data.id)
+                    Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+                    Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
@@ -170,17 +172,19 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 data.id2 <- x$data.id[rep(1:n, each = nk*Q), ]
                 data.id2[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 id.GK <- rep(1:n, rowSums(!is.na(st)))
-                mfX <- model.frame(x$termsYx, data = data.id2)
-                mfZ <- model.frame(x$termsYz, data = data.id2)
                 if (parameterization %in% c("value", "both")) {
+                    mfX <- model.frame(x$termsYx, data = data.id2)
+                    mfZ <- model.frame(x$termsYz, data = data.id2)
                     Xs <- model.matrix(x$formYx, mfX)
                     Zs <- model.matrix(x$formYz, mfZ)
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
                     eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
                 if (parameterization %in% c("slope", "both")) {
-                    Xs.deriv <- model.matrix(derivForm$fixed, mfX)
-                    Zs.deriv <- model.matrix(derivForm$random, mfZ)
+                    mfX.deriv <- model.frame(x$termsYx.deriv, data = data.id2)
+                    mfZ.deriv <- model.frame(x$termsYz.deriv, data = data.id2)
+                    Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+                    Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
@@ -214,17 +218,19 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
-                mfX <- model.frame(x$termsYx, data = data.id)
-                mfZ <- model.frame(x$termsYz, data = data.id)
                 if (parameterization %in% c("value", "both")) {
+                    mfX <- model.frame(x$termsYx, data = data.id)
+                    mfZ <- model.frame(x$termsYz, data = data.id)
                     Xs <- model.matrix(x$formYx, mfX)
                     Zs <- model.matrix(x$formYz, mfZ)
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
                     eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
                 if (parameterization %in% c("slope", "both")) {
-                    Xs.deriv <- model.matrix(derivForm$fixed, mfX)
-                    Zs.deriv <- model.matrix(derivForm$random, mfZ)
+                    mfX.deriv <- model.frame(x$termsYx.deriv, data = data.id)
+                    mfZ.deriv <- model.frame(x$termsYz.deriv, data = data.id)
+                    Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+                    Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])

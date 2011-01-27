@@ -31,15 +31,27 @@ function (time.points) {
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
         P.missO <- P[unq.id.miss]
         log.st.missO <- log.st[id.GK]
-        Xs.missO <- Xs[id.GK, , drop = FALSE]
-        Zs.missO <- Zs[id.GK, , drop = FALSE]
+        if (parameterization %in% c("value", "both")) {
+            Xs.missO <- Xs[id.GK, , drop = FALSE]
+            Zs.missO <- Zs[id.GK, , drop = FALSE]
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv.missO <- Xs.deriv[id.GK, , drop = FALSE]
+            Zs.deriv.missO <- Zs.deriv[id.GK, , drop = FALSE]
+        }
         Ws.intF.vl.missO <- Ws.intF.vl[id.GK, , drop = FALSE]
         Ws.intF.sl.missO <- Ws.intF.sl[id.GK, , drop = FALSE]
     }
     if (method == "spline-PH-GH") {
         P.missO <- P[unq.id.miss]
-        Xs.missO <- Xs[id.GK, , drop = FALSE]
-        Zs.missO <- Zs[id.GK, , drop = FALSE]
+        if (parameterization %in% c("value", "both")) {
+            Xs.missO <- Xs[id.GK, , drop = FALSE]
+            Zs.missO <- Zs[id.GK, , drop = FALSE]
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv.missO <- Xs.deriv[id.GK, , drop = FALSE]
+            Zs.deriv.missO <- Zs.deriv[id.GK, , drop = FALSE]
+        }
         W2s.missO <- W2s[id.GK, , drop = FALSE] 
         W2.missO <- W2[unq.id.miss, , drop = FALSE]
         Ws.intF.vl.missO <- Ws.intF.vl[id.GK, , drop = FALSE]
@@ -50,8 +62,14 @@ function (time.points) {
         ind.D.missO <- ind.D[unq.id.miss]
         ind.K.missO <- ind.K[id.GK]
         wkP.missO <- wkP[id.GK]
-        Xs.missO <- Xs[id.GK, , drop = FALSE]
-        Zs.missO <- Zs[id.GK, , drop = FALSE]
+        if (parameterization %in% c("value", "both")) {
+            Xs.missO <- Xs[id.GK, , drop = FALSE]
+            Zs.missO <- Zs[id.GK, , drop = FALSE]
+        }
+        if (parameterization %in% c("slope", "both")) {
+            Xs.deriv.missO <- Xs.deriv[id.GK, , drop = FALSE]
+            Zs.deriv.missO <- Zs.deriv[id.GK, , drop = FALSE]
+        }
         Ws.intF.vl.missO <- Ws.intF.vl[id.GK, , drop = FALSE]
         Ws.intF.sl.missO <- Ws.intF.sl[id.GK, , drop = FALSE]
     }

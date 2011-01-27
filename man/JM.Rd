@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.8-0\cr
-Date: \tab 2010-12-15\cr
+Version: \tab 0.8-1\cr
+Date: \tab 2011-01-27\cr
 License: \tab \acronym{GPL} \cr
 }
 
