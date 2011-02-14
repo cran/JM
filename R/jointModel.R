@@ -264,7 +264,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         id.GK <- rep(1:nY, rowSums(!is.na(st)))
         P <- c(t(P))
         data.id2 <- data.id[rep(seq_len(nY), each = nk*Q), ]
-        data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
+        data.id2[[timeVar]] <- pmax(c(t(st)) - lag, 0)
         data.id2 <- data.id2[!is.na(data.id2[[timeVar]]), ]
         if (parameterization %in% c("value", "both")) {
             mfX <- model.frame(TermsX, data = data.id2)
@@ -352,7 +352,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         }
     }
     # remove objects
-    rmObjs <- c(names(x), "y.long", "mfX", "mfX.id", "mfZ", "mfZ.id", "data.id2")
+    rmObjs <- c(names(x), "y.long", "mfX", "mfZ", "data.id2")
     rm(list = rmObjs); gc()
     # joint model fit
     out <- switch(method,

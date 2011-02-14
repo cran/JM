@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.8-1\cr
-Date: \tab 2011-01-27\cr
+Version: \tab 0.8-2\cr
+Date: \tab 2011-02-14\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -63,13 +63,13 @@ Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal measurements 
 and event time data. \emph{Biostatistics} \bold{1}, 465--480.
 
-Rizopoulos, D. (2010a) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
+Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
 
-Rizopoulos, D. (2010b). Dynamic prediction and prospective accuracy in joint models for longitudinal 
+Rizopoulos, D. (2011a). Dynamic predictions and prospective accuracy in joint models for longitudinal 
 and time-to-event data. \emph{Biometrics}, accepted.
 
-Rizopoulos, D. (2011). Pseudo-adaptive Gaussian quadrature integration in joint models for longitudinal 
+Rizopoulos, D. (2011b). Pseudo-adaptive Gaussian quadrature integration in joint models for longitudinal 
 and time-to-event data. \emph{In progress}.
 
 Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint

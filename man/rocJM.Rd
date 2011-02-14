@@ -77,7 +77,7 @@ The estimation of the above defined probabilities is achieved with a Monte Carlo
 \code{\link{survfitJM}}. The number of Monte Carlo samples is defined by the \code{M} argument, and the burn-in iterations for
 the Metropolis-Hastings algorithm using the \code{burn.in} argument.
 
-More details can be found in Rizopoulos (2010a).
+More details can be found in Rizopoulos (2011).
 }
 
 \value{
@@ -108,10 +108,10 @@ More details can be found in Rizopoulos (2010a).
 Heagerty, P. and Zheng, Y. (2005). Survival model predictive accuracy and ROC curves.
 \emph{Biometrics} \bold{61}, 92--105.
 
-Rizopoulos, D. (2010a). Dynamic predictions and prospective accuracy in joint models for longitudinal 
+Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for longitudinal 
 and time-to-event data. \emph{Biometrics}, accepted.
 
-Rizopoulos, D. (2010b) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
+Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
 
 Zheng, Y. and Heagerty, P. (2007). Prospective accuracy for longitudinal markers.

@@ -8,6 +8,12 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
         stop("'data' must be a data.frame with more than one rows.\n")
     if (is.null(data[[idVar]]))
         stop("'idVar' not in 'data.\n'")
+    method <- object$method
+    directionSmaller <- as.logical(if (method == "weibull-AFT-GH") {
+        object$coefficients$alpha > 0 
+    } else { 
+        object$coefficients$alpha < 0
+    })
     if (is.null(cc) || !is.numeric(cc)) {
         pc <- quantile(object$y$y, c(0.05, 0.95), names = FALSE)
         if (is.null(min.cc) || !is.numeric(min.cc))
@@ -22,9 +28,12 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
         cc <- matrix(cc, length(cc), lag) + rep(abs.diff, each = length(cc))
     } else {
         lag <- length(rel.diff)
-        cc <- matrix(cc, length(cc), lag) * rep(rel.diff, each = length(cc))        
+        vv <- if (directionSmaller)
+            -outer(cc, rel.diff - 1)
+        else
+            outer(cc, rel.diff - 1)
+        cc <- matrix(cc, length(cc), lag) + abs(vv)
     }
-    method <- object$method
     timeVar <- object$timeVar
     interFact <- object$interFact
     parameterization <- object$parameterization
@@ -39,10 +48,6 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     mfZ <- model.frame(TermsZ, data = data)
     formYx <- reformulate(attr(TermsX, "term.labels"))
     formYz <- object$formYz
-    #TermsY <- delete.response(object$termsY)
-    #mfY <- model.frame(TermsY, data = data)
-    #formYx <- reformulate(attr(TermsY, "term.labels"))
-    #formYz <- object$formYz
     X <- model.matrix(formYx, mfX)
     Z <- model.matrix(formYz, mfZ)
     TermsT <- object$termsT
@@ -86,7 +91,7 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
             Dalpha = Dalpha, log.sigma.t = if (is.null(sigma.t)) NULL else log(sigma.t), 
             log.xi = if (is.null(xi)) NULL else log(xi), gammas.bs = gammas.bs, 
-            D = if (diag.D) log(D) else chol.transf(D))
+            D = if (diag.D) log(diag(D)) else chol.transf(D))
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH") && !is.null(object$scaleWB)) {
         list.thetas$log.sigma.t <- NULL
     }
@@ -109,7 +114,6 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     Var.thetas <- vcov(object)
     environment(log.posterior.b) <- environment(S.b) <- environment(ModelMats) <- environment()
     # Simulate
-    directionSmaller <- if (method == "weibull-AFT-GH") alpha > 0 else alpha < 0
     out <- vector("list", M)
     success.rate <- matrix(FALSE, M, n.tp)
     b.old <- b.new <- mvrnorm(n.tp, rep(0, ncz), D)
@@ -171,8 +175,6 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
                 if (ind)
                     b.new[i, ] <- proposed.b
                 # Step 4a: compute Pr(T > t_k | T > t_{k - 1}, b.new; theta.new)
-                #S.last <- S.b(last.time[i], b.new, i)
-                #S.pred <- sapply(tDt[[i]], S.b, b = b.new, i = i)
                 S.last <- S.b(last.time[i], b.new[i, ], i, survMats.last[[i]])
                 S.pred <- numeric(length(tDt[[i]]))
                 for (l in seq_along(S.pred))
@@ -181,15 +183,16 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
                 # Step 4b: compute Pr(y(t) <= c | b.new; theta.new)
                 mu.new <- as.vector(x.i %*% betas.new) + rowSums(z.i * rep(b.new[i, ], each = nrow(z.i)))                
                 ccc <- cc[, seq(1, min(nrow(z.i), ncol(cc))), drop = FALSE]
-                F.y.t[i, ] <- exp(rowSums(pnorm(ccc, mean = rep(tail(mu.new, lag), each = nrow(cc)), 
-                    sd = sigma.new, log.p = TRUE, lower.tail = directionSmaller)))
+                ppp <- pnorm(ccc, mean = rep(tail(mu.new, lag), each = nrow(cc)), 
+                    sd = sigma.new, log.p = TRUE, lower.tail = directionSmaller)
+                F.y.t[i, ] <- exp(rowSums(ppp))
              } else {
                 pi.dt.t[[i]] <- F.y.t[i, ] <- NA
             }
         }
         b.old <- b.new
         out[[m]] <- c(pi.dt.t = list(pi.dt.t), F.y.t = list(F.y.t))
-    }    
+    }
     res <- vector("list", n.tp)
     for (i in seq_len(n.tp)) {
         pp <- sapply(out, function (x) x[[1]][[i]])
@@ -247,8 +250,12 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
         rownames(rr) <- tail(sprintf("%.1f", dt), length(rr))
         rr
     })
+    times <- split(data[[timeVar]], data[[idVar]][, drop = TRUE])
+    for (i in seq_along(times))
+        if (all(times[[i]] == 0))
+            optThr[[i]] <- optThr[[i]][, 1, drop = FALSE]
     if (is.matrix(aucs)) colnames(aucs) <- unique(data[[idVar]]) else names(aucs) <- unique(data[[idVar]])
-    out <- c("MCresults" = res, list(AUCs = aucs, optThr = optThr, times = split(data[[timeVar]], data[[idVar]][, drop = TRUE]), 
+    out <- c("MCresults" = res, list(AUCs = aucs, optThr = optThr, times = times, 
         dt = dt, M = M, diffType = diffType, abs.diff = abs.diff, rel.diff = rel.diff, cc = cc, min.cc = min.cc, 
         max.cc = max.cc, success.rate = success.rate))
     class(out) <- "rocJM"

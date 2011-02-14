@@ -71,7 +71,7 @@ Harrell, F., Kerry, L. and Mark, D. (1996). Multivariable prognostic models: iss
 developing models, evaluating assumptions and adequacy, and measuring and reducing errors.
 \emph{Statistics in Medicine} \bold{15}, 361--387.
 
-Rizopoulos, D. (2010). Dynamic predictions and prospective accuracy in joint models for 
+Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for 
 longitudinal and time-to-event data. \emph{Biometrics}, accepted.
 }
 

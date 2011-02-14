@@ -37,7 +37,7 @@
 }
 
 \references{
-Rizopoulos, D. (2010). Dynamic predictions and prospective accuracy in joint models for 
+Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for 
 longitudinal and time-to-event data. \emph{Biometrics}, accepted.
 
 More examples can be found at \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.

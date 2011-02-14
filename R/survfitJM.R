@@ -79,7 +79,7 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
             Dalpha = Dalpha, log.sigma.t = if (is.null(sigma.t)) NULL else log(sigma.t), 
             log.xi = if (is.null(xi)) NULL else log(xi), gammas.bs = gammas.bs, 
-            D = if (diag.D) log(D) else chol.transf(D))
+            D = if (diag.D) log(diag(D)) else chol.transf(D))
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH") && !is.null(object$scaleWB)) {
         list.thetas$log.sigma.t <- NULL
     }
@@ -105,7 +105,7 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     survMats <- survMats.last <- vector("list", n.tp)
     for (i in seq_len(n.tp)) {
         survMats[[i]] <- lapply(times.to.pred[[i]], ModelMats, ii = i)
-        survMats.last[[i]] <- ModelMats(last.time[i], ii = i)  
+        survMats.last[[i]] <- ModelMats(last.time[i], ii = i)
     }
     # calculate the Empirical Bayes estimates and their (scaled) variance
     modes.b <- matrix(0, n.tp, ncz)
@@ -131,8 +131,6 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
         modes.b[i, ] <- opt$par
         Vars.b[[i]] <- scale * solve(opt$hessian)        
     }
-    #system.time(replicate(1000, log.posterior.b(rep(0.1, ncol(Z)), y, time = last.time, method = method, ii = 1)))
-    #system.time(replicate(1000, log.posterior.b2(rep(0.1, ncol(Z)), y, survMats.last, method, ii = 1)))
     if (!simulate) {
         res <- vector("list", n.tp)
         for (i in seq_len(n.tp)) {

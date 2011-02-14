@@ -1,3 +1,10 @@
+Changes in version: JM_0.8-2
+
+  * a bug was corrected in the internal function ModelMats().
+  
+
+==============================
+
 Changes in version: JM_0.8-1
 
   * the new function xtable.jointModel() in conjunction with the xtable package can be used to produce a LaTeX table with the results of joint modeling analysis.

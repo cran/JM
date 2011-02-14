@@ -85,8 +85,8 @@ Predicted probabilities are not computed for joint models with \code{method = "c
 Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
 
-Rizopoulos, D. (2010). Dynamic prediction and prospective accuracy in joint models for longitudinal and time-to-event data. 
-\emph{Submitted}.
+Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for longitudinal and time-to-event data. 
+\emph{Biometrics}, accepted.
 }
 
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
