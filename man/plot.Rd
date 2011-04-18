@@ -18,7 +18,7 @@
   main = "", 
   ask = prod(par("mfcol")) < length(which) && dev.interactive(), 
   \dots, ids = NULL, add.smooth = getOption("add.smooth"), 
-  add.qqline = TRUE, add.KM = FALSE, cex.caption = 1)
+  add.qqline = TRUE, add.KM = FALSE, cex.caption = 1, return = FALSE)
 }
 
 \arguments{
@@ -38,6 +38,8 @@
   \item{add.KM}{logical; if \code{TRUE} the Kaplan-Meier estimate of the survival function is superimposed in the 
     "Marginal Survival" plot.}
   \item{cex.caption}{magnification of captions.}
+  \item{return}{logical; if \code{TRUE} and \code{which} takes in values in \code{c(3:5, 8:10)},
+ 	then the values used to create the plot are returned.}
 }
 
 \note{

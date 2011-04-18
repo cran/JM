@@ -57,7 +57,7 @@ fitSURV <- coxph(Surv(Time, death) ~ drug + AZT + prevOI + gender,
 fit.aids <- jointModel(fitLME, fitSURV, timeVar = "obstime", 
     method = "piecewise-PH-GH")
 
-ND <- aids[aids$patient %in% "7", ]
+ND <- aids[aids$patient == "7", ]
 roc <- rocJM(fit.aids, dt = c(2, 4, 8), ND, idVar = "patient")
 plot(roc, lwd = 2, legend = TRUE)
 plot(roc, type = "AUC")

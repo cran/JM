@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.8-2\cr
-Date: \tab 2011-02-14\cr
+Version: \tab 0.8-3\cr
+Date: \tab 2011-04-18\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -46,7 +46,7 @@ integration technique; available options are:
         required integrals (Rizopoulos et al., 2009).}
 }
 For all the above mentioned options (except the last one), a pseudo-adaptive Gauss-Hermite integration rule is also available
-(Rizopoulos, 2011). This is much faster than the classical Gauss-Hermite rule, and in several simulations it has been 
+(Rizopoulos, 2011b). This is much faster than the classical Gauss-Hermite rule, and in several simulations it has been 
 shown to perform equally well (though its performance is still under investigation).
 
 The package also offers several utility functions that can extract useful information from fitted joint models. The most
@@ -63,14 +63,14 @@ Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal measurements 
 and event time data. \emph{Biostatistics} \bold{1}, 465--480.
 
+Rizopoulos, D. (2011a). Dynamic predictions and prospective accuracy in joint models for longitudinal 
+and time-to-event data. \emph{Biometrics}, to appear.
+
+Rizopoulos, D. (2011b). Fast fitting of joint models for longitudinal and event time Data using a 
+pseudo-adaptive Gaussian quadrature Rule. \emph{Submitted}.
+
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
-
-Rizopoulos, D. (2011a). Dynamic predictions and prospective accuracy in joint models for longitudinal 
-and time-to-event data. \emph{Biometrics}, accepted.
-
-Rizopoulos, D. (2011b). Pseudo-adaptive Gaussian quadrature integration in joint models for longitudinal 
-and time-to-event data. \emph{In progress}.
 
 Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
 modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} 

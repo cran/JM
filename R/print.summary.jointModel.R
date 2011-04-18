@@ -6,8 +6,8 @@ function (x, digits = max(4, getOption("digits") - 4),
     cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
     cat("Data Descriptives:\n")
     pcEv <- round(100 * sum(x$d) / x$n, 1)
-    cat("Longitudinal Process\t\t\tEvent Process")
-    cat("\nNumber of Observations: ", x$N, "\t\tNumber of Events: ", sum(x$d), " (", pcEv, "%)", sep = "")
+    cat("Longitudinal Process\t\tEvent Process")
+    cat("\nNumber of Observations: ", x$N, "\tNumber of Events: ", sum(x$d), " (", pcEv, "%)", sep = "")
     cat("\nNumber of Groups:", length(unique(x$id)))
     cat("\n\nJoint Model Summary:")
     cat("\nLongitudinal Process: linear mixed effects model")
@@ -20,10 +20,10 @@ function (x, digits = max(4, getOption("digits") - 4),
         cat("Weibull relative risk model\n")
     } else if (x$method == "piecewise-PH-GH") {
         if (printKnots)
-            cat("Relative risk model with piecewise-constant baseline risk function\n\t\t(knots at: ", 
+            cat("Relative risk model with piecewise-constant\n\tbaseline risk function (knots at: ", 
                 paste(round(x$control$knots, 1), collapse = ", "), ")\n", sep = "")
         else 
-            cat("Relative risk model with piecewise-constant baseline risk function\n")
+            cat("Relative risk model with piecewise-constant\n\t\tbaseline risk function\n")
     } else if (x$method == "spline-PH-GH") {
         xx <- if (length(x$control$knots) == 1) {
             kk <- round(unique(x$control$knots[[1]]), 1)
@@ -37,7 +37,7 @@ function (x, digits = max(4, getOption("digits") - 4),
         if (printKnots)
             cat("Relative risk model with spline-approximated baseline risk function (knots at: ", xx, ")\n", sep = "")
         else 
-            cat("Relative risk model with spline-approximated baseline risk function\n")
+            cat("Relative risk model with spline-approximated\n\t\tbaseline risk function\n")
     } else {
         cat("log cumulative baseline hazard with B-splines (internal knots at: ", 
             paste(round(exp(x$knots[-c(1, length(x$knots))]), 2), collapse = ", "), ")\n", sep = "")

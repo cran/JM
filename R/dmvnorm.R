@@ -7,7 +7,7 @@ function (x, mu, Sigma, log = FALSE) {
         dnorm(x, mu, sqrt(Sigma), log = log)
     } else {
         t1 <- length(mu) == length(Sigma)
-        t2 <- all(Sigma[lower.tri(Sigma)] < sqrt(.Machine$double.eps))
+        t2 <- all(abs(Sigma[lower.tri(Sigma)]) < sqrt(.Machine$double.eps))
         if (t1 || t2) {
             if (!t1)
                 Sigma <- diag(Sigma)

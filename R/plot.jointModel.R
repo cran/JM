@@ -3,7 +3,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
     "Marginal Cumulative Hazard", "Marginal log Cumulative Hazard", "Baseline Hazard", "Cumulative Baseline Hazard", 
     "Subject-specific Survival", "Subject-specific Cumulative Hazard", "Subject-specific log Cumulative Hazard"), 
     survTimes = NULL, main = "", ask = prod(par("mfcol")) < length(which) && dev.interactive(), ..., ids = NULL, 
-    add.smooth = getOption("add.smooth"), add.qqline = TRUE, add.KM = FALSE, cex.caption = 1) {
+    add.smooth = getOption("add.smooth"), add.qqline = TRUE, add.KM = FALSE, cex.caption = 1, return = FALSE) {
     if (!inherits(x, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
     if (!is.numeric(which) || any(which < 1) || any(which > 10))
@@ -72,6 +72,8 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 data.id <- x$data.id[id.GK, ]
                 data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
                 if (parameterization %in% c("value", "both")) {
+                    mfX <- model.frame(x$termsYx, data = data.id)
+                    mfZ <- model.frame(x$termsYz, data = data.id)
                     Xs <- model.matrix(x$formYx, mfX)
                     Zs <- model.matrix(x$formYz, mfZ)
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
@@ -268,12 +270,13 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
             list("survival" = exp(- exp(eta)), "cumulative-Hazard" = exp(eta), "log-cumulative-Hazard" = eta)
         }
     }
-    one.fig <- prod(par("mfcol")) == 1
-    if (ask) {
+    if (!return)
+        one.fig <- prod(par("mfcol")) == 1
+    if (ask && !return) {
         op <- par(ask = TRUE)
         on.exit(par(op))
     }
-    if (show[1]) {
+    if (show[1] && !return) {
         fitY <- fitted(x, process = "Longitudinal", type = "Subject")
         resY <- residuals(x, process = "Longitudinal", type = "Subject")
         plot(fitY, resY, xlab = "Fitted Values", ylab = "Residuals", main = main, ...)
@@ -283,14 +286,14 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
         }
         mtext(caption[1], 3, 0.25, cex = cex.caption)
     } 
-    if (show[2]) {
+    if (show[2] && !return) {
         resY <- residuals(x, process = "Longitudinal", type = "stand-Subject")
         qqnorm(resY, ylab = "Standardized Residuals", main = main, ...)
         if (add.qqline)
             qqline(resY, lty = 3, col = "grey50")
         mtext(caption[2], 3, 0.25, cex = cex.caption)
     }
-    if (show[3]) {
+    if (show[3] && !return) {
         strata <- if (is.null(x$y$strata)) gl(1, n) else x$y$strata
         yy <- rowsum(fitT[["survival"]], strata) / as.vector(table(strata))
         if (add.KM) {
@@ -304,19 +307,19 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
         }
         mtext(caption[3], 3, 0.25, cex = cex.caption)
     }
-    if (show[4]) {
+    if (show[4] && !return) {
         strata <- if (is.null(x$y$strata)) gl(1, n) else x$y$strata
         yy <- rowsum(fitT[["cumulative-Hazard"]], strata) / as.vector(table(strata))
         matplot(survTimes, t(yy), xlab = "Time", ylab = "Cumulative Hazard", main = main, type = "l", ...)
         mtext(caption[4], 3, 0.25, cex = cex.caption)
     }
-    if (show[5]) {
+    if (show[5] && !return) {
         strata <- if (is.null(x$y$strata)) gl(1, n) else x$y$strata
         yy <- rowsum(fitT[["log-cumulative-Hazard"]], strata) / as.vector(table(strata))
         plot(survTimes, t(yy), xlab = "Time", ylab = "log Cumulative Hazard", main = main, type = "l", ...)
         mtext(caption[5], 3, 0.25, cex = cex.caption)
     }
-    if (show[6]) {
+    if (show[6] && !return) {
         lambda0 <- x$coefficients$lambda0
         plot(lambda0[, "time"], lambda0[, "basehaz"], xlab = "Time", ylab = "", main = main, ...)
         if (add.smooth) {
@@ -324,29 +327,32 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
         }
         mtext(caption[6], 3, 0.25, cex = cex.caption)
     }
-    if (show[7]) {
+    if (show[7] && !return) {
         lambda0 <- x$coefficients$lambda0
         plot(lambda0[, "time"], cumsum(lambda0[, "basehaz"]), xlab = "Time", ylab = "", main = main, type = "s", ...)
         mtext(caption[7], 3, 0.25, cex = cex.caption)
     }
-    if (show[8]) {
+    if (show[8] && !return) {
         yy <- t(fitT[["survival"]])
         matplot(survTimes, yy[, ids], type = "l", col = "black", lty = 1, 
             xlab = "Time", ylab = "Survival", main = main, ylim = c(0, 1), ...)
         mtext(caption[8], 3, 0.25, cex = cex.caption)
     }
-    if (show[9]) {
+    if (show[9] && !return) {
         yy <- t(fitT[["cumulative-Hazard"]])
         matplot(survTimes, yy[, ids], type = "l", col = "black", lty = 1, 
             xlab = "Time", ylab = "Cumulative Hazard", main = main, ...)
         mtext(caption[9], 3, 0.25, cex = cex.caption)
     }
-    if (show[10]) {
+    if (show[10] && !return) {
         yy <- t(fitT[["log-cumulative-Hazard"]])
         matplot(survTimes, yy[, ids], type = "l", col = "black", lty = 1, 
             xlab = "Time", ylab = "log Cumulative Hazard", main = main, ...)
         mtext(caption[10], 3, 0.25, cex = cex.caption)
     }
-    invisible()
+    if (return)
+        invisible(c(fitT, list(survTimes = survTimes)))
+    else 
+        invisible()
 }
 

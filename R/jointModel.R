@@ -1,8 +1,8 @@
 jointModel <-
 function (lmeObject, survObject, timeVar, parameterization = c("value", "slope", "both"), 
-        method = c("weibull-PH-GH", "weibull-PH-aGH", "weibull-AFT-GH", "weibull-AFT-aGH", 
-        "piecewise-PH-GH", "piecewise-PH-aGH", "Cox-PH-GH", "Cox-PH-aGH", "spline-PH-GH", 
-        "spline-PH-aGH", "ch-Laplace"), interFact = NULL, derivForm = NULL, lag = 0, 
+        method = c("weibull-PH-aGH", "weibull-PH-GH", "weibull-AFT-aGH", "weibull-AFT-GH", 
+        "piecewise-PH-aGH", "piecewise-PH-GH", "Cox-PH-aGH", "Cox-PH-GH", "spline-PH-aGH", 
+        "spline-PH-GH", "ch-Laplace"), interFact = NULL, derivForm = NULL, lag = 0, 
         scaleWB = NULL, init = NULL, control = list(), ...) {
     cl <- match.call()
     if (!inherits(lmeObject, "lme"))
@@ -15,7 +15,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         warning("variance structure in 'lmeObject' is ignored.\n")        
     if (!inherits(survObject, "coxph") && !inherits(survObject, "survreg"))
         stop("\n'survObject' must inherit from class coxph or class survreg.")
-    if (is.null(survObject$x))
+    if (!is.matrix(survObject$x))
         stop("\nuse argument 'x = TRUE' in ", 
             if (inherits(survObject, "coxph")) "'coxph()'." else "'survreg()'.")
     if (length(timeVar) != 1 || !is.character(timeVar))
@@ -319,14 +319,10 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     VC <- lapply(pdMatrix(lmeObject$modelStruct$reStruct), "*", lmeObject$sigma^2)[[1]]
     if (con$typeGH != "simple") {
         Vs <- vector("list", nY)
-        V <- vcov(lmeObject)
+        inv.VC <- solve(VC)
         for (i in 1:nY) {
             Z.i <- Z[id == i, , drop = FALSE]
-            X.i <- X[id == i, , drop = FALSE]
-            M <- solve(Z.i %*% tcrossprod(VC, Z.i) + 
-                lmeObject$sigma^2*diag(nrow(Z.i)))
-            Vs[[i]] <- VC - VC %*% crossprod(Z.i, M - M %*% X.i %*% 
-                V %*% crossprod(X.i, M)) %*% Z.i %*% VC
+            Vs[[i]] <- solve(crossprod(Z.i) / lmeObject$sigma^2 + inv.VC)        
         }
         con$inv.chol.VCs <- lapply(Vs, function (x) solve(chol(solve(x))))
         con$det.inv.chol.VCs <- sapply(con$inv.chol.VCs, det)

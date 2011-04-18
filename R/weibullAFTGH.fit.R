@@ -60,7 +60,7 @@ function (x, y, id, initial.values, scaleWB, parameterization, derivForm, contro
         wGH <- wGH * control$det.inv.chol.VC
     } else { 
         b <- sqrt(2) * b
-       VCdets <- control$det.inv.chol.VCs
+        VCdets <- control$det.inv.chol.VCs
     }
     dimnames(b) <- NULL
     b2 <- if (ncz == 1) b * b else t(apply(b, 1, function (x) x %o% x))

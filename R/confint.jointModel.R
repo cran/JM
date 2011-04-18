@@ -18,7 +18,8 @@ function (object, parm = c("all", "Longitudinal", "Event"), level = 0.95, ...) {
     a <- c(a, 1 - a)
     pct <- stats:::format.perc(a, 3)
     fac <- qnorm(a)
-    ci <- array(NA, dim = c(length(cf), 2L), dimnames = list(names(cf), pct))
+    ci <- array(NA, dim = c(length(cf), 3L), dimnames = list(names(cf), 
+            c(pct[1], "est.", pct[2])))
     ses <- sqrt(diag(vcov(object))) 
     ii <- switch(parm,
        "Longitudinal" = grep("Y.", names(ses), fixed = TRUE)[seq_along(cf)],
@@ -30,7 +31,8 @@ function (object, parm = c("all", "Longitudinal", "Event"), level = 0.95, ...) {
        } 
     )
     ses <- ses[ii]
-    ci[] <- cf + ses %o% fac
+    ci[, c(1,3)] <- cf + ses %o% fac
+    ci[, 2] <- cf
     ci
 }
 

@@ -12,9 +12,9 @@ data under a maximum likelihood approach. Various options for the survival model
 \usage{
 jointModel(lmeObject, survObject, timeVar, 
   parameterization = c("value", "slope", "both"),
-  method = c("weibull-PH-GH", "weibull-PH-aGH", "weibull-AFT-GH", 
-    "weibull-AFT-aGH", "piecewise-PH-GH", "piecewise-PH-aGH", 
-    "Cox-PH-GH", "Cox-PH-aGH", "spline-PH-GH", "spline-PH-aGH", 
+  method = c("weibull-PH-aGH", "weibull-PH-GH", "weibull-AFT-aGH", 
+    "weibull-AFT-GH", "piecewise-PH-aGH", "piecewise-PH-GH", 
+    "Cox-PH-aGH", "Cox-PH-GH", "spline-PH-aGH", "spline-PH-GH", 
     "ch-Laplace"),
   interFact = NULL, derivForm = NULL, lag = 0, scaleWB = NULL,
   init = NULL, control = list(), \dots)
@@ -175,11 +175,11 @@ Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal 
 Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and longitudinal data: Likelihood 
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
-Rizopoulos, D. (2011a). Pseudo-adaptive Gaussian quadrature integration in joint models for longitudinal 
-and time-to-event data. \emph{In progress}.
+Rizopoulos, D. (2011a). Fast fitting of joint models for longitudinal and event time Data using a pseudo-adaptive 
+Gaussian quadrature Rule. \emph{Submitted}.
 
 Rizopoulos, D. (2011b). Dynamic predictions and prospective accuracy in joint models for longitudinal 
-and time-to-event data. \emph{Biometrics}, accepted.
+and time-to-event data. \emph{Biometrics}, to appear.
 
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
@@ -222,7 +222,11 @@ corresponds to the association parameter \eqn{\alpha} and the element "Assoct.s"
 \code{method = "Cox-PH-GH"} are based on the profile score vector (i.e., given the NPMLE for the unspecified baseline 
 hazard). Hsieh et al. (2006) have noted that these standard errors are underestimated.
 
-6. For more examples and additional material check \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
+6. As it is the case for all types of mixed models that require numerical integration, it is advisable (especially in
+difficult datasets) to check the stability of the maximum likelihood estimates with an increasing number of 
+Gauss-Hermite quadrature points.
+
+7. For more examples and additional material check \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
 }
 
 \seealso{
