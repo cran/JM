@@ -26,8 +26,16 @@ function (time.points) {
     d.missO <- d[unq.id.miss]
     X.missO <- X[ind.miss, ]
     Z.missO <- Z[ind.miss, ]
-    Xtime.missO <- Xtime[unq.id.miss, , drop = FALSE]
-    Ztime.missO <- Ztime[unq.id.miss, , drop = FALSE]
+    if (parameterization %in% c("value", "both")) {
+        Xtime.missO <- Xtime[unq.id.miss, , drop = FALSE]
+        Ztime.missO <- Ztime[unq.id.miss, , drop = FALSE]
+        WintF.vl.missO <- WintF.vl[unq.id.miss, , drop = FALSE]
+    }
+    if (parameterization %in% c("slope", "both")) {
+        Xtime.deriv.missO <- Xtime.deriv[unq.id.miss, , drop = FALSE]
+        Ztime.deriv.missO <- Ztime.deriv[unq.id.miss, , drop = FALSE]
+        WintF.sl.missO <- WintF.sl[unq.id.miss, , drop = FALSE]
+    }
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
         P.missO <- P[unq.id.miss]
         log.st.missO <- log.st[id.GK]
@@ -80,13 +88,13 @@ function (time.points) {
         function (x) time.points[!time.points %in% x]))
     dataM <- object$data[unq.id.miss, ]
     dataM <- dataM[id2.miss, ]
-    dataM[object$timeVar] <- pmax(mis.times - object$y$lag, 0)
+    dataM[[object$timeVar]] <- pmax(mis.times - object$y$lag, 0)
     mfX <- model.frame(object$termsYx, data = dataM)
     mfZ <- model.frame(object$termsYz, data = dataM)
     X.missM <- model.matrix(object$formYx, mfX)
     Z.missM <- model.matrix(object$formYz, mfZ)
     N.missM <- nrow(X.missM)
-    n.missO <- nrow(Ztime.missO)
+    n.missO <- length(unq.id.miss)
     # Estimated MLEs
     D <- object$coefficients$D
     diag.D <- ncz != ncol(D)
@@ -158,7 +166,7 @@ function (time.points) {
             xi.new <- exp(thetas.new$log.xi); Q <- object$x$Q
         # Step2: Simulate new values for the random effects
         eta.yx <- as.vector(X.missO %*% betas.new)
-        eta.yxT <- as.vector(Xtime.missO %*% betas.new)
+        #eta.yxT <- as.vector(Xtime.missO %*% betas.new)
         eta.tw <- if (!is.null(WW)) as.vector(WW.missO %*% gammas.new) else 0
         dmvt.current <- dmvt.proposed <- numeric(n.missO)
         for (i in 1:n.missO) {

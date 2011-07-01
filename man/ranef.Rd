@@ -9,21 +9,17 @@ Extracts the random effects estimates from a fitted joint model.
 }
 
 \usage{
-\method{ranef}{jointModel}(object, postVar = FALSE, \dots)
+\method{ranef}{jointModel}(object, type = c("mean", "mode"), postVar = FALSE, \dots)
 }
 
 \arguments{
   \item{object}{an object inheriting from class \code{jointModel}.}
-  \item{postVar}{logical; if \code{TRUE} the variance-covariance matrix of these estimates is also returned. 
-  See \bold{Details} for more info.}
+  \item{type}{what type of empirical Bayes estimates to compute, the mean of the posterior distribution or
+	the mode of the posterior distribution.}
+  \item{postVar}{logical; if \code{TRUE} the variance of the posterior distribution is also returned. When
+	\code{type == "mode"}, then this equals \eqn{\{- \partial^2 \log p(b_i | T_i, 
+	\delta_i, y_i) / \partial b_i^\top \partial b_i \}^{-1}}.}
   \item{\dots}{additional arguments; currently none is used.}
-}
-
-\details{
-  For methods \code{"weibull-GH-PH"}, \code{"weibull-AFT-GH"}, \code{"Cox-PH-GH"},  \code{"spline-PH-GH"} and 
-  \code{"piecewise-PH-GH"} the \code{ranef()} method returns the posterior means (and posterior variances if 
-  \code{postVar = TRUE}), whereas for method \code{"ch-Laplace"} it returns the posterior modes (and the inverse of 
-  the negative of the second-order derivative of the log-posterior with respect to the random effects, if \code{postVar = TRUE}). 
 }
 
 \value{

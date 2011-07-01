@@ -20,7 +20,7 @@ function (b, y, Mats, method, ii) {
     if (parameterization %in% c("value", "both"))
         Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * rep(b, each = nrow(Zs))))
     if (parameterization %in% c("slope", "both"))
-        Ys.deriv <- as.vector(Xs.deriv %*% betas[indFixed]) + 
+        Ys.deriv <- as.vector(Xs.deriv %*% betas.new[indFixed]) + 
             rowSums(Zs.deriv * rep(b[indRandom], each = nrow(Zs)))
     tt <- switch(parameterization,
         "value" = c(Ws.intF.vl %*% alpha.new) * Ys, 

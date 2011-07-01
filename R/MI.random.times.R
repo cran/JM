@@ -12,10 +12,16 @@ function (time.points) {
     d.missO <- d
     X.missO <- X
     Z.missO <- Z
-    Xtime.missO <- Xtime
-    Ztime.missO <- Ztime
-    Ws.intF.vl.missO <- Ws.intF.vl
-    Ws.intF.sl.missO <- Ws.intF.sl
+    if (parameterization %in% c("value", "both")) {
+        Xtime.missO <- Xtime
+        Ztime.missO <- Ztime
+        WintF.vl.missO <- WintF.vl
+    }
+    if (parameterization %in% c("slope", "both")) {
+        Xtime.deriv.missO <- Xtime.deriv
+        Ztime.deriv.missO <- Ztime.deriv
+        WintF.sl.missO <- WintF.sl
+    }
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
         P.missO <- P
         log.st.missO <- log.st

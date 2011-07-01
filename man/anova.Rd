@@ -5,17 +5,21 @@
 \title{Anova Method for Fitted Joint Models}
 
 \description{
-  Performs a likelihood ratio test between two nested joint models.
+  Produces marginal Wald tests or Performs a likelihood 
+	ratio test between two nested joint models.
 }
 
 \usage{
-\method{anova}{jointModel}(object, object2, test = TRUE, \dots)
+\method{anova}{jointModel}(object, object2, test = TRUE, 
+   process = c("both", "Longitudinal", "Event"), L = NULL, \dots)
 }
 
 \arguments{
   \item{object}{an object inheriting from class \code{jointModel}, nested in \code{object2}.}
   \item{object2}{an object inheriting from class \code{jointModel}.}
   \item{test}{logical; if \code{TRUE} the likelihood ratio test is performed.}
+  \item{process}{for which of the two submodels to produce the marginal Wald tests table.}
+  \item{L}{a numeric matrix of appropriate dimensions defining the contrasts of interest.}
   \item{\dots}{additional arguments; currently none is used.}
 }
 
@@ -32,6 +36,12 @@
     \item{df}{the degrees of freedom for the test (i.e., the difference in the number of parameters).}
     \item{LRT}{the value of the Likelihood Ratio Test statistic (returned if \code{test = TRUE}).}
     \item{p.value}{the \eqn{p}-value of the test (returned if \code{test = TRUE}).}
+    \item{aovTab.Y}{a data.frame with the marginal Wald tests for the longitudinal process; 
+	produced only when \code{object2} is missing.}
+    \item{aovTab.T}{a data.frame with the marginal Wald tests for the event process; 
+	produced only when \code{object2} is missing.}
+    \item{aovTab.L}{a data.frame with the marginal Wald tests for the user-defined contrasts matrix; 
+	produced only when \code{object2} is missing and \code{L} is not \code{NULL}.}
 }
 
 \section{Warning}{

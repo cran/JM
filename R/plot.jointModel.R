@@ -85,7 +85,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
                     Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
-                        if (indRandom) 
+                        if (length(indRandom) > 1 || indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
                         else
                             0
@@ -130,7 +130,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
                     Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
-                        if (indRandom) 
+                        if (length(indRandom) > 1 || indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
                         else
                             0
@@ -188,7 +188,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
                     Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
-                        if (indRandom) 
+                        if (length(indRandom) > 1 || indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
                         else
                             0
@@ -234,7 +234,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
                     Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
-                        if (indRandom) 
+                        if (length(indRandom) > 1 || indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
                         else
                             0

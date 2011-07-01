@@ -247,7 +247,10 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
         betasn <- betas - c(solve(Hbetas, scbetas))
         list.thetas <- list(gammas = gammas, alpha = alpha, Dalpha = Dalpha, log.xi = log(xi))
         list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
-        thetas <- unlist(as.relistable(list.thetas))        
+        thetas <- unlist(as.relistable(list.thetas))
+        
+        gr.survPC(thetas)
+        
         optz.surv <- optim(thetas, opt.survPC, gr.survPC, method = "BFGS", 
             control = list(maxit = if (it < 5) 20 else 5, 
                 parscale = if (it < 5) rep(0.01, length(thetas)) else rep(0.1, length(thetas))))

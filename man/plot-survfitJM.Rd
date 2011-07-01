@@ -12,8 +12,9 @@
 \method{plot}{survfitJM}(x, estimator = c("both", "mean", "median"), 
     which = NULL, fun = NULL, conf.int = FALSE, 
     add.last.time.axis.tick = FALSE, include.y = FALSE, main = NULL, 
-    xlab = NULL, ylab = NULL, lty = NULL, col = NULL, lwd = NULL, 
-    pch = NULL, ask = NULL, legend = FALSE, \dots)
+    xlab = NULL, ylab = NULL, ylab2 = NULL, lty = NULL, col = NULL, 
+    lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, \dots,
+    cex.axis.z = 1, cex.lab.z = 1)
 }
 
 \arguments{
@@ -33,12 +34,14 @@
   \item{main}{a character string specifying the title in the plot.}
   \item{xlab}{a character string specifying the x-axis label in the plot.}
   \item{ylab}{a character string specifying the y-axis label in the plot.}
+  \item{ylab2}{a character string specifying the y-axis label in the plotm when \code{include.y = TRUE}.}
   \item{lty}{what types of lines to use.}
   \item{col}{which colors to use.}
   \item{lwd}{the thickness of the lines.}
   \item{pch}{the type of points to use.}  
   \item{ask}{logical; if \code{TRUE}, the user is asked before each plot, see \code{par()}.}
   \item{legend}{logical; if \code{TRUE}, a legend is included in the plot.}
+  \item{cex.axis.z, cex.lab.z}{the par \code{cex} argument for the axis at side 4, when \code{include.y = TRUE}.}
   \item{\dots}{extra graphical parameters passed to \code{plot()}.}
 }
 

@@ -1,19 +1,25 @@
 posterior.b <-
 function (b) {
-    Y <- eta.yxT + rowSums(Ztime.missO * b)
-    eta.t <- eta.tw + alpha.new * Y
     mu.y <- eta.yx + rowSums(Z.missO * b[id3.miss, , drop = FALSE])
     logNorm <- dnorm(y.missO, mu.y, sigma.new, TRUE)
     log.p.yb <- as.vector(tapply(logNorm, id.miss, sum))
     log.p.tb <- if (method == "weibull-PH-GH") {
         id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
         if (parameterization %in% c("value", "both")) {
+            Y.new <- as.vector(Xtime.missO %*% betas.new) + rowSums(Ztime.missO * b)
+            eta.t <- eta.tw + c(WintF.vl.missO %*% alpha.new) * Y.new
             Ys.new <- as.vector(Xs.missO %*% betas.new) + 
                 rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
             eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
         }
         if (parameterization %in% c("slope", "both")) {
-            Ys.deriv.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
+            Y.new <- as.vector(Xtime.deriv.missO %*% betas.new[indFixed]) + 
+                rowSums(Ztime.deriv.missO * b[, indRandom, drop = FALSE])
+            eta.t <- if (parameterization == "both")
+                eta.t + c(WintF.sl.missO %*% Dalpha.new) * Y.new
+            else
+                eta.tw + c(WintF.sl.missO %*% Dalpha.new) * Y.new
+            Ys.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
                 rowSums(Zs.deriv.missO * b[id.GK3, indRandom, drop = FALSE])
             eta.s <- if (parameterization == "both")
                 eta.s + c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
@@ -28,11 +34,19 @@ function (b) {
     } else if (method == "weibull-AFT-GH") {
         id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
         if (parameterization %in% c("value", "both")) {
+            Y.new <- as.vector(Xtime.missO %*% betas.new) + rowSums(Ztime.missO * b)
+            eta.t <- eta.tw + c(WintF.vl.missO %*% alpha.new) * Y.new
             Ys.new <- as.vector(Xs.missO %*% betas.new) + 
                 rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
             eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
         }
         if (parameterization %in% c("slope", "both")) {
+            Y.new <- as.vector(Xtime.deriv.missO %*% betas.new[indFixed]) + 
+                rowSums(Ztime.deriv.missO * b[, indRandom, drop = FALSE])
+            eta.t <- if (parameterization == "both")
+                eta.t + c(WintF.sl.missO %*% Dalpha.new) * Y.new
+            else
+                eta.tw + c(WintF.sl.missO %*% Dalpha.new) * Y.new
             Ys.deriv.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
                 rowSums(Zs.deriv.missO * b[id.GK3, indRandom, drop = FALSE])
             eta.s <- if (parameterization == "both")
@@ -48,12 +62,20 @@ function (b) {
     } else if (method == "spline-PH-GH") {
         id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
         if (parameterization %in% c("value", "both")) {
+            Y.new <- as.vector(Xtime.missO %*% betas.new) + rowSums(Ztime.missO * b)
+            eta.t <- eta.tw + c(WintF.vl.missO %*% alpha.new) * Y.new
             Ys.new <- as.vector(Xs.missO %*% betas.new) + 
                 rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
             eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
         }
         if (parameterization %in% c("slope", "both")) {
-            Ys.deriv.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
+            Y.new <- as.vector(Xtime.deriv.missO %*% betas.new[indFixed]) + 
+                rowSums(Ztime.deriv.missO * b[, indRandom, drop = FALSE])
+            eta.t <- if (parameterization == "both")
+                eta.t + c(WintF.sl.missO %*% Dalpha.new) * Y.new
+            else
+                eta.tw + c(WintF.sl.missO %*% Dalpha.new) * Y.new
+            Ys.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
                 rowSums(Zs.deriv.missO * b[id.GK3, indRandom, drop = FALSE])
             eta.s <- if (parameterization == "both")
                 eta.s + c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
@@ -70,11 +92,19 @@ function (b) {
         nn <- as.vector(tapply(ii, ii, length))
         id.GK3 <- rep(seq_len(n.missO), nn)
         if (parameterization %in% c("value", "both")) {
+            Y.new <- as.vector(Xtime.missO %*% betas.new) + rowSums(Ztime.missO * b)
+            eta.t <- eta.tw + c(WintF.vl.missO %*% alpha.new) * Y.new
             Ys.new <- as.vector(Xs.missO %*% betas.new) + 
                 rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
             eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
         }
         if (parameterization %in% c("slope", "both")) {
+            Y.new <- as.vector(Xtime.deriv.missO %*% betas.new[indFixed]) + 
+                rowSums(Ztime.deriv.missO * b[, indRandom, drop = FALSE])
+            eta.t <- if (parameterization == "both")
+                eta.t + c(WintF.sl.missO %*% Dalpha.new) * Y.new
+            else
+                eta.tw + c(WintF.sl.missO %*% Dalpha.new) * Y.new
             Ys.deriv.new <- as.vector(Xs.deriv.missO %*% betas.new[indFixed]) + 
                 rowSums(Zs.deriv.missO * b[id.GK3, indRandom, drop = FALSE])
             eta.s <- if (parameterization == "both")

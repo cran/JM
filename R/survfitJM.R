@@ -173,7 +173,7 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
                         log.posterior.b(b.old[i, ], y, survMats.last, method, ii = i) - dmvt.proposed), 1)
                 ind <- runif(1) <= a
                 success.rate[m, i] <- ind
-                if (ind)
+                if (!is.na(ind) && ind)
                     b.new[i, ] <- proposed.b
                 # Step 3: compute Pr(T > t_k | T > t_{k - 1}; theta.new, b.new)
                 S.last <- S.b(last.time[i], b.new[i, ], i, survMats.last[[i]])
@@ -201,9 +201,10 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
         }
     }
     y <- split(y, id)
+    fitted.y <- split(c(X %*% betas) + rowSums(Z * modes.b[id, ]), id)
     names(res) <- names(y) <- names(last.time) <- names(obs.times) <- unique(unclass(newdata[[idVar]]))
     res <- list(summaries = res, survTimes = survTimes, last.time = last.time, 
-        obs.times = obs.times, y = y, ry = range(object$y$y, na.rm = TRUE))
+        obs.times = obs.times, y = y, fitted.y = fitted.y, ry = range(object$y$y, na.rm = TRUE))
     if (simulate) {
         res$full.results <- out
         res$success.rate <- success.rate

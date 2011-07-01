@@ -237,9 +237,14 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         nk <- length(sk)
         if (is.null(con$knots) || !is.numeric(con$knots)) {
             Q <- con$lng.in.kn + 1
-            qs <- quantile(Time, seq(0, 1, len = Q + 1), names = FALSE)[-c(1, Q + 1)] + 1e-06
+            qs <- unique(quantile(Time, seq(0, 1, len = Q + 1), 
+                names = FALSE)[-c(1, Q + 1)])
+            qs <- qs + 1e-06
+            if (max(qs) > max(Time))
+                qs[which.max(qs)] <- max(Time) - 1e-06
             con$knots <- qs
             qs <- c(0, qs, max(Time) + 1)
+            Q <- length(qs) - 1
         } else {
             qs <- c(0, sort(con$knots), max(Time) + 1)
             Q <- length(qs) - 1
@@ -388,6 +393,8 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     out$parameterization <- parameterization
     out$derivForm <- derivForm
     out$interFact <- interFact
+    out$assignY <- attr(lmeObject$fixDF, "assign")[-1]
+    out$assignT <- survObject$assign
     out$call <- cl
     class(out) <- "jointModel"
     out

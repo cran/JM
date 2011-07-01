@@ -1,7 +1,8 @@
 plot.survfitJM <-
 function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, conf.int = FALSE,
-        add.last.time.axis.tick = FALSE, include.y = FALSE, main = NULL, xlab = NULL, ylab = NULL, 
-        lty = NULL, col = NULL, lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, ...) {
+        add.last.time.axis.tick = FALSE, include.y = FALSE, main = NULL, xlab = NULL, ylab = NULL, ylab2 = NULL,
+        lty = NULL, col = NULL, lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, ..., cex.axis.z = 1, 
+        cex.lab.z = 1) {
     estimator <- match.arg(estimator)
     fun <- if (!is.null(fun)) match.fun(fun)
     if (is.null(which))
@@ -23,18 +24,25 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
     }
     if (is.null(xlab))
         xlab <- rep("Time", length(which))
-    if (is.null(ylab))
+    if (is.null(ylab)) {
         ylab <- if (is.null(fun))
-            rep(expression(paste("Pr(", T[i] >= u, " | ", T[i] > t, ", ", tilde(y)[i](t), ")", sep = " ")), length(which))
+            if (!include.y)
+                rep(expression(paste("Pr(", T[i] >= u, " | ", T[i] > t, 
+                    ", ", tilde(y)[i](t), ")", sep = " ")), length(which))
+            else
+                rep("Survival Probability", length(which))
         else
             rep("", length(which))
+    }
+    if (is.null(ylab2))
+        ylab2 <- "Longitudinal Outcome"
     if (!is.null(x$success.rate)) {
-    if (is.null(col))
-        col <- switch(estimator, both = c(2, 3, 1, 1), mean = c(2, 1, 1), median = c(3, 1, 1))
-    if (is.null(lty))
-        lty <- switch(estimator, both = c(1, 1, 2, 2), mean = c(1, 2, 2), median = c(1, 2, 2))
-    if (is.null(lwd))
-        lwd <- switch(estimator, both = c(1, 1, 1, 1), mean = c(1, 1, 1), median = c(1, 1, 1))
+        if (is.null(col))
+            col <- switch(estimator, both = c(2, 3, 1, 1), mean = c(2, 1, 1), median = c(3, 1, 1))
+        if (is.null(lty))
+            lty <- switch(estimator, both = c(1, 1, 2, 2), mean = c(1, 2, 2), median = c(1, 2, 2))
+        if (is.null(lwd))
+            lwd <- switch(estimator, both = c(1, 1, 1, 1), mean = c(1, 1, 1), median = c(1, 1, 1))
     } else {
         col <- lty <- lwd <- 1
     }
@@ -61,11 +69,31 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
             lty <- lty[-exc]
             lwd <- lwd[-exc]
         }
-        if (include.y)
-            layout(matrix(c(1, 2)))
         ylim <- if (is.null(fun)) c(0, 1) else { rr <- r[, -1, drop = FALSE]; range(rr[is.finite(rr)]) } 
-        matplot(r[, 1], r[, -1, drop = FALSE], type = "l", col = col, lwd = lwd, lty = lty, ylim = ylim, 
-            main = main[ii], xlab = xlab[i], ylab = ylab[i], ...)
+        if (!include.y) {
+            matplot(r[, 1], r[, -1, drop = FALSE], type = "l", col = col, lwd = lwd, lty = lty, ylim = ylim, 
+                main = main[ii], xlab = xlab[i], ylab = ylab[i], ...)
+        } else {
+            oldmar <- par("mar")
+            par(mar = c(5,4,5,4))
+            lt <- x$last.time[ii]
+            r. <- r[r[, 1] >= lt, ]
+            rng <- range(x$obs.times[[ii]], x$survTimes)
+            plot(x$obs.times[[ii]], x$y[[ii]], xlim = rng, ylim = x$ry,
+                xlab = xlab[i], ylab = ylab2, pch = pch, ...)
+            lines(x$obs.times[[ii]], x$fitted.y[[ii]], col = col, lwd = lwd)
+            abline(v = lt, lty = 3)
+            print(lt)
+            print(r.)
+            print(x$obs.times[[ii]])
+            par(new = TRUE)
+            matplot(r.[, 1], r.[, -1, drop = FALSE], type = "l", col = col, lwd = lwd, 
+                lty = lty, ylim = ylim, main = main[ii], xlim = rng,
+                ylab = "", xlab = "", axes = FALSE, yaxs = "i", ...)
+            axis(4, las = 2, cex.axis = cex.axis.z)
+            mtext(ylab[i], 4, 2, cex = cex.lab.z)
+            par(mar = oldmar, new = FALSE)
+        }
         if (add.last.time.axis.tick)
             axis(1, at = round(x$last.time[ii], 1))
         if (legend) {
@@ -75,9 +103,6 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
                 lab <- c(lab, "Lower limit", "Upper limit")
             legend("left", lab, lwd = lwd, lty = lty, col = col, bty = "n", ...)
         }
-        if (include.y)
-            plot(x$obs.times[[ii]], x$y[[ii]], xlim = range(x$survTimes), ylim = x$ry,
-                xlab = xlab[i], ylab = "Longitudinal Outcome", pch = pch, ...)
     }
     invisible()
 }

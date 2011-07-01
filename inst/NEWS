@@ -1,6 +1,23 @@
+Changes in version: JM_0.8-4
+
+  * method ranef() has now the extra argument 'type' the specifies whether to compute
+    the mean (default) or the mode of the posterior distribution of the random effects.
+
+  * the anova() method now also produces marginal Wald tests when a single joint model
+    is provided.
+
+  * plot.survfitJM() produces a more informative plot when argument 'include.y' is set to
+    TRUE.
+
+  * a bug has been corrected in residuals.jointModel() that it did not work when 'MI = TRUE',
+    and 'parameterization = "slope"' in jointModel().
+  
+
+==============================
+
 Changes in version: JM_0.8-3
 
-  * the default method is now the Weibull under the relative risk parameterization
+  * the default method is now the Weibull model under the relative risk parameterization
     using the pseudo-adaptive Gauss-Hermite rule.
 
   * the plot() method has a new logical argument called 'return', which 
@@ -8,8 +25,8 @@ Changes in version: JM_0.8-3
 
   * a typo in the code creating the scaling for the pseudo-adaptive 
     Gauss-Hermite points has been corrected. This was primarily affecting 
-    the standard errors in the longitudinal submodel. The point may also
-    slightly change in some datasets.  
+    the standard errors in the longitudinal submodel. The point estimates may 
+    also slightly change in some datasets.  
   
 
 ==============================

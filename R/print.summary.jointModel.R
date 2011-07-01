@@ -10,7 +10,7 @@ function (x, digits = max(4, getOption("digits") - 4),
     cat("\nNumber of Observations: ", x$N, "\tNumber of Events: ", sum(x$d), " (", pcEv, "%)", sep = "")
     cat("\nNumber of Groups:", length(unique(x$id)))
     cat("\n\nJoint Model Summary:")
-    cat("\nLongitudinal Process: linear mixed effects model")
+    cat("\nLongitudinal Process: linear mixed-effects model")
     cat("\nEvent Process: ")
     if (x$method == "Cox-PH-GH") {
         cat("Relative risk model with unspecified baseline risk function\n\n")

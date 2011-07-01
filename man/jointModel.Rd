@@ -134,12 +134,12 @@ piecewise constant baseline risk function. For \code{method = "spline-PH-GH"} a 
 log baseline risk function is approximated using B-splines. For \code{method = "ch-Laplace"} an additive model on the log cumulative hazard 
 scale is assumed (see Rizopoulos et al., 2009 for more info). Finally, for \code{method = "Cox-PH-GH"} a time-dependent relative risk model 
 is assumed where the baseline risk function is left unspecified (Wulfsohn and Tsiatis, 1997). For all these options the linear predictor for the
-survival submodel is written as \deqn{\eta = \gamma^\top w_i + \alpha m_i\{min(t-k, 0)\},}{eta = gamma' w_i + alpha m_i{min(t-k,0)},} when 
-\code{parameterization = "value"}, \deqn{\eta = \gamma^\top w_i + \alpha_s m_i'\{min(t-k, 0)\},}{eta = gamma' w_i + alpha m_i'{min(t-k, 0)}} 
-when \code{parameterization = "slope"}, and \deqn{\eta = \gamma^\top w_i + \alpha m_i\{min(t-k, 0)\} + \alpha_s m_i'\{min(t-k, 0)\},}{eta = 
-gamma' w_i + alpha m_i{min(t-k, 0)} + \alpha_s m_i'{min(t-k, 0)},} when \code{parameterization = "both"}, where in all the above the value 
+survival submodel is written as \deqn{\eta = \gamma^\top w_i + \alpha m_i\{max(t-k, 0)\},}{eta = gamma' w_i + alpha m_i{max(t-k,0)},} when 
+\code{parameterization = "value"}, \deqn{\eta = \gamma^\top w_i + \alpha_s m_i'\{max(t-k, 0)\},}{eta = gamma' w_i + alpha m_i'{max(t-k, 0)}} 
+when \code{parameterization = "slope"}, and \deqn{\eta = \gamma^\top w_i + \alpha m_i\{max(t-k, 0)\} + \alpha_s m_i'\{max(t-k, 0)\},}{eta = 
+gamma' w_i + alpha m_i{max(t-k, 0)} + \alpha_s m_i'{max(t-k, 0)},} when \code{parameterization = "both"}, where in all the above the value 
 of \eqn{k} is specified by the \code{lag} argument and \eqn{m_i'(t) = d m_i(t) / dt}. If \code{interFact} is specified, then
-\eqn{m_i\{min(t-k, 0)\}} and/or \eqn{m_i'\{min(t-k, 0)\}} are multiplied with the design matrices derived from the formulas
+\eqn{m_i\{max(t-k, 0)\}} and/or \eqn{m_i'\{max(t-k, 0)\}} are multiplied with the design matrices derived from the formulas
 supplied as the first two arguments of \code{interFact}, respectively. In this case \eqn{\alpha} and/or \eqn{\alpha_s} become vectors of
 association parameters.
 
