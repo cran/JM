@@ -27,10 +27,12 @@ function (b, y, Mats, method, ii) {
         "slope" = c(Ws.intF.sl %*% Dalpha.new) * Ys.deriv,
         "both" = c(Ws.intF.vl %*% alpha.new) * Ys + 
             c(Ws.intF.sl %*% Dalpha.new) * Ys.deriv)
-    eta.tw <- if (!is.null(W)) 
-        as.vector(W[ii, , drop = FALSE] %*% gammas.new)
-    else
-        0
+    eta.tw <- if (!is.null(W)) {
+        if (!LongFormat)
+            as.vector(W[ii, , drop = FALSE] %*% gammas.new)
+        else
+            as.vector(W[id.i, , drop = FALSE] %*% gammas.new)
+    } else 0
     log.survival <- if (method == "weibull-PH-GH") {
         Vi <- exp(log(sigma.t.new) + (sigma.t.new - 1) * log(st) + tt)
         - exp(eta.tw) * P * sum(wk * Vi)
@@ -39,16 +41,19 @@ function (b, y, Mats, method, ii) {
         - Vi^sigma.t.new
     } else if (method == "spline-PH-GH") {
         W2s <- if (length(kn <- object$control$knots) == 1) {
-            splineDesign(unlist(kn, use.names = FALSE), st, ord = object$control$ord, outer.ok = TRUE)
+            splineDesign(unlist(kn, use.names = FALSE), st, 
+                ord = object$control$ord, outer.ok = TRUE)
         } else {
             strt.i <- strt[ii]
-            w2s <- lapply(kn, function (kn) splineDesign(kn, st, ord = object$control$ord, outer.ok = TRUE))
+            w2s <- lapply(kn, function (kn) 
+                splineDesign(kn, st, ord = object$control$ord, outer.ok = TRUE))
             ll <- match(strt.i, names(w2s))
             w2s[-ll] <- lapply(w2s[-ll], function (m) {m[, ] <- 0; m})
             do.call(cbind, w2s)
         }
         Vi <- exp(c(W2s %*% gammas.bs.new) + tt)
-        - exp(eta.tw) * P * sum(wk * Vi)
+        idT <- rep(seq_along(P), each = object$control$GKk)
+        - sum(exp(eta.tw) * P * tapply(wk * Vi, idT, sum))
     } else if (method == "piecewise-PH-GH") {
         P <- P[!is.na(P)]
         ind.K <- rep(seq_len(ind), each = 7)

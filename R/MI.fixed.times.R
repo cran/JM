@@ -1,6 +1,5 @@
 MI.fixed.times <-
 function (time.points) {
-    parameterization <- object$parameterization
     indFixed <- object$derivForm$indFixed
     indRandom <- object$derivForm$indRandom
     # indexes for missing data
@@ -15,7 +14,7 @@ function (time.points) {
     ni <- as.vector(tapply(id.miss, id.miss, length))
     id3.miss <- rep(seq_along(ni), ni)
     id.GK <- if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", "spline-PH-GH")) {
-        rep(seq_len(n) %in% unq.id.miss, each = object$control$GKk)
+        rep(idT %in% unq.id.miss, each = object$control$GKk)
     } else if (object$method == "piecewise-PH-GH") {
         object$x$id.GK %in% unq.id.miss
     } else NULL
@@ -26,15 +25,17 @@ function (time.points) {
     d.missO <- d[unq.id.miss]
     X.missO <- X[ind.miss, ]
     Z.missO <- Z[ind.miss, ]
+    keep <- idT %in% unq.id.miss
+    idT.missO <- if (LongFormat) idT[keep] else idT[unq.id.miss]
     if (parameterization %in% c("value", "both")) {
-        Xtime.missO <- Xtime[unq.id.miss, , drop = FALSE]
-        Ztime.missO <- Ztime[unq.id.miss, , drop = FALSE]
-        WintF.vl.missO <- WintF.vl[unq.id.miss, , drop = FALSE]
+        Xtime.missO <- Xtime[keep, , drop = FALSE]
+        Ztime.missO <- Ztime[keep, , drop = FALSE]
+        WintF.vl.missO <- WintF.vl[keep, , drop = FALSE]
     }
     if (parameterization %in% c("slope", "both")) {
-        Xtime.deriv.missO <- Xtime.deriv[unq.id.miss, , drop = FALSE]
-        Ztime.deriv.missO <- Ztime.deriv[unq.id.miss, , drop = FALSE]
-        WintF.sl.missO <- WintF.sl[unq.id.miss, , drop = FALSE]
+        Xtime.deriv.missO <- Xtime.deriv[keep, , drop = FALSE]
+        Ztime.deriv.missO <- Ztime.deriv[keep, , drop = FALSE]
+        WintF.sl.missO <- WintF.sl[keep, , drop = FALSE]
     }
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
         P.missO <- P[unq.id.miss]
@@ -51,7 +52,7 @@ function (time.points) {
         Ws.intF.sl.missO <- Ws.intF.sl[id.GK, , drop = FALSE]
     }
     if (method == "spline-PH-GH") {
-        P.missO <- P[unq.id.miss]
+        P.missO <- P[keep]
         if (parameterization %in% c("value", "both")) {
             Xs.missO <- Xs[id.GK, , drop = FALSE]
             Zs.missO <- Zs[id.GK, , drop = FALSE]
@@ -61,7 +62,7 @@ function (time.points) {
             Zs.deriv.missO <- Zs.deriv[id.GK, , drop = FALSE]
         }
         W2s.missO <- W2s[id.GK, , drop = FALSE] 
-        W2.missO <- W2[unq.id.miss, , drop = FALSE]
+        W2.missO <- W2[keep, , drop = FALSE]
         Ws.intF.vl.missO <- Ws.intF.vl[id.GK, , drop = FALSE]
         Ws.intF.sl.missO <- Ws.intF.sl[id.GK, , drop = FALSE]
     }

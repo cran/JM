@@ -27,8 +27,9 @@ function (betas) {
     logNorm <- dnorm(y, mu.y, sigma, TRUE)
     log.p.yb <- rowsum(logNorm, id)
     log.hazard <- eta.t
-    log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
-    log.p.tb <- d * log.hazard + log.survival
+    log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), 
+        id.GK, reorder = FALSE)
+    log.p.tb <- rowsum(d * log.hazard + log.survival, idT, reorder = FALSE)
     p.bytn <- p.byt * (log.p.yb + log.p.tb)
     -sum(p.bytn %*% wGH, na.rm = TRUE)
 }

@@ -1,3 +1,19 @@
+Changes in version: JM_0.9-0
+
+  * jointModel() can now also handle exogenous time-dependent covariates when 
+    method = "spline-PH-aGH".
+
+  * jointModel() can now also handle competing risks settings when method = "spline-PH-aGH".
+
+  * new function crLong() expands a data frame in the long format in the competing 
+    risks setting.
+
+  * predict() method now calculates marginal and subject-specific predictions for the 
+    longitudinal outcome.
+  
+
+==============================
+
 Changes in version: JM_0.8-4
 
   * method ranef() has now the extra argument 'type' the specifies whether to compute
@@ -170,7 +186,7 @@ Changes in version: JM_0.3-0
 
 Changes in version: JM_0.2-1
 
-  * changes in e-mail addresses.
+  * changes in e-mail addresses in .Rd files.
 
 
 ==============================

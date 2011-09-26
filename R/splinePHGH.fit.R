@@ -18,6 +18,7 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     Ztime.deriv <- x$Ztime.deriv
     Zs.deriv <- x$Zs.deriv
     W1 <- x$W
+    if (!is.null(W1)) rownames(W1) <- NULL
     W2 <- x$W2
     W2s <- x$W2s
     WW <- if (is.null(W1)) W2 else cbind(W2, W1)
@@ -45,15 +46,17 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     ncz <- ncol(Z)
     ncww <- ncol(WW)
     nk <- ncol(W2)
-    n <- length(logT)
     N <- length(y)
     ni <- as.vector(tapply(id, id, length))
+    n <- length(ni)
+    nRisks <- x$nRisks
+    CompRisk <- nRisks > 1
+    idT <- x$idT
     # crossproducts and others
     XtX <- crossprod(X)
     ZtZ <- lapply(split(Z, id), function (x) crossprod(matrix(x, ncol = ncz)))
     names(ZtZ) <- NULL
     ZtZ <- matrix(unlist(ZtZ), n, ncz * ncz, TRUE)
-    outer.Ztime <- lapply(1:n, function (x) Ztime[x, ] %o% Ztime[x, ])
     # Gauss-Hermite quadrature rule components
     GH <- gauher(control$GHk)
     b <- as.matrix(expand.grid(rep(list(GH$x), ncz)))
@@ -65,7 +68,7 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
         wGH <- wGH * control$det.inv.chol.VC
     } else { 
         b <- sqrt(2) * b
-       VCdets <- control$det.inv.chol.VCs
+        VCdets <- control$det.inv.chol.VCs
     }
     dimnames(b) <- NULL
     b2 <- if (ncz == 1) b * b else t(apply(b, 1, function (x) x %o% x))
@@ -90,22 +93,25 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     # pseudo-adaptive Gauss-Hermite
     if (control$typeGH != "simple") {
         lis.b <- vector("list", n)
-        for (i in 1:n)
+        for (i in 1:n) {
             lis.b[[i]] <- t(control$inv.chol.VCs[[i]] %*% t(b)) + 
                 rep(control$ranef[i, ], each = k)
+            Ztb[id == i, ] <- Z[id == i, , drop = FALSE] %*% t(lis.b[[i]])
+        }
         lis.b2 <- lapply(lis.b, function (b) if (ncz == 1) b * b else
             t(apply(b, 1, function (x) x %o% x)))
-        for (i in 1:n) {
-            Ztb[id == i, ] <- Z[id == i, , drop = FALSE] %*% t(lis.b[[i]])
+        for (i in seq_along(logT)) {
             if (parameterization %in% c("value", "both")) {
-                Ztime.b[i, ] <- Ztime[i, , drop = FALSE] %*% t(lis.b[[i]])
-                Zsb[id.GK == i, ] <- Zs[id.GK == i, ] %*% t(lis.b[[i]])
+                bb <- t(lis.b[[idT[i]]])
+                Ztime.b[i, ] <- Ztime[i, , drop = FALSE] %*% bb
+                Zsb[id.GK == i, ] <- Zs[id.GK == i, ] %*% bb
             }
             if (parameterization %in% c("slope", "both") && 
                     (length(indRandom) > 1 || indRandom)) {
-                Ztime.b.deriv[i, ] <- Ztime.deriv[i, , drop = FALSE] %*% t(lis.b[[i]][, indRandom, drop = FALSE])
-                Zsb.deriv[id.GK == i, ] <- Zs.deriv[id.GK == i, ] %*% t(lis.b[[i]][, indRandom, drop = FALSE])
-            }            
+                bb <- t(lis.b[[idT[i]]][, indRandom, drop = FALSE])
+                Ztime.b.deriv[i, ] <- Ztime.deriv[i, , drop = FALSE] %*% bb
+                Zsb.deriv[id.GK == i, ] <- Zs.deriv[id.GK == i, ] %*% bb
+            }
         }
     }
     # initial values
@@ -138,12 +144,13 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
         # save parameter values in matrix
         Y.mat[it, ] <- c(betas, sigma)        
         T.mat[it, ] <- switch(parameterization, "value" = c(gammas, alpha, gammas.bs),
-            "slope" = c(gammas, Dalpha, gammas.bs), "both" = c(gammas, alpha, Dalpha, gammas.bs))
+            "slope" = c(gammas, Dalpha, gammas.bs), 
+            "both" = c(gammas, alpha, Dalpha, gammas.bs))
         B.mat[it, ] <- D
         
         # linear predictors
         eta.yx <- as.vector(X %*% betas)
-        eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, n)
+        eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else rep(0, length(logT))
         eta.tw2 <- as.vector(W2 %*% gammas.bs)
         eta.ws <- as.vector(W2s %*% gammas.bs)
         if (parameterization %in% c("value", "both")) {
@@ -169,10 +176,10 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
         mu.y <- eta.yx + Ztb
         logNorm <- dnorm(y, mu.y, sigma, TRUE)
         log.p.yb <- rowsum(logNorm, id, reorder = FALSE); dimnames(log.p.yb) <- NULL
-        log.hazard <- eta.t        
+        log.hazard <- eta.t
         log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
         dimnames(log.survival) <- NULL
-        log.p.tb <- d * log.hazard + log.survival
+        log.p.tb <- rowsum(d * log.hazard + log.survival, idT, reorder = FALSE)
         log.p.b <- if (control$typeGH == "simple") {
             rep(dmvnorm(b, rep(0, ncz), D, TRUE), each = n)
         } else {
@@ -212,11 +219,13 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
             cat("log-likelihood:", lgLik[it], "\n")
             cat("betas:", round(betas, 4), "\n")
             cat("sigma:", round(sigma, 4), "\n")
-            cat("gammas:", round(c(gammas.bs, gammas), 4), "\n")
+            if (!is.null(W1))
+                cat("gammas:", round(gammas, 4), "\n")
             if (parameterization %in% c("value", "both"))
                 cat("alpha:", round(alpha, 4), "\n")
             if (parameterization %in% c("slope", "both"))
                 cat("Dalpha:", round(Dalpha, 4), "\n")
+            cat("gammas.bs:", round(gammas.bs, 4), "\n")
             cat("D:", if (!diag.D) round(D[lower.tri(D, TRUE)], 4) else round(D, 4), "\n")
         }
         
@@ -266,8 +275,9 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
         Dalpha <- thetasn$Dalpha
         gammas.bs <- thetasn$gammas.bs
     }
-    list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, Dalpha = Dalpha, 
-        gammas.bs = gammas.bs, D = if (diag.D) log(D) else chol.transf(D))
+    list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, 
+        alpha = alpha, Dalpha = Dalpha, gammas.bs = gammas.bs, 
+        D = if (diag.D) log(D) else chol.transf(D))
     list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
     thetas <- unlist(as.relistable(list.thetas))
     lgLik <- - LogLik.splineGH(thetas)
@@ -327,7 +337,7 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
             log.hazard <- eta.t
             log.survival <- - exp.eta.tw * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
             dimnames(log.survival) <- NULL
-            log.p.tb <- d * log.hazard + log.survival            
+            log.p.tb <- rowsum(d * log.hazard + log.survival, idT, reorder = FALSE)
             log.p.b <- if (control$typeGH == "simple") {
                 rep(dmvnorm(b, rep(0, ncz), D, TRUE), each = n)
             } else {
@@ -358,7 +368,7 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
             }
             Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
             if (control$verbose)
-                cat("\n\nconverged!\ncalculating Hessian...\n")
+                cat("\n\ncalculating Hessian...\n")
         }
     }
     # calculate Hessian matrix
@@ -402,12 +412,17 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
         paste("B.", if (!diag.D) paste("D", seq(1, ncz * (ncz + 1) / 2), sep = "") else names(D), sep = ""))
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
-    list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, Dalpha = Dalpha, gammas.bs = gammas.bs,
-        D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
+    list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, 
+        Dalpha = Dalpha, gammas.bs = gammas.bs, D = as.matrix(D)), Hessian = Hessian, 
+        logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
         Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb,
-        Ztimeb = if (parameterization %in% c("value", "both")) rowSums(Ztime * post.b) else NULL,
+        Ztimeb = if (parameterization %in% c("value", "both")) {
+            rowSums(Ztime * post.b[idT, , drop = FALSE])
+        } else NULL,
         Ztimeb.deriv = if (parameterization %in% c("slope", "both")) {
-            if (indRandom) rowSums(Ztime.deriv * post.b[, indRandom, drop = FALSE]) else rep(0, nrow(Ztime.deriv))
+            if (indRandom) {
+                    rowSums(Ztime.deriv * post.b[idT, indRandom, drop = FALSE])
+            } else rep(0, nrow(Ztime.deriv))
         } else NULL), iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
 }
 

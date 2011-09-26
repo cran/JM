@@ -68,7 +68,7 @@ fitCOX.null <- coxph(Surv(Time, death) ~ 1,
     data = aids.id, x = TRUE)
 # joint model fit without treatment effect
 fitJOINT.null <- jointModel(fitLME.null, fitCOX.null, 
-    timeVar = "obstime", method = "weibull-PH-GH")
+    timeVar = "obstime", method = "weibull-PH-aGH")
 
 # linear mixed model fit with treatment effect
 fitLME.alt <- lme(sqrt(CD4) ~ obstime * drug - drug, 
@@ -78,7 +78,7 @@ fitCOX.alt <- coxph(Surv(Time, death) ~ drug,
     data = aids.id, x = TRUE)
 # joint model fit with treatment effect
 fitJOINT.alt <- jointModel(fitLME.alt, fitCOX.alt, timeVar = "obstime", 
-    method = "weibull-PH-GH")
+    method = "weibull-PH-aGH")
 
 # likelihood ratio test for treatment effect
 anova(fitJOINT.null, fitJOINT.alt)

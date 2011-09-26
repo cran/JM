@@ -10,16 +10,19 @@ function (thetas) {
     eta.t <- switch(parameterization, 
         "value" = eta.tw2 + eta.tw1 + c(WintF.vl %*% alpha) * Y, 
         "slope" = eta.tw2 + eta.tw1 + c(WintF.sl %*% Dalpha) * Y.deriv, 
-        "both" = eta.tw2 + eta.tw1 + c(WintF.vl %*% alpha) * Y + c(WintF.sl %*% Dalpha) * Y.deriv)    
+        "both" = eta.tw2 + eta.tw1 + c(WintF.vl %*% alpha) * Y + 
+            c(WintF.sl %*% Dalpha) * Y.deriv)    
     eta.s <- switch(parameterization, 
         "value" = c(Ws.intF.vl %*% alpha) * Ys,
         "slope" = c(Ws.intF.sl %*% Dalpha) * Ys.deriv, 
-        "both" = c(Ws.intF.vl %*% alpha) * Ys + c(Ws.intF.sl %*% Dalpha) * Ys.deriv)
+        "both" = c(Ws.intF.vl %*% alpha) * Ys + 
+            c(Ws.intF.sl %*% Dalpha) * Ys.deriv)
     eta.ws <- as.vector(W2s %*% gammas.bs)
     log.hazard <- eta.t
-    log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
+    log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), 
+        id.GK, reorder = FALSE)
     dimnames(log.survival) <- NULL
-    log.p.tb <- d * log.hazard + log.survival    
+    log.p.tb <- rowsum(d * log.hazard + log.survival, idT, reorder = FALSE)
     p.bytn <- p.byt * log.p.tb
     -sum(p.bytn %*% wGH, na.rm = TRUE)
 }

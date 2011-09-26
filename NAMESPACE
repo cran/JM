@@ -1,5 +1,5 @@
 # Exported functions
-export(anova.jointModel, coef.jointModel, dynC, fitted.jointModel, fixef.jointModel, jointModel, plot.jointModel, 
+export(anova.jointModel, coef.jointModel, crLong, dynC, fitted.jointModel, fixef.jointModel, jointModel, plot.jointModel, 
 	 plot.survfitJM, predict.jointModel, ranef.jointModel, residuals.jointModel, rocJM, simulateJM, 
 	 simulate.jointModel, survfitJM, wald.strata, weibull.frailty, xtable.jointModel)
 

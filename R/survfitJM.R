@@ -3,12 +3,16 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
             last.time = NULL, M = 200, CI.levels = c(0.025, 0.975), scale = 1.6) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
+    if (object$CompRisk)
+        stop("survfitJM() is not currently implemented for ",
+            "competing risks joint models.\n")
     if (!is.data.frame(newdata) || nrow(newdata) == 0)
         stop("'newdata' must be a data.frame with more than one rows.\n")
     if (is.null(newdata[[idVar]]))
         stop("'idVar' not in 'newdata.\n'")
     if (is.null(survTimes) || !is.numeric(survTimes))
-        survTimes <- seq(min(exp(object$y$logT)), max(exp(object$y$logT)) + 0.1, length.out = 35)
+        survTimes <- seq(min(exp(object$y$logT)), 
+            max(exp(object$y$logT)) + 0.1, length.out = 35)
     method <- object$method
     timeVar <- object$timeVar
     interFact <- object$interFact
@@ -17,7 +21,8 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     indFixed <- derivForm$indFixed
     indRandom <- derivForm$indRandom
     id <- as.numeric(unclass(newdata[[idVar]]))
-    id <- match(id, unique(id))    
+    id <- match(id, unique(id))
+    LongFormat <- object$LongFormat
     TermsX <- object$termsYx
     TermsZ <- object$termsYz
     TermsX.deriv <- object$termsYx.deriv
@@ -30,10 +35,13 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     X <- model.matrix(formYx, mfX)
     Z <- model.matrix(formYz, mfZ)
     TermsT <- object$termsT
-    data.id <- newdata[!duplicated(id), ]
+    data.id <- if (LongFormat) newdata else newdata[!duplicated(id), ]
     mfT <- model.frame(delete.response(TermsT), data = data.id)
     formT <- if (!is.null(kk <- attr(TermsT, "specials")$strata)) {
         strt <- eval(attr(TermsT, "variables"), data.id)[[kk]]
+        tt <- drop.terms(TermsT, kk - 1, keep.response = FALSE)
+        reformulate(attr(tt, "term.labels"))
+    } else if (!is.null(kk <- attr(TermsT, "specials")$cluster)) {
         tt <- drop.terms(TermsT, kk - 1, keep.response = FALSE)
         reformulate(attr(tt, "term.labels"))
     } else {
@@ -104,8 +112,10 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     # construct model matrices to calculate the survival functions
     survMats <- survMats.last <- vector("list", n.tp)
     for (i in seq_len(n.tp)) {
-        survMats[[i]] <- lapply(times.to.pred[[i]], ModelMats, ii = i)
-        survMats.last[[i]] <- ModelMats(last.time[i], ii = i)
+        survMats[[i]] <- lapply(times.to.pred[[i]], ModelMats, ii = i,
+            obs.times = obs.times, survTimes = survTimes)
+        survMats.last[[i]] <- ModelMats(last.time[i], ii = i, 
+            obs.times = obs.times, survTimes = survTimes)
     }
     # calculate the Empirical Bayes estimates and their (scaled) variance
     modes.b <- matrix(0, n.tp, ncz)
@@ -143,7 +153,7 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     } else {
         out <- vector("list", M)
         success.rate <- matrix(FALSE, M, n.tp)
-        b.old <- b.new <- mvrnorm(n.tp, rep(0, ncz), D)
+        b.old <- b.new <- modes.b
         if (n.tp == 1)
             dim(b.old) <- dim(b.new) <- c(1, ncz)    
         for (m in 1:M) {

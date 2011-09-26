@@ -8,7 +8,8 @@ function (object) {
     indFixed <- derivForm$indFixed
     indRandom <- derivForm$indRandom
     n <- object$n
-    id <- object$id   
+    id <- object$id
+    idT <- object$x$idT
     y <- object$y$y
     ind.D <- object$y$ind.D
     logT <- object$y$logT
@@ -37,7 +38,7 @@ function (object) {
     wk <- object$x$wk
     id.GK <- object$x$id.GK
     if (is.null(id.GK))
-        id.GK <- rep(seq_len(n), each = object$control$GKk)
+        id.GK <- rep(seq_along(logT), each = object$control$GKk)
     Q <- object$x$Q
     ncx <- ncol(X)
     ncz <- ncol(Z)
@@ -57,7 +58,8 @@ function (object) {
     ####
     ff <- function (b, i) {
         id.i <- id %in% i
-        id.GK.i <- id.GK %in% i
+        idT.i <- idT %in% i
+        id.GK.i <- id.GK %in% which(idT.i)
         X.i <- X[id.i, , drop = FALSE]
         Z.i <- Z[id.i, , drop = FALSE]
         mu.y <- as.vector(X.i %*% betas) + rowSums(Z.i * rep(b, each = nrow(Z.i)))
@@ -66,33 +68,32 @@ function (object) {
         log.p.b <- dmvnorm(b, rep(0, ncz), D, TRUE)
         eta.tw <- if (!is.null(W)) {
             if (method %in% c("weibull-PH-GH", "weibull-AFT-GH"))
-                as.vector(cbind(1, W[i, , drop = FALSE]) %*% gammas)
+                as.vector(cbind(1, W[idT.i, , drop = FALSE]) %*% gammas)
             else
-                as.vector(W[i, , drop = FALSE] %*% gammas)
-            
+                as.vector(W[idT.i, , drop = FALSE] %*% gammas)
         } else {
             0
         }
         if (parameterization %in% c("value", "both")) {
-            Xtime.i <- Xtime[i, , drop = FALSE]
-            Ztime.i <- Ztime[i, , drop = FALSE]
+            Xtime.i <- Xtime[idT.i, , drop = FALSE]
+            Ztime.i <- Ztime[idT.i, , drop = FALSE]
             Y <- c(Xtime.i %*% betas) + sum(Ztime.i * b)
             Xs.i <- Xs[id.GK.i, , drop = FALSE]
             Zs.i <- Zs[id.GK.i, , drop = FALSE]
             Ys <- as.vector(Xs.i %*% betas + rowSums(Zs.i * rep(b, each = nrow(Zs.i))))
-            WintF.vl.i <- WintF.vl[i, , drop = FALSE]
+            WintF.vl.i <- WintF.vl[idT.i, , drop = FALSE]
             Ws.intF.vl.i <- Ws.intF.vl[id.GK.i, , drop = FALSE]
         }
         if (parameterization %in% c("slope", "both")) {
-            Xtime.deriv.i <- Xtime.deriv[i, , drop = FALSE]
-            Ztime.deriv.i <- Ztime.deriv[i, , drop = FALSE]
+            Xtime.deriv.i <- Xtime.deriv[idT.i, , drop = FALSE]
+            Ztime.deriv.i <- Ztime.deriv[idT.i, , drop = FALSE]
             Y.deriv <- c(Xtime.deriv.i %*% betas[indFixed]) + 
                 sum(Ztime.deriv.i * b[indRandom])
             Xs.deriv.i <- Xs.deriv[id.GK.i, , drop = FALSE]
             Zs.deriv.i <- Zs.deriv[id.GK.i, , drop = FALSE]
             Ys.deriv <- as.vector(Xs.deriv.i %*% betas[indFixed]) + 
                 rowSums(Zs.deriv.i * rep(b[indRandom], each = nrow(Zs.deriv.i)))
-            WintF.sl.i <- WintF.sl[i, , drop = FALSE]
+            WintF.sl.i <- WintF.sl[idT.i, , drop = FALSE]
             Ws.intF.sl.i <- Ws.intF.sl[id.GK.i, , drop = FALSE]
         }
         tt <- switch(parameterization,
@@ -118,12 +119,15 @@ function (object) {
             log.h <- log(sigma.t) + (sigma.t - 1) * log(Vi) + eta.tw + tt
             d[i] * log.h + log.S
         } else if (method == "spline-PH-GH") {
-            W2.i <- W2[i, , drop = FALSE]
+            W2.i <- W2[idT.i, , drop = FALSE]
             W2s.i <- W2s[id.GK.i, , drop = FALSE]
             Vi <- exp(c(W2s.i %*% gammas.bs) + ss)
-            log.S <- - exp(eta.tw) * P[i] * sum(wk * Vi)
+            kk.i <- sum(idT.i)
+            log.S <- - exp(eta.tw) * P[idT.i] * 
+                tapply(rep(wk, kk.i) * Vi, 
+                    rep(seq_len(kk.i), each = length(wk)), sum)
             log.h <- eta.tw + tt + c(W2.i %*% gammas.bs) 
-            d[i] * log.h + log.S
+            sum(d[idT.i] * log.h + log.S)
         } else if (method == "piecewise-PH-GH") {
             nk <- object$control$GKk
             wkP <- rep(wk, sum(id.GK.i)/nk) * rep(P, each = nk)[id.GK.i]
@@ -140,7 +144,11 @@ function (object) {
         modes[i, ] <- opt$par
         hessians[[i]] <- solve(opt$hessian)
     }
-    rownames(modes) <- names(object$y$logT)
+    rownames(modes) <- if (!object$CompRisk && !object$LongFormat) {
+        names(object$y$logT)
+    } else {
+        seq_len(nrow(modes))
+    }
     names(hessians) <- rownames(modes)
     list(modes = modes, vars = hessians)
 }

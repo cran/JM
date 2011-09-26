@@ -34,7 +34,7 @@ type = c("Marginal", "Subject", "EventTime"), scale = c("survival",
   function, cumulative hazard function or log cumulative hazard function is returned. For \code{type = "Marginal"}, 
   random effects values for each sample unit are simulated \code{M} times from a normal distribution with zero mean and 
   covariance matrix the estimated covariance matrix for the random effects. The marginal survival function for the 
-  \eqn{i}th sample unit is approximated by \deqn{S_i(t) = \int S_i(t | b_i) p(b_i) db_i \approx \sum_{m = 1}^M 
+  \eqn{i}th sample unit is approximated by \deqn{S_i(t) = \int S_i(t | b_i) p(b_i) db_i \approx (1/M) \sum_{m = 1}^M 
   S_i(t | b_{im}),} where \eqn{p(b_i)} denotes the normal probability density function, and \eqn{b_{im}} the \eqn{m}th 
   simulated value for the random effect of the \eqn{i}th sample unit. The cumulative hazard and log cumulative hazard 
   functions are calculated as \eqn{H_i(t) = - \log S_i(t)} and \eqn{\log H_i(t) = \log \{ - \log S_i(t)\},} respectively.

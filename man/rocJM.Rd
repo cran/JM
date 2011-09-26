@@ -109,7 +109,7 @@ Heagerty, P. and Zheng, Y. (2005). Survival model predictive accuracy and ROC cu
 \emph{Biometrics} \bold{61}, 92--105.
 
 Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for longitudinal 
-and time-to-event data. \emph{Biometrics}, accepted.
+and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
 
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
@@ -137,7 +137,7 @@ fitLME <- lme(sqrt(CD4) ~ obstime * (drug + AZT + prevOI + gender),
 fitSURV <- coxph(Surv(Time, death) ~ drug + AZT + prevOI + gender, 
     data = aids.id, x = TRUE)
 fit.aids <- jointModel(fitLME, fitSURV, timeVar = "obstime", 
-    method = "piecewise-PH-GH")
+    method = "piecewise-PH-aGH")
 
 # the following will take some time to execute...
 ND <- aids[aids$patient == "7", ]

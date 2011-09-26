@@ -25,7 +25,7 @@ function (fit) {
     pvalue <- pchisq(stat, df = df, lower.tail = FALSE)
     mat <- rbind(c("X^2" = stat, df = df, "Pr(> X^2)" = pvalue))
     rownames(mat) <- rep("", nrow(mat))
-    structure(list(alternative = "spline coefficients for the baseline risk function\n\tare not equal among strata", 
+    structure(list(alternative = "spline coefficients for the baseline risk\n\tfunction are not equal among strata", 
         Result = mat), class  = "wald.strata")
 }
 

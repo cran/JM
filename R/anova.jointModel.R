@@ -69,29 +69,41 @@ function (object, object2, test = TRUE,
                 length(ga))
             jj <- grep("Assoct[!^\\.s]", names(ga))
             ii <- setdiff(grep("Assoct", names(ga)), jj)
-            termsLabs2 <- termsLabs <- unique(c(names(object$assignT),
+            termsLabs <- unique(c(names(object$assignT),
                 all.vars(object$interFac$value), all.vars(object$interFac$slope)))
-            termsLabs <- if (Asc.All <- length(object$coefficients$alpha) + 
-                length(object$coefficients$Dalpha) == 1)
-                c(termsLabs, "Assoct(?![.]s)", "Assoct([.]s)")
-            else 
-                c(termsLabs, "Assoct", "Assoct(?![.]s)", "Assoct([.]s)")
+            AssoctLabs <- if (Asc.All <- length(object$coefficients$alpha) + 
+                length(object$coefficients$Dalpha) == 1) {
+                c("Assoct(?![.]s)", "Assoct([.]s)")
+            } else {
+                c("Assoct", "Assoct(?![.]s)", "Assoct([.]s)")
+            }
             termsLabs2 <- switch(object$parameterization,
                 "both" = if (Asc.All) 
                     c(termsLabs2, "Assoct", "Assoct.s") else 
-                        c(termsLabs2, "Assoct(all)", "Assoct", "Assoct.s"), 
-                "value" = if (Asc.All) c(termsLabs2, "Assoct") else
-                    c(termsLabs2, "Assoct(all)", "Assoct"),
-                "slope" = if (Asc.All) c(termsLabs2, "Assoct.s") else 
-                    c(termsLabs2, "Assoct(all)", "Assoct.s"))
-            indMI <- lapply(termsLabs, function (x) grep(x, names(ga), perl = TRUE))
-            indI <- lapply(grep(":", names(ga), fixed = TRUE), c)
-            allEf <- c(indMI, indI)
+                        c(termsLabs, "Assoct(all)", "Assoct", "Assoct.s"), 
+                "value" = if (Asc.All) c(termsLabs, "Assoct") else
+                    c(termsLabs, "Assoct(all)", "Assoct"),
+                "slope" = if (Asc.All) c(termsLabs, "Assoct.s") else 
+                    c(termsLabs, "Assoct(all)", "Assoct.s"))   
+            indInt <- grep(":", termsLabs, fixed = TRUE)
+            tt <- as.list(termsLabs)
+            if (length(indInt))
+                tt[indInt] <- strsplit(termsLabs[indInt], ":")
+            indM <- lapply(tt, function (x) {
+                if (length(x) > 1)
+                    do.call(intersect, lapply(x, 
+                        function (y) grep(y, names(ga), perl = TRUE)))
+                else 
+                    grep(x, names(ga), perl = TRUE)
+            })
+            indA <- lapply(AssoctLabs, 
+                function (x) grep(x, names(ga), perl = TRUE))
+            allEf <- c(indM, indA)
             allEf <- allEf[sapply(allEf, length) > 0]
-            resT <- t(sapply(allEf, function (tt) { 
-                f(tt, thetas = ga, V = VarCov[indT, indT])
+            resT <- t(sapply(allEf, function (z) { 
+                f(z, thetas = ga, V = VarCov[indT, indT])
             }))
-            rownames(resT) <- c(termsLabs2, names(ga)[unlist(indI)])
+            rownames(resT) <- termsLabs2
             resT <- as.data.frame(resT)
         }
         out <- if (is.null(L)) {

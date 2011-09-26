@@ -1,6 +1,6 @@
 initial.surv <-
 function (Time, d, W, WintF.vl, WintF.sl, id, times, method, 
-        parameterization, long = NULL, long.deriv = NULL, extra = NULL) {
+        parameterization, long = NULL, long.deriv = NULL, extra = NULL, LongFormat) {
     old <- options(warn = (-1))
     on.exit(options(old))
     if (!is.null(long)) {
@@ -13,42 +13,76 @@ function (Time, d, W, WintF.vl, WintF.sl, id, times, method,
         if (parameterization == "slope") 
             long.id <- NULL
     }
-    WW <- cbind(W, long.id, longD.id)
-    if (method %in% c("Cox-PH-GH", "weibull-PH-GH", "piecewise-PH-GH", "spline-PH-GH", "spline-PH-Laplace")) {
-        DD <- data.frame(id = id, Time = Time[id], d = d[id], times = times)
-        if (!is.null(long)) {
-            DD$long <- long * WintF.vl[id, , drop = FALSE]
-            k <- ncol(DD$long)
-        }
-        if (!is.null(long.deriv)) {
-            DD$longD <- long.deriv * WintF.sl[id, , drop = FALSE]
-            l <- ncol(DD$longD)
-        }
-        dW <- as.data.frame(W[id, , drop = FALSE], row.names = row.names(DD))
-        if (ncol(dW)) {
-            names(dW) <- paste("W", seq_along(dW), sep = "")
-            DD <- cbind(DD, dW)
-        }
-        DD$start <- DD$times
-        DD$stop <- unlist(lapply(split(DD[c("id", "start", "Time")], DD$id), 
-            function (d) c(d$start[-1], d$Time[1])))
-        DD$event <- ave(DD$d, DD$id, FUN = function(x) {
-            if (length(x) == 1) {
-                x
-            } else {
-                x[seq(length(x) - 1)] <- 0
-                x
+    idT <- extra$ii
+    WW <- if (!LongFormat) {
+        cbind(W, long.id, longD.id)
+    } else {
+        cbind(W, long.id[idT], longD.id[idT])
+    }
+    if (method %in% c("Cox-PH-GH", "weibull-PH-GH", "piecewise-PH-GH", 
+            "spline-PH-GH", "spline-PH-Laplace")) {
+        if (!LongFormat) {
+            DD <- data.frame(id = id, Time = Time[id], d = d[id], times = times)
+            if (!is.null(long)) {
+                DD$long <- long * WintF.vl[id, , drop = FALSE]
+                k <- ncol(DD$long)
             }
-        })
-        baseCovs <- if (ncol(dW))
+            if (!is.null(long.deriv)) {
+                DD$longD <- long.deriv * WintF.sl[id, , drop = FALSE]
+                l <- ncol(DD$longD)
+            }
+            dW <- as.data.frame(W[id, , drop = FALSE], row.names = row.names(DD))
+            if (ncol(dW)) {
+                names(dW) <- paste("W", seq_along(dW), sep = "")
+                DD <- cbind(DD, dW)
+            }
+        } else {
+            DD <- data.frame(Time = Time, d = d)
+            if (!is.null(long)) {
+                DD$long <- as.vector(long.id[idT]) * WintF.vl
+                k <- ncol(DD$long)
+            }
+            if (!is.null(long.deriv)) {
+                DD$longD <- as.vector(longD.id[idT]) * WintF.sl
+                l <- ncol(DD$longD)
+            }
+            dW <- as.data.frame(W, row.names = row.names(DD))
+            if (ncol(dW)) {
+                names(dW) <- paste("W", seq_along(dW), sep = "")
+                DD <- cbind(DD, dW)
+            }
+            DD$strata <- extra$strata
+        }
+        if (!LongFormat) {
+            DD$start <- DD$times
+            DD$stop <- unlist(lapply(split(DD[c("id", "start", "Time")], DD$id), 
+                function (d) c(d$start[-1], d$Time[1])))
+            DD$event <- ave(DD$d, DD$id, FUN = function(x) {
+                if (length(x) == 1) {
+                    x
+                } else {
+                    x[seq(length(x) - 1)] <- 0
+                    x
+                }
+            })
+        }
+        baseCovs <- if (ncol(dW)) {
             paste("+", paste(names(dW), collapse = " + "))
-        else 
+        } else 
             NULL
-        form <- switch(parameterization,
-            "value" = paste("Surv(start, stop, event) ~", "long", baseCovs),
-            "slope" = paste("Surv(start, stop, event) ~", "longD", baseCovs),
-            "both" = paste("Surv(start, stop, event) ~", "long + longD", baseCovs)
-        )
+        form <- if (!LongFormat) {
+            switch(parameterization,
+                "value" = paste("Surv(start, stop, event) ~", "long", baseCovs),
+                "slope" = paste("Surv(start, stop, event) ~", "longD", baseCovs),
+                "both" = paste("Surv(start, stop, event) ~", "long + longD", baseCovs))
+        } else {
+            switch(parameterization,
+                "value" = paste("Surv(Time, d) ~", "long", baseCovs),
+                "slope" = paste("Surv(Time, d) ~", "longD", baseCovs),
+                "both" = paste("Surv(Time, d) ~", "long + longD", baseCovs))
+        }
+        if (!is.null(DD$strata))
+            form <- paste(form, "+ strata(strata)")
         form <- as.formula(form)
         cph <- coxph(form, data = DD)
         coefs <- cph$coefficients
@@ -76,12 +110,40 @@ function (Time, d, W, WintF.vl, WintF.sl, id, times, method,
             out$xi <- exp(coefs[grep("xi", names(coefs))])
         }
         if (method == "spline-PH-GH" || method == "spline-PH-Laplace") {
-            dat <- data.frame(Time = Time, d = d)
-            init.fit <- survreg(Surv(Time, d) ~ WW, data = dat)
-            xi <- 1 / init.fit$scale
-            phi <- exp(coefs[1])
-            logh <- log(phi * xi * Time^(xi - 1))
-            out$gammas.bs <- as.vector(lm.fit(extra$W2, logh)$coefficients)
+            if (is.null(extra$strata)) {
+                dat <- data.frame(Time = Time, d = d, as.data.frame(WW))
+                rn <- tapply(row.names(dat), idT, tail, 1)
+                ind <- row.names(dat) %in% rn
+                dat <- dat[ind, ]
+                init.fit <- survreg(Surv(Time, d) ~ ., data = dat)
+                coefs <- init.fit$coef
+                xi <- 1 / init.fit$scale
+                phi <- exp(coefs[1])
+                logh <- -log(phi * xi * dat$Time^(xi - 1))
+                out$gammas.bs <- as.vector(lm.fit(extra$W2[ind, ], logh)$coefficients)
+            } else {
+                dat <- data.frame(Time = Time, d = d)
+                dat <- cbind(dat, as.data.frame(WW))
+                strata <- extra$strata
+                split.dat <- split(dat, strata)
+                gg <- NULL
+                for (i in seq_along(split.dat)) {
+                    ii <- strata == levels(strata)[i]
+                    SpD.i <- split.dat[[i]]
+                    idT.i <- idT[ii]
+                    W2.i <- extra$W2[ii, ]
+                    rn <- tapply(row.names(SpD.i), idT.i, tail, 1)
+                    ind <- row.names(SpD.i) %in% rn
+                    SpD.i <- SpD.i[ind, ]
+                    init.fit <- survreg(Surv(Time, d) ~ ., data = SpD.i)
+                    coefs <- init.fit$coef
+                    xi <- 1 / init.fit$scale
+                    phi <- exp(coefs[1])
+                    logh <- -log(phi * xi * SpD.i$Time^(xi - 1))
+                    gg <- c(gg, as.vector(lm.fit(W2.i[ind, ], logh)$coefficients))
+                }
+                out$gammas.bs <- gg[!is.na(gg)]
+            }
             out
         }
     }

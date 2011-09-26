@@ -22,10 +22,12 @@ function (t, b, ii, Mats) {
         "slope" = c(Ws.intF.sl %*% Dalpha.new) * Ys.deriv,
         "both" = c(Ws.intF.vl %*% alpha.new) * Ys + 
             c(Ws.intF.sl %*% Dalpha.new) * Ys.deriv)
-    eta.tw <- if (!is.null(W)) 
-        as.vector(W[ii, , drop = FALSE] %*% gammas.new)
-    else
-        0
+    eta.tw <- if (!is.null(W)) {
+        if (!LongFormat)
+            as.vector(W[ii, , drop = FALSE] %*% gammas.new)
+        else
+            as.vector(W[id %in% ii, , drop = FALSE] %*% gammas.new)
+    } else 0
     log.survival <- if (method == "weibull-PH-GH") {
         Vi <- exp(log(sigma.t.new) + (sigma.t.new - 1) * log(st) + tt)
         - exp(eta.tw) * P * sum(wk * Vi)
@@ -43,7 +45,8 @@ function (t, b, ii, Mats) {
             do.call(cbind, w2s)
         }
         Vi <- exp(c(W2s %*% gammas.bs.new) + tt)
-        - exp(eta.tw) * P * sum(wk * Vi)
+        idT <- rep(seq_along(P), each = object$control$GKk)
+        - sum(exp(eta.tw) * P * tapply(wk * Vi, idT, sum))
     } else if (method == "piecewise-PH-GH") {
         P <- P[!is.na(P)]
         ind.K <- rep(seq_len(ind), each = 7)

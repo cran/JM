@@ -1,6 +1,7 @@
 summary.weibull.frailty <-
 function (object, sand.se = FALSE, ...) {
-    out <- list(logLik = object$logLik, AIC = AIC(object), BIC = AIC(object, k = log(length(unique(object$id)))), 
+    out <- list(logLik = object$logLik, AIC = AIC(object), 
+        BIC = AIC(object, k = log(length(unique(object$id)))), 
         id = object$id, d = object$y[, 2], call = object$call)
     coefs <- object$coefficients$betas
     nx <- length(coefs)
@@ -16,7 +17,8 @@ function (object, sand.se = FALSE, ...) {
         }
         out$coefTab <- if (sand.se) {
             cbind("value" = betas, "std.err" = sds, "sand s.e." = sds2, 
-                "z-value" = betas / sds2, "p-value" = 2 * pnorm(abs(betas / sds2), lower.tail = FALSE))
+                "z-value" = betas / sds2, 
+                "p-value" = 2 * pnorm(abs(betas / sds2), lower.tail = FALSE))
         } else {
             cbind("value" = betas, "std.err" = sds, "z-value" = betas / sds, 
                   "p-value" = 2 * pnorm(abs(betas / sds), lower.tail = FALSE))            

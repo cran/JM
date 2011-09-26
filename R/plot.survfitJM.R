@@ -83,9 +83,6 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
                 xlab = xlab[i], ylab = ylab2, pch = pch, ...)
             lines(x$obs.times[[ii]], x$fitted.y[[ii]], col = col, lwd = lwd)
             abline(v = lt, lty = 3)
-            print(lt)
-            print(r.)
-            print(x$obs.times[[ii]])
             par(new = TRUE)
             matplot(r.[, 1], r.[, -1, drop = FALSE], type = "l", col = col, lwd = lwd, 
                 lty = lty, ylim = ylim, main = main[ii], xlim = rng,

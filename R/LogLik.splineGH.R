@@ -35,13 +35,15 @@ function (thetas) {
     logNorm <- dnorm(y, mu.y, sigma, TRUE)
     log.p.yb <- rowsum(logNorm, id)    
     log.hazard <- eta.t
-    log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)
+    log.survival <- - exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), 
+        id.GK, reorder = FALSE)
     dimnames(log.survival) <- NULL
-    log.p.tb <- d * log.hazard + log.survival
+    log.p.tb <- rowsum(d * log.hazard + log.survival, idT, reorder = FALSE)
     log.p.b <- if (control$typeGH == "simple") {
         rep(dmvnorm(b, rep(0, ncz), D, TRUE), each = n)
     } else {
-        matrix(dmvnorm(do.call(rbind, lis.b), rep(0, ncz), D, TRUE), n, k, byrow = TRUE)
+        matrix(dmvnorm(do.call(rbind, lis.b), rep(0, ncz), D, TRUE), 
+            n, k, byrow = TRUE)
     }
     p.ytb <- exp(log.p.yb + log.p.tb + log.p.b)
     if (control$typeGH != "simple")

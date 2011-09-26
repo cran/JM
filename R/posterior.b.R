@@ -60,17 +60,18 @@ function (b) {
         log.survival <- - Vi^sigma.t.new
         d.missO * log.hazard + log.survival
     } else if (method == "spline-PH-GH") {
-        id.GK3 <- rep(seq_len(n.missO), each = object$control$GKk)
+        id.GK3 <- rep(seq_len(nrow(W2.missO)), each = object$control$GKk)
         if (parameterization %in% c("value", "both")) {
-            Y.new <- as.vector(Xtime.missO %*% betas.new) + rowSums(Ztime.missO * b)
+            Y.new <- as.vector(Xtime.missO %*% betas.new) + 
+                rowSums(Ztime.missO * b[idT.missO, , drop = FALSE])
             eta.t <- eta.tw + c(WintF.vl.missO %*% alpha.new) * Y.new
             Ys.new <- as.vector(Xs.missO %*% betas.new) + 
-                rowSums(Zs.missO * b[id.GK3, , drop = FALSE])
+                rowSums(Zs.missO * b[idT.missO[id.GK3], , drop = FALSE])
             eta.s <- c(Ws.intF.vl.missO %*% alpha.new) * Ys.new
         }
         if (parameterization %in% c("slope", "both")) {
             Y.new <- as.vector(Xtime.deriv.missO %*% betas.new[indFixed]) + 
-                rowSums(Ztime.deriv.missO * b[, indRandom, drop = FALSE])
+                rowSums(Ztime.deriv.missO * b[idT.missO[id.GK3], indRandom, drop = FALSE])
             eta.t <- if (parameterization == "both")
                 eta.t + c(WintF.sl.missO %*% Dalpha.new) * Y.new
             else
@@ -82,11 +83,11 @@ function (b) {
             else 
                 c(Ws.intF.sl.missO %*% Dalpha.new) * Ys.new
         }
-        wk <- rep(wk, n.missO)
+        wk <- rep(wk, nrow(W2.missO))
         log.hazard <- c(W2.missO %*% gammas.bs.new) + eta.t
         Vi <- exp(c(W2s.missO %*% gammas.bs.new) + eta.s)
         log.survival <- - exp(eta.tw) * P.missO * as.vector(tapply(wk * Vi, id.GK3, sum))
-        d.missO * log.hazard + log.survival
+        as.vector(tapply(d.missO * log.hazard + log.survival, idT.missO, sum))
     } else if (method == "piecewise-PH-GH") {
         ii <- object$x$id.GK[id.GK]
         nn <- as.vector(tapply(ii, ii, length))
@@ -128,7 +129,7 @@ function (b) {
         dnorm(b, sd = sqrt(D.new), log = TRUE)
     } else {
         if (diag.D) {
-            rowSums(dnorm(b, sd = rep(sqrt(D.new), each = k), log = TRUE))
+            rowSums(dnorm(b, sd = rep(sqrt(D.new), each = nrow(b)), log = TRUE))
         } else {
             dmvnorm(b, rep(0, ncz), D, TRUE)
         }

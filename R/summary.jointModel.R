@@ -9,26 +9,36 @@ function (object, ...) {
     coefsY <- cbind("Value" = betas, "Std.Err" = sds, "z-value" = betas / sds, 
         "p-value" = 2 * pnorm(abs(betas / sds), lower.tail = FALSE))
     if (object$method == "Cox-PH-GH") {
-        gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
+        gammas <- c(object$coefficients$gammas, 
+            "Assoct" = as.vector(object$coefficients$alpha),
             "Assoct.s" = as.vector(object$coefficients$Dalpha))
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else if (object$method == "weibull-PH-GH") {
-        gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
-            "Assoct.s" = as.vector(object$coefficients$Dalpha), "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
+        gammas <- c(object$coefficients$gammas, 
+            "Assoct" = as.vector(object$coefficients$alpha),
+            "Assoct.s" = as.vector(object$coefficients$Dalpha), 
+            "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else if (object$method == "weibull-AFT-GH") {
-        gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
-            "Assoct.s" = as.vector(object$coefficients$Dalpha), "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
+        gammas <- c(object$coefficients$gammas, 
+            "Assoct" = as.vector(object$coefficients$alpha),
+            "Assoct.s" = as.vector(object$coefficients$Dalpha), 
+            "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
         gammas[seq(1, length(gammas) - 1)] <- - gammas[seq(1, length(gammas) - 1)]
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else if (object$method == "piecewise-PH-GH") {
-        gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
-            "Assoct.s" = as.vector(object$coefficients$Dalpha), log(as.vector(object$coefficients$xi)))
-        names(gammas)[seq(length(gammas) - object$x$Q + 1, length(gammas))] <- paste("log(xi.", seq_len(object$x$Q), ")", sep = "")
+        gammas <- c(object$coefficients$gammas, 
+            "Assoct" = as.vector(object$coefficients$alpha),
+            "Assoct.s" = as.vector(object$coefficients$Dalpha), 
+            log(as.vector(object$coefficients$xi)))
+        ss <- seq(length(gammas) - object$x$Q + 1, length(gammas))
+        names(gammas)[ss] <- paste("log(xi.", seq_len(object$x$Q), ")", sep = "")
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else if (object$method == "spline-PH-GH") {
-        gammas <- c(object$coefficients$gammas, "Assoct" = as.vector(object$coefficients$alpha),
-            "Assoct.s" = as.vector(object$coefficients$Dalpha), object$coefficients$gammas.bs)
+        gammas <- c(object$coefficients$gammas, 
+            "Assoct" = as.vector(object$coefficients$alpha),
+            "Assoct.s" = as.vector(object$coefficients$Dalpha), 
+            object$coefficients$gammas.bs)
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else {
         gms <- object$coefficients$gammas
@@ -68,8 +78,9 @@ function (object, ...) {
         sds <- c(sds, NA)
     coefsT <- cbind("Value" = gammas, "Std.Err" = sds, "z-value" = gammas / sds,
         "p-value" = 2 * pnorm(abs(gammas / sds), lower.tail = FALSE))
-    out <- list("CoefTable-Long" = coefsY, "CoefTable-Event" = coefsT, D = object$coefficients$D, 
-        sigma = object$coefficients$sigma, logLik = as.vector(logLik(object)), AIC = AIC(object), 
+    out <- list("CoefTable-Long" = coefsY, "CoefTable-Event" = coefsT, 
+        D = object$coefficients$D, sigma = object$coefficients$sigma, 
+        logLik = as.vector(logLik(object)), AIC = AIC(object), 
         BIC = AIC(object, k = log(object$n)))
     out$N <- object$N
     out$n <- object$n
@@ -80,6 +91,8 @@ function (object, ...) {
     out$knots <- unique(object$knots)
     out$conv <- object$conv
     out$parameterization <- object$parameterization
+    out$nstrata <- length(unique(object$y$strata))
+    out$CompRisk <- object$CompRisk
     out$call <- object$call
     class(out) <- "summary.jointModel"
     out

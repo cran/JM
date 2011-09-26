@@ -43,11 +43,12 @@ function (thetas) {
     Int <- wk * exp(eta.ws + eta.s)
     log.survival <- - exp.eta.tw.P * rowsum(Int, id.GK, reorder = FALSE)
     dimnames(log.survival) <- NULL
-    log.p.tb <- d * log.hazard + log.survival
+    log.p.tb <- rowsum(d * log.hazard + log.survival, idT, reorder = FALSE)
     log.p.b <- if (control$typeGH == "simple") {
         rep(dmvnorm(b, rep(0, ncz), D, TRUE), each = n)
     } else {
-        matrix(dmvnorm(do.call(rbind, lis.b), rep(0, ncz), D, TRUE), n, k, byrow = TRUE)
+        matrix(dmvnorm(do.call(rbind, lis.b), rep(0, ncz), D, TRUE), 
+            n, k, byrow = TRUE)
     }
     p.ytb <- exp(log.p.yb + log.p.tb + log.p.b)
     if (control$typeGH != "simple")
@@ -82,41 +83,71 @@ function (thetas) {
         ki <- exp.eta.tw.P * switch(parameterization,
             "value" = rowsum(Int * Ws.intF.vl.alph * Xs[, i], id.GK, reorder = FALSE),
             "slope" = {ii <- match(i, indFixed); 
-                if (is.na(ii)) 0 else rowsum(Int * Ws.intF.sl.alph * Xs.deriv[, ii], id.GK, reorder = FALSE)},
+                if (is.na(ii)) 0 else rowsum(Int * Ws.intF.sl.alph * Xs.deriv[, ii], 
+                    id.GK, reorder = FALSE)},
             "both" = {ii <- match(i, indFixed);
                 rowsum(Int * (Ws.intF.vl.alph * Xs[, i] + 
-                    Ws.intF.sl.alph * if (is.na(ii)) 0 else Xs.deriv[, ii]), id.GK, reorder = FALSE)}
+                    Ws.intF.sl.alph * if (is.na(ii)) 0 else Xs.deriv[, ii]), 
+                        id.GK, reorder = FALSE)}
         )
+        ki <- rowsum(ki, idT, reorder = FALSE)
         kii <- c((p.byt * ki) %*% wGH)
         sc2[i] <- switch(parameterization,
-            "value" = - sum(d * WintF.vl.alph * Xtime[, i] - kii, na.rm = TRUE),
-            "slope" = {ii <- match(i, indFixed); 
-                if (is.na(ii)) 0 else - sum(d * WintF.sl.alph * Xtime.deriv[, ii] - 
-                    kii, na.rm = TRUE)},
-            "both" = {ii <- match(i, indFixed);
-                - sum(d * (WintF.vl.alph * Xtime[, i] + WintF.sl.alph * 
-                    if (is.na(ii)) 0 else Xtime.deriv[, ii]) - kii, na.rm = TRUE)}
-        )
+            "value" = {
+                ddd <- tapply(d * WintF.vl.alph * Xtime[, i], idT, sum)
+                - sum(ddd - kii, na.rm = TRUE)
+            },
+            "slope" = {
+                ii <- match(i, indFixed)
+                if (is.na(ii)) 0 else {
+                    ddd <- tapply(d * WintF.sl.alph * Xtime.deriv[, ii], idT, sum)
+                    - sum(ddd - kii, na.rm = TRUE)
+                }
+            },
+            "both" = {
+                ii <- match(i, indFixed)
+                ddd <- tapply(d * (WintF.vl.alph * Xtime[, i] + WintF.sl.alph * 
+                    if (is.na(ii)) 0 else Xtime.deriv[, ii]), idT, sum)
+                - sum(ddd - kii, na.rm = TRUE)
+            })
     }    
-    score.y <- c(sc1 + sc2, - sigma * (- N / sigma + drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
-    scgammas1 <- if (!is.null(W1)) - colSums(W1 * (d + c((p.byt * log.survival) %*% wGH)), na.rm = TRUE) else NULL    
+    score.y <- c(sc1 + sc2, - sigma * (- N / sigma + 
+        drop(crossprod(mu, mu - 2 * Zb) + crossprod(Zb) + tr.tZZvarb) / sigma^3))
+    scgammas1 <- if (!is.null(W1)) {
+        scg1 <- numeric(ncol(W1))
+        for (jj in seq_along(scg1)) {
+            tt <- rowsum(W1[, jj] * log.survival, idT, reorder = FALSE)
+            scg1[jj] <- sum(c((p.byt * tt) %*% wGH), na.rm = TRUE)
+        }
+        - colSums(W1 * d, na.rm = TRUE) - scg1
+    } else 
+        NULL
     scgammas2 <- numeric(nk)
     for (i in 1:nk) {
         kk <- exp.eta.tw.P * rowsum(Int * W2s[, i], id.GK, reorder = FALSE)
-        scgammas2[i] <- - sum(W2[, i] * d - c((p.byt * kk) %*% wGH))
+        kk <- rowsum(kk, idT, reorder = FALSE)
+        scgammas2[i] <- - sum(W2[, i] * d) + sum(c((p.byt * kk) %*% wGH))
     }
     scalpha <- if (parameterization %in% c("value", "both")) {
         rr <- numeric(ncol(WintF.vl))
-        for (l in seq_along(rr)) 
-            rr[l] <- - sum((p.byt * (d * WintF.vl[, l] * Y - exp.eta.tw.P * 
-                rowsum(Int * Ws.intF.vl[, l] * Ys, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)    
+        for (l in seq_along(rr)) {
+            rrr <- exp.eta.tw.P * rowsum(Int * Ws.intF.vl[, l] * 
+                    Ys, id.GK, reorder = FALSE)
+            rrr <- rowsum(rrr, idT, reorder = FALSE)
+            rr[l] <- - sum((p.byt * (rowsum(d * WintF.vl[, l] * Y, idT, 
+                    reorder = FALSE) - rrr)) %*% wGH, na.rm = TRUE)
+        }
         rr
     } else NULL
     scalpha.D <- if (parameterization %in% c("slope", "both")) {
         rr <- numeric(ncol(WintF.sl))
-        for (l in seq_along(rr)) 
-            rr[l] <- - sum((p.byt * (d * WintF.sl[, l] * Y.deriv - exp.eta.tw.P * 
-                rowsum(Int * Ws.intF.sl[, l] * Ys.deriv, id.GK, reorder = FALSE))) %*% wGH, na.rm = TRUE)
+        for (l in seq_along(rr)) {
+            rrr <- exp.eta.tw.P * rowsum(Int * Ws.intF.sl[, l] * 
+                    Ys.deriv, id.GK, reorder = FALSE)
+            rrr <- rowsum(rrr, idT, reorder = FALSE)            
+            rr[l] <- - sum((p.byt * (rowsum(d * WintF.sl[, l] * Y.deriv, 
+                    idT, reorder = FALSE) - rrr)) %*% wGH, na.rm = TRUE)
+        }
         rr
     } else NULL
     score.t <- c(scgammas1, scalpha, scalpha.D, scgammas2)

@@ -48,6 +48,7 @@ function (betas) {
                 }
             }            
             ki <- exp.eta.tw.P * rowsum(Int * XX, id.GK, reorder = FALSE)
+            ki <- rowsum(ki, idT, reorder = FALSE)
             kii <- c((p.byt * ki) %*% wGH)
             H2[i, j] <- sum(kii, na.rm = TRUE)
         }

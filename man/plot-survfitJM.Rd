@@ -50,7 +50,7 @@ Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal a
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
 
 Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for longitudinal and time-to-event data. 
-\emph{Biometrics}, accepted.
+\emph{Biometrics} \bold{67}, 819--829.
 }
 
 
@@ -67,7 +67,7 @@ fitCOX <- coxph(Surv(Time, death) ~ drug, data = aids.id, x = TRUE)
 
 # joint model fit
 fitJOINT <- jointModel(fitLME, fitCOX, 
-    timeVar = "obstime", method = "weibull-PH-GH")
+    timeVar = "obstime", method = "weibull-PH-aGH")
 
 # sample of the patients who are still alive
 ND <- aids[aids$patient == "141", ]

@@ -3,14 +3,16 @@ function (x, digits = max(4, getOption("digits") - 4),
         printKnots = FALSE, ...) {
     if (!inherits(x, "summary.jointModel"))
         stop("Use only with 'summary.jointModel' objects.\n")
-    cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
+    cat("\nCall:\n", paste(deparse(x$call), sep = "\n", 
+        collapse = "\n"), "\n\n", sep = "")
     cat("Data Descriptives:\n")
     pcEv <- round(100 * sum(x$d) / x$n, 1)
     cat("Longitudinal Process\t\tEvent Process")
-    cat("\nNumber of Observations: ", x$N, "\tNumber of Events: ", sum(x$d), " (", pcEv, "%)", sep = "")
+    cat("\nNumber of Observations: ", x$N, "\tNumber of Events: ", 
+        sum(x$d), " (", pcEv, "%)", sep = "")
     cat("\nNumber of Groups:", length(unique(x$id)))
     cat("\n\nJoint Model Summary:")
-    cat("\nLongitudinal Process: linear mixed-effects model")
+    cat("\nLongitudinal Process: Linear mixed-effects model")
     cat("\nEvent Process: ")
     if (x$method == "Cox-PH-GH") {
         cat("Relative risk model with unspecified baseline risk function\n\n")
@@ -36,14 +38,21 @@ function (x, digits = max(4, getOption("digits") - 4),
         }
         if (printKnots)
             cat("Relative risk model with spline-approximated baseline risk function (knots at: ", xx, ")\n", sep = "")
-        else 
-            cat("Relative risk model with spline-approximated\n\t\tbaseline risk function\n")
+        else {
+            if (x$CompRisk) {
+                cat("Competing risks relative risk model with spline-approximated\n\t\tbaseline risk function\n")
+            } else if (x$nstrata > 1) {
+                cat("Stratified relative risk model with spline-approximated\n\t\tbaseline risk function\n")
+            } else {
+                cat("Relative risk model with spline-approximated\n\t\tbaseline risk function\n")
+            }   
+        }
     } else {
         cat("log cumulative baseline hazard with B-splines (internal knots at: ", 
             paste(round(exp(x$knots[-c(1, length(x$knots))]), 2), collapse = ", "), ")\n", sep = "")
     }
-    cat("Parameterization:", switch(x$parameterization, "value" = "time-dependent", 
-        "slope" = "time-dependent slope", "both" = "time-dependent + time-dependent slope"), "\n\n")
+    cat("Parameterization:", switch(x$parameterization, "value" = "Time-dependent", 
+        "slope" = "Time-dependent slope", "both" = "Time-dependent + time-dependent slope"), "\n\n")
     model.sum <- data.frame(log.Lik = x$logLik, AIC = x$AIC, BIC = x$BIC, row.names = "")
     print(model.sum)
     cat("\nVariance Components:\n")

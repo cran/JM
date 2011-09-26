@@ -7,7 +7,8 @@ function (object, process = c("Longitudinal", "Event"), include.splineCoefs = FA
         betas <- object$coefficients$betas
         out <- matrix(betas, nrow = object$n, ncol = length(betas), byrow = TRUE)
         colnames(out) <- names(betas)
-        rownames(out) <- names(object$y$logT)
+        if (!object$CompRisk && !object$LongFormat)
+            rownames(out) <- names(object$y$logT)
         EB <- object$EB$post.b
         out[, colnames(EB)] <- out[, colnames(EB)] + EB
         out

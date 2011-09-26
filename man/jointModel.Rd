@@ -17,7 +17,7 @@ jointModel(lmeObject, survObject, timeVar,
     "Cox-PH-aGH", "Cox-PH-GH", "spline-PH-aGH", "spline-PH-GH", 
     "ch-Laplace"),
   interFact = NULL, derivForm = NULL, lag = 0, scaleWB = NULL,
-  init = NULL, control = list(), \dots)
+  CompRisk = FALSE, init = NULL, control = list(), \dots)
 }
 
 \arguments{
@@ -43,6 +43,7 @@ jointModel(lmeObject, survObject, timeVar,
   \item{scaleWB}{a numeric scalar denoting a fixed value for the scale parameter of the Weibull hazard; used only when 
     \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}. The default \code{NULL} means that the scale 
     parameter is estimated.}
+  \item{CompRisk}{logical; should a competing risks joint model be fitted.}
   \item{init}{a list of user-specified initial values. The initial values list must have the following components:
     \describe{
         \item{betas}{the vector of fixed effects for the linear mixed effects model.}
@@ -176,10 +177,10 @@ Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and lo
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
 Rizopoulos, D. (2011a). Fast fitting of joint models for longitudinal and event time Data using a pseudo-adaptive 
-Gaussian quadrature Rule. \emph{Submitted}.
+Gaussian quadrature rule. \emph{Computational Statistics and Data Analysis}, to appear.
 
 Rizopoulos, D. (2011b). Dynamic predictions and prospective accuracy in joint models for longitudinal 
-and time-to-event data. \emph{Biometrics}, to appear.
+and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
 
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
@@ -283,8 +284,37 @@ coxFit <- coxph(Surv(Time, death) ~ drug, data = aids.id, x = TRUE)
 # and fourth component the indicator of which random-effects correspond to the 
 # previous defined formula
 dForm <- list(fixed = ~ 1 + drug, indFixed = c(2, 4), random = ~ 1, indRandom = 2)
-jointModel(lmeFit, coxFit, timeVar = timeVar, method = "spline-PH-GH",
+jointModel(lmeFit, coxFit, timeVar = "obstime", method = "spline-PH-aGH",
   parameterization = "both", derivForm = dForm)
+
+
+# Competing Risks joint model
+# we first expand the PBC dataset in the competing risks long format
+# with two competing risks being death and transplantation
+pbc2.idCR <- crLong(pbc2.id, "status", "alive")
+
+# we fit the linear mixed model as before
+lmeFit.pbc <- lme(log(serBilir) ~ drug * ns(year, 3), 
+    random = list(id = pdDiag(form = ~ ns(year, 3))), data = pbc2)
+
+# however, for the survival model we need to use the data in the long
+# format, and include the competing risks indicator as a stratification
+# factor. We also take interactions of the baseline covariates with the
+# stratification factor in order to allow the effect of these covariates
+# to be different for each competing risk
+coxCRFit.pbc <- coxph(Surv(years, status2) ~ (drug + sex)*strata + strata(strata), 
+    data = pbc2.idCR, x = TRUE)
+
+# the corresponding joint model is fitted simply by including the above
+# two submodels as main arguments, setting argument CompRisk to TRUE, 
+# and choosing as method = "spline-PH-aGH". Similarly as above, we also 
+# include strata as an interaction factor to allow serum bilirubin to 
+# have a different effect for each of the two competing risks
+jmCRFit.pbc <- jointModel(lmeFit.pbc, coxCRFit.pbc, timeVar = "year", 
+    method = "spline-PH-aGH", 
+    interFact = list(value = ~ strata, data = pbc2.idCR), 
+    CompRisk = TRUE)
+summary(jmCRFit.pbc)
 }
 
 # linear mixed model fit
@@ -292,9 +322,9 @@ fitLME <- lme(sqrt(CD4) ~ obstime * drug - drug,
     random = ~ 1 | patient, data = aids)
 # cox model fit
 fitCOX <- coxph(Surv(Time, death) ~ drug, data = aids.id, x = TRUE)
-# joint model fit with a spline approximate baseline hazard
+# joint model fit with a spline-approximated baseline hazard function
 fitJOINT <- jointModel(fitLME, fitCOX, 
-    timeVar = "obstime", method = "spline-PH-GH")
+    timeVar = "obstime", method = "spline-PH-aGH")
 fitJOINT
 summary(fitJOINT)
 }

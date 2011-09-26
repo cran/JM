@@ -1,6 +1,5 @@
 MI.random.times <-
 function (time.points) {
-    parameterization <- object$parameterization
     indFixed <- object$derivForm$indFixed
     indRandom <- object$derivForm$indRandom
     # indexes for missing data
@@ -12,15 +11,18 @@ function (time.points) {
     d.missO <- d
     X.missO <- X
     Z.missO <- Z
+    idT.missO <- object$x$idT
     if (parameterization %in% c("value", "both")) {
         Xtime.missO <- Xtime
         Ztime.missO <- Ztime
         WintF.vl.missO <- WintF.vl
+        Ws.intF.vl.missO <- Ws.intF.vl
     }
     if (parameterization %in% c("slope", "both")) {
         Xtime.deriv.missO <- Xtime.deriv
         Ztime.deriv.missO <- Ztime.deriv
         WintF.sl.missO <- WintF.sl
+        Ws.intF.sl.missO <- Ws.intF.sl
     }
     if (method %in% c("weibull-PH-GH", "weibull-AFT-GH")) {
         P.missO <- P
@@ -62,7 +64,7 @@ function (time.points) {
         }
     }
     WW.missO <- WW
-    n.missO <- nrow(Ztime.missO)
+    n.missO <- length(unique(idT.missO))
     id.miss <- id3.miss <- id
     # Estimated MLEs (Joint Model)
     D <- object$coefficients$D
@@ -140,10 +142,11 @@ function (time.points) {
         D.new <- thetas.new$D
         D.new <- if (diag.D) exp(D.new) else chol.transf(D.new)
         if (object$method == "weibull-PH-GH" || object$method == "weibull-AFT-GH")
-            sigma.t.new <- if (is.null(object$scaleWB)) 
+            sigma.t.new <- if (is.null(object$scaleWB)) {
                 exp(thetas.new$log.sigma.t)
-            else
+            } else {
                 object$scaleWB
+            }
         if (object$method == "spline-PH-GH")
             gammas.bs.new <- thetas.new$gammas.bs
         if (object$method == "piecewise-PH-GH")
@@ -160,7 +163,7 @@ function (time.points) {
         eta.yxT <- as.vector(Xtime.missO %*% betas.new)
         eta.tw <- as.vector(WW.missO %*% gammas.new)
         dmvt.current <- dmvt.proposed <- numeric(n.missO)
-        for (i in 1:n.missO) {
+        for (i in seq_len(n.missO)) {
             proposed.b[i, ] <- rmvt(1, EBs[i, ], Var[[i]], 4)
             tt <- dmvt(rbind(current.b[i, ], proposed.b[i, ]), EBs[i, ], Var[[i]], 4, TRUE)
             dmvt.current[i] <- tt[1]
@@ -183,7 +186,7 @@ function (time.points) {
         while (any(new.visit[!is.na(new.visit)] < t.max)) {
             data.vs <- time.points$data[!duplicated(time.points$data[[time.points$nam.id]]), ]
             if (!is.null(nam <- attr(time.points, "prev.y")))
-                data.vs[nam] <- curr.y
+                data.vs[[nam]] <- curr.y
             mf.vs <- model.frame(time.points$terms, data = data.vs, na.action = NULL)
             X.vs.new <- model.matrix(formula(time.points), mf.vs)[, -1, drop = FALSE]
             mu.vs <- c(log(scale.vs.new) + X.vs.new %*% betas.vs.new) + log(omega.new) / shape.vs.new

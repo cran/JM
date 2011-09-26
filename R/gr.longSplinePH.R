@@ -24,19 +24,34 @@ function (betas) {
         ki <- exp.eta.tw.P * switch(parameterization,
             "value" = rowsum(Int * Ws.intF.vl.alph * Xs[, i], id.GK, reorder = FALSE),
             "slope" = {ii <- match(i, indFixed); 
-                if (is.na(ii)) 0 else rowsum(Int * Ws.intF.sl.alph * Xs.deriv[, ii], id.GK, reorder = FALSE)},
+                if (is.na(ii)) 0 else rowsum(Int * Ws.intF.sl.alph * Xs.deriv[, ii], 
+                    id.GK, reorder = FALSE)},
             "both" = {ii <- match(i, indFixed);
                 rowsum(Int * (Ws.intF.vl.alph * Xs[, i] + 
-                    Ws.intF.sl.alph * if (is.na(ii)) 0 else Xs.deriv[, ii]), id.GK, reorder = FALSE)}
+                    Ws.intF.sl.alph * if (is.na(ii)) 0 else Xs.deriv[, ii]), 
+                        id.GK, reorder = FALSE)}
         )
+        ki <- rowsum(ki, idT, reorder = FALSE)
         kii <- c((p.byt * ki) %*% wGH)
         sc2[i] <- switch(parameterization,
-            "value" = - sum(d * WintF.vl.alph * Xtime[, i] - kii, na.rm = TRUE),
-            "slope" = {ii <- match(i, indFixed); 
-                if (is.na(ii)) 0 else - sum(d * WintF.sl.alph * Xtime.deriv[, ii] - kii, na.rm = TRUE)},
-            "both" = {ii <- match(i, indFixed);
-                - sum(d * (WintF.vl.alph * Xtime[, i] + 
-                    WintF.sl.alph * if (is.na(ii)) 0 else Xtime.deriv[, ii]) - kii, na.rm = TRUE)}
+            "value" = {
+                ddd <- tapply(d * WintF.vl.alph * Xtime[, i], idT, sum)
+                - sum(ddd - kii, na.rm = TRUE)
+            },
+            "slope" = {
+                ii <- match(i, indFixed)
+                if (is.na(ii)) 0 else {
+                    ddd <- tapply(d * WintF.sl.alph * Xtime.deriv[, ii], idT, sum)
+                    - sum(ddd - kii, na.rm = TRUE)
+                }
+            },
+            "both" = {
+                ii <- match(i, indFixed)
+                ddd <- tapply(d * (WintF.vl.alph * Xtime[, i] + 
+                    WintF.sl.alph * if (is.na(ii)) 0 else Xtime.deriv[, ii]), 
+                    idT, sum)
+                - sum(ddd - kii, na.rm = TRUE)                
+            }
         )
     }    
     c(sc1 + sc2)

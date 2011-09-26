@@ -3,7 +3,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         method = c("weibull-PH-aGH", "weibull-PH-GH", "weibull-AFT-aGH", "weibull-AFT-GH", 
         "piecewise-PH-aGH", "piecewise-PH-GH", "Cox-PH-aGH", "Cox-PH-GH", "spline-PH-aGH", 
         "spline-PH-GH", "ch-Laplace"), interFact = NULL, derivForm = NULL, lag = 0, 
-        scaleWB = NULL, init = NULL, control = list(), ...) {
+        scaleWB = NULL, CompRisk = FALSE, init = NULL, control = list(), ...) {
     cl <- match.call()
     if (!inherits(lmeObject, "lme"))
         stop("\n'lmeObject' must inherit from class lme.")
@@ -44,29 +44,69 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     if (!is.null(interFact) && method %in% c("Cox-PH-GH", "ch-Laplace")) {
         stop("\nincluding interaction terms is not currently available for methods 'Cox-PH-GH' & 'ch-Laplace'.")
     }
+    if (CompRisk && (method != "spline-PH-GH" || is.null(survObject$strata))) {
+        stop("\nto fit a competing risks joint model you must choose as method 'spline-PH-GH'",
+            " and include a strata() in the specification of the coxph().")
+    }
     # survival process
     formT <- formula(survObject)
     if (inherits(survObject, "coxph")) {
         W <- survObject$x
-        Time <- survObject$y[, 1]
+        keepW <- suppressWarnings(!is.na(survObject$coefficients))
+        W <- W[, keepW, drop = FALSE]
+        if (CompRisk) {
+            nRisks <- length(unique(survObject$strata))  
+        } else {
+            nRisks <- 1
+        }
+        surv <- survObject$y
+        if (attr(surv, "type") == "right") {
+            LongFormat <- FALSE
+            Time <- survObject$y[, 1]
+            d <- survObject$y[, 2]
+        } else if (attr(surv, "type") == "counting") {
+            LongFormat <- TRUE
+            if (is.null(survObject$model))
+                stop("\nplease refit the Cox model including in the ", 
+                    "call to coxph() the argument 'model = TRUE'.")
+            Time <- survObject$y[, 2]
+            d <- survObject$y[, 3]
+        }
+        idT <- if (!is.null(survObject$model$cluster)) {
+            as.vector(unclass(survObject$model$cluster))
+        } else {
+            if (!CompRisk) seq_along(Time)
+            else rep(seq_len(length(Time)/nRisks), each = nRisks)
+        }
     } else {
         W <- survObject$x[, -1, drop = FALSE]
         Time <- exp(survObject$y[, 1])
+        d <- survObject$y[, 2]
+        idT <- seq_along(Time)
+        LongFormat <- FALSE
+        nRisks <- 1
     }
-    nT <- length(Time)
+    nT <- length(unique(idT))
+    if (LongFormat && is.null(survObject$model$cluster))
+        stop("\nuse argument 'model = TRUE' and cluster() in coxph().")
     if (!length(W))
         W <- NULL
-    d <- survObject$y[, 2]
     if (sum(d) < 5)
         warning("\nmore than 5 events are required.")
-    WintF.vl <- WintF.sl <- as.matrix(rep(1, nT))
+    WintF.vl <- WintF.sl <- as.matrix(rep(1, length(Time)))
     if (!is.null(interFact)) {
-        if (nrow(interFact$data) != nT)
-            stop("\n'survObject' and 'interFact$data' imply different sample sizes.")
         if (!is.null(interFact$value))
-            WintF.vl <- model.matrix(interFact$value, data = interFact$data)
+            WintF.vl <- if (is.null(survObject$model)) {
+                model.matrix(interFact$value, data = interFact$data)
+            } else {
+                model.matrix(interFact$value, data = survObject$model)
+            }
         if (!is.null(interFact$slope))
-            WintF.sl <- model.matrix(interFact$slope, data = interFact$data)
+            WintF.sl <- if (is.null(survObject$model)) {
+                model.matrix(interFact$slope, data = interFact$data)
+            } else {
+                model.matrix(interFact$slope, data = survObject$model)
+            }
     }
     # longitudinal process
     id <- as.vector(unclass(lmeObject$groups[[1]]))
@@ -74,7 +114,8 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     dimnames(b) <- NULL
     nY <- nrow(b)
     if (nY != nT)
-        stop("sample sizes in the longitudinal and event processes differ.\n")
+        stop("sample sizes in the longitudinal and event processes differ; ", 
+            "maybe you forgot the cluster() argument.\n")
     TermsX <- lmeObject$terms
     data <- lmeObject$data[all.vars(TermsX)]
     formYx <- formula(lmeObject)
@@ -86,10 +127,11 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     Z <- model.matrix(formYz, mfZ)
     y.long <- model.response(mfX, "numeric")
     data.id <- data[!duplicated(id), ]
+    data.id <- data.id[idT, ]
     if (!timeVar %in% names(data))
         stop("\n'timeVar' does not correspond to one of the columns in the model.frame of 'lmeObject'.")
     # extra design matrices for the longitudinal part
-    data.id[timeVar] <- pmax(Time - lag, 0)
+    data.id[[timeVar]] <- pmax(Time - lag, 0)
     if (parameterization %in% c("value", "both")) {
         mfX.id <- model.frame(TermsX, data = data.id)
         mfZ.id <- model.frame(TermsZ, data = data.id)
@@ -112,8 +154,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
             if (length(derivForm$indRandom) > 1 || derivForm$indRandom) 
                 rowSums(Zderiv * b[id, derivForm$indRandom, drop = FALSE])
             else
-                rep(0, nrow(Zderiv))
-        )
+                rep(0, nrow(Zderiv)))
     }
     if (parameterization == "value")
         long.deriv <- NULL
@@ -121,22 +162,24 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         long <- NULL        
     # response vectors and design matrices
     y <- list(y = y.long, logT = log(Time), d = d, lag = lag)
-    x <- list(X = X, Z = Z, W = W, WintF.vl = WintF.vl, WintF.sl = WintF.sl)
+    x <- list(X = X, Z = Z, W = W, WintF.vl = WintF.vl, 
+        WintF.sl = WintF.sl, idT = idT, nRisks = nRisks)
     x <- switch(parameterization, 
         "value" = c(x, list(Xtime = Xtime, Ztime = Ztime)),
         "slope" = c(x, list(Xtime.deriv = Xtime.deriv, Ztime.deriv = Ztime.deriv)),
         "both" = c(x, list(Xtime = Xtime, Ztime = Ztime, Xtime.deriv = Xtime.deriv, 
-            Ztime.deriv = Ztime.deriv))
-    )
+            Ztime.deriv = Ztime.deriv)))
     # control values
     ind.noadapt <- method. %in% c("weibull-AFT-GH", "weibull-PH-GH", "piecewise-PH-GH", 
         "Cox-PH-GH", "spline-PH-GH")
-    con <- list(only.EM = FALSE, iter.EM = 50, iter.qN = 350, optimizer = "optim", tol1 = 1e-03, tol2 = 1e-04, 
-        tol3 = sqrt(.Machine$double.eps), numeriDeriv = "fd", eps.Hes = 1e-06, parscale = NULL, step.max = 0.1, 
-        backtrackSteps = 2, knots = NULL, lng.in.kn = if (method == "piecewise-PH-GH") 6 else 5, ord = 4, 
+    con <- list(only.EM = FALSE, iter.EM = if (method == "spline-PH-GH") 120 else 50, 
+        iter.qN = 350, optimizer = "optim", tol1 = 1e-03, tol2 = 1e-04, 
+        tol3 = if (!CompRisk) sqrt(.Machine$double.eps) else 1e-09, numeriDeriv = "fd", eps.Hes = 1e-06, 
+        parscale = NULL, step.max = 0.1, backtrackSteps = 2, 
+        knots = NULL, lng.in.kn = if (method == "piecewise-PH-GH") 6 else 5, ord = 4, 
         equal.strata.knots = TRUE, typeGH = if (ind.noadapt) "simple" else "adaptive", 
-        GHk = if (ncol(Z) < 3 && nrow(Z) < 2000) 15 else 9, GKk = if (method == "piecewise-PH-GH") 7 else 15, 
-        verbose = FALSE)
+        GHk = if (ncol(Z) < 3 && nrow(Z) < 2000) 15 else 9, 
+        GKk = if (method == "piecewise-PH-GH" || length(Time) > nRisks*nT) 7 else 15, verbose = FALSE)
     if (method == "Cox-PH-GH") {
         con$only.EM <- TRUE
         con$iter.EM <- 200
@@ -159,11 +202,19 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     if (method %in% c("weibull-AFT-GH", "weibull-PH-GH", "spline-PH-GH", "spline-PH-Laplace")) {
         wk <- gaussKronrod(con$GKk)$wk
         sk <- gaussKronrod(con$GKk)$sk
-        P <- Time/2
-        st <- outer(P, sk + 1)
-        id.GK <- rep(seq_len(nY), each = con$GKk)
-        data.id2 <- data.id[id.GK, ]
-        data.id2[timeVar] <- pmax(c(t(st)) - lag, 0)
+        if (LongFormat) {
+            Time0 <- survObject$y[, 1]
+            P <- (Time - Time0) / 2
+            P1 <- (Time + Time0) / 2
+            st <- outer(P, sk) + P1
+        } else {
+            P <- as.vector(Time)/2
+            st <- outer(P, sk + 1)
+        }
+        dimnames(st) <- names(P) <- NULL
+        id.GK <- rep(seq_along(Time), each = con$GKk)
+        data.id2 <- data.id[id.GK, , drop = FALSE]
+        data.id2[[timeVar]] <- pmax(c(t(st)) - lag, 0)
         if (parameterization %in% c("value", "both")) {
             mfX <- model.frame(TermsX, data = data.id2)
             mfZ <- model.frame(TermsZ, data = data.id2)
@@ -183,16 +234,22 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         x <- switch(parameterization,
             "value" = c(x, list(Xs = Xs, Zs = Zs)),
             "slope" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv)),
-            "both" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv, Xs = Xs, Zs = Zs))
-        )
+            "both" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv, Xs = Xs, Zs = Zs)))
         if (method == "spline-PH-GH" || method == "spline-PH-Laplace") {
-            strt <- if (is.null(survObject$strata)) gl(1, nT) else survObject$strata
+            strt <- if (is.null(survObject$strata)) gl(1, length(Time)) else survObject$strata
             nstrt <- length(levels(strt))
             split.Time <- split(Time, strt)
+            ind.t <- if (LongFormat) {
+                unlist(tapply(idT, idT, 
+                    function (x) c(rep(FALSE, length(x) - 1), TRUE)))
+            } else {
+                rep(TRUE, length(Time))
+            }
             kn <- if (con$equal.strata.knots) {
                 kk <- if (is.null(con$knots)) {
-                    pp <- seq(0, 1, length.out = con$lng.in.kn + 2)[-c(1, con$lng.in.kn + 2)]
-                    quantile(Time, pp, names = FALSE)
+                    pp <- seq(0, 1, length.out = con$lng.in.kn + 2)
+                    pp <- tail(head(pp, -1), -1)
+                    quantile(Time[ind.t], pp, names = FALSE)
                 } else {
                     con$knots
                 }
@@ -200,9 +257,16 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
                 names(rr) <- names(split.Time)
                 rr
             } else {
-                lapply(split.Time, function (t) {
+                spt <- if (length(Time) > nT & !CompRisk) 
+                    mapply(function (x, y){
+                        x[unlist(tapply(y, y, 
+                            function (z) c(rep(FALSE, length(z) - 1), TRUE)))]
+                    }, split.Time, split(idT, strt), SIMPLIFY = FALSE)
+                else split.Time
+                lapply(spt, function (t) {
                     kk <- if (is.null(con$knots)) {
-                        pp <- seq(0, 1, length.out = con$lng.in.kn + 2)[-c(1, con$lng.in.kn + 2)]
+                        pp <- seq(0, 1, length.out = con$lng.in.kn + 2)
+                        pp <- tail(head(pp, -1), -1)
                         quantile(t, pp, names = FALSE)
                     } else {
                         con$knots
@@ -211,18 +275,25 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
                 })
             }
             con$knots <- kn
-            W2 <- mapply(function (k, t) splineDesign(k, t, ord = con$ord), kn, split.Time, SIMPLIFY = FALSE)
+            W2 <- mapply(function (k, t) splineDesign(k, t, ord = con$ord), kn, 
+                            split.Time, SIMPLIFY = FALSE)
+            if (any(sapply(W2, colSums) == 0))
+                stop("\nsome of the knots of the B-splines basis are set outside the range",
+                    "\n   of the observed event times for one of the strata; refit the model", 
+                    "\n   setting the control argument 'equal.strata.knots' to FALSE.")
             W2 <- mapply(function (w2, ind) {
-                out <- matrix(0, nT, ncol(w2))
+                out <- matrix(0, length(Time), ncol(w2))
                 out[strt == ind, ] <- w2
                 out
             }, W2, levels(strt), SIMPLIFY = FALSE)
             W2 <- do.call(cbind, W2)
-            split.Time <- split(c(t(st)), rep(strt, each = con$GKk))
-            W2s <- mapply(function (k, t) splineDesign(k, t, ord = con$ord), kn, split.Time, SIMPLIFY = FALSE)
+            strt.s <- rep(strt, each = con$GKk)
+            split.Time <- split(c(t(st)), strt.s)
+            W2s <- mapply(function (k, t) splineDesign(k, t, ord = con$ord), 
+                kn, split.Time, SIMPLIFY = FALSE)
             W2s <- mapply(function (w2s, ind) {
-                out <- matrix(0, nT * con$GKk, ncol(w2s))
-                out[strt == ind, ] <- w2s
+                out <- matrix(0, length(Time) * con$GKk, ncol(w2s))
+                out[strt.s == ind, ] <- w2s
                 out
             }, W2s, levels(strt), SIMPLIFY = FALSE)
             W2s <- do.call(cbind, W2s)
@@ -266,7 +337,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
             st[i, ] <- rep(P[i, ], each = nk) * skQ + rep(P1[i, ], each = nk)
         }
         y <- c(y, list(ind.D = ind))
-        id.GK <- rep(1:nY, rowSums(!is.na(st)))
+        id.GK <- rep(seq_len(nY), rowSums(!is.na(st)))
         P <- c(t(P))
         data.id2 <- data.id[rep(seq_len(nY), each = nk*Q), ]
         data.id2[[timeVar]] <- pmax(c(t(st)) - lag, 0)
@@ -290,7 +361,8 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         x <- switch(parameterization,
             "value" = c(x, list(Xs = Xs, Zs = Zs)),
             "slope" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv)),
-            "both" = c(x, list(Xs.deriv = Xs.deriv, Zs.deriv = Zs.deriv, Xs = Xs, Zs = Zs))
+            "both" = c(x, list(Xs.deriv = Xs.deriv, 
+                Zs.deriv = Zs.deriv, Xs = Xs, Zs = Zs))
         )
     }
     # extra design matrices for 'method = "Cox-PH-GH"' with event times prior to observed time for the ith subject
@@ -316,12 +388,15 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         x <- c(x, list(indT = indT))
         x <- switch(parameterization,
             "value" = c(x, list(Xtime2 = Xtime2, Ztime2 = Ztime2)),
-            "slope" = c(x, list(Xtime2.deriv = Xtime2.deriv, Ztime2.deriv = Ztime2.deriv)),
-            "both" = c(x, list(Xtime2.deriv = Xtime2.deriv, Ztime2.deriv = Ztime2.deriv, Xtime2 = Xtime2, Ztime2 = Ztime2))
+            "slope" = c(x, list(Xtime2.deriv = Xtime2.deriv, 
+                Ztime2.deriv = Ztime2.deriv)),
+            "both" = c(x, list(Xtime2.deriv = Xtime2.deriv, 
+                Ztime2.deriv = Ztime2.deriv, Xtime2 = Xtime2, Ztime2 = Ztime2))
         )
     }
     # initial values
-    VC <- lapply(pdMatrix(lmeObject$modelStruct$reStruct), "*", lmeObject$sigma^2)[[1]]
+    VC <- lapply(pdMatrix(lmeObject$modelStruct$reStruct), "*", 
+        lmeObject$sigma^2)[[1]]
     if (con$typeGH != "simple") {
         Vs <- vector("list", nY)
         inv.VC <- solve(VC)
@@ -339,7 +414,9 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         VC <- diag(VC)
     init.surv <- initial.surv(Time, d, W, WintF.vl, WintF.sl, id, 
         times = data[[timeVar]], method, parameterization, long = long, 
-        long.deriv = long.deriv, extra = list(W2 = x$W2, control = con))
+        long.deriv = long.deriv, 
+        extra = list(W2 = x$W2, control = con, ii = idT, strata = survObject$strata),
+        LongFormat = CompRisk | length(Time) > nT)
     if (method == "Cox-PH-GH" && length(init.surv$lambda0) < length(unqT))
         init.surv$lambda0 <- basehaz(survObject)$hazard
     initial.values <- c(list(betas = fixef(lmeObject), sigma = lmeObject$sigma, D = VC), init.surv)
@@ -393,6 +470,8 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     out$parameterization <- parameterization
     out$derivForm <- derivForm
     out$interFact <- interFact
+    out$CompRisk <- CompRisk
+    out$LongFormat <- LongFormat
     out$assignY <- attr(lmeObject$fixDF, "assign")[-1]
     out$assignT <- survObject$assign
     out$call <- cl

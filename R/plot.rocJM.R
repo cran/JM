@@ -1,6 +1,7 @@
 plot.rocJM <-
-function (x, which = NULL, type = c("ROC", "AUC"), ndt = "all", main = NULL, caption = NULL,
-    xlab = NULL, ylab = NULL, ask = NULL, legend = FALSE, lx = NULL, ly = NULL, lty = NULL, col = NULL, 
+function (x, which = NULL, type = c("ROC", "AUC"), 
+    ndt = "all", main = NULL, caption = NULL, xlab = NULL, ylab = NULL, 
+    ask = NULL, legend = FALSE, lx = NULL, ly = NULL, lty = NULL, col = NULL, 
     cex.caption = 0.8, ...) {
     type <- match.arg(type)
     if (is.null(which))
@@ -17,7 +18,8 @@ function (x, which = NULL, type = c("ROC", "AUC"), ndt = "all", main = NULL, cap
         main <- paste("Case", names(x$times))
     if (is.null(caption))
         caption <- sapply(x$times, function (xx) {
-            paste("(Follow-up times: ", paste(round(xx, 1), collapse = ", "), ")", sep = "")
+            paste("(Follow-up times: ", 
+                paste(round(xx, 1), collapse = ", "), ")", sep = "")
         })
     if (type == "ROC") {
         if (is.null(xlab))
@@ -34,7 +36,8 @@ function (x, which = NULL, type = c("ROC", "AUC"), ndt = "all", main = NULL, cap
             col. <- if (is.null(col)) rep(1:6, length.out = nrow(rr$Sens)) else col
             if (ndt == "all") {
                 matplot(t(1 - rr$Spec), t(rr$Sen), type = "l", lty = lty, col = col., 
-                    ylim = c(0, 1), xlim = c(0, 1), xlab = xlab, ylab = ylab, main = main[ii], ...)
+                    ylim = c(0, 1), xlim = c(0, 1), xlab = xlab, 
+                    ylab = ylab, main = main[ii], ...)
                 abline(a = 0, b = 1, col = "grey")
                 mtext(caption[ii], 3, 0.25, cex = cex.caption)
                 if (legend) {
@@ -42,9 +45,11 @@ function (x, which = NULL, type = c("ROC", "AUC"), ndt = "all", main = NULL, cap
                     legend(lx, ly, labs, lty = lty, col = col., bty = "n", ...)
                 }
             } else {
-                ind <- if (ndt > (nr <- nrow(rr$Sen))) 1:nr else round(seq(1, nr, length.out = ndt))
-                matplot(t(1 - rr$Spec)[, ind], t(rr$Sen)[, ind], type = "l", lty = lty, col = col., 
-                    ylim = c(0, 1), xlim = c(0, 1), xlab = xlab, ylab = ylab, main = main[ii], ...)
+                ind <- if (ndt > (nr <- nrow(rr$Sen))) 1:nr else 
+                    round(seq(1, nr, length.out = ndt))
+                matplot(t(1 - rr$Spec)[, ind], t(rr$Sen)[, ind], 
+                    type = "l", lty = lty, col = col., ylim = c(0, 1), 
+                    xlim = c(0, 1), xlab = xlab, ylab = ylab, main = main[ii], ...)
                 abline(a = 0, b = 1, col = "grey")            
                 mtext(caption[ii], 3, 0.25, cex = cex.caption)
                 if (legend) {
@@ -66,7 +71,8 @@ function (x, which = NULL, type = c("ROC", "AUC"), ndt = "all", main = NULL, cap
             max.n <- max(sapply(aucs, length))
             aucs <- sapply(aucs, function (y) {
                 out <- rep(as.numeric(NA), max.n)
-                names(out) <- sprintf("%.1f", unique(sort(as.numeric(unlist(rnams)))))
+                names(out) <- sprintf("%.1f", 
+                    unique(sort(as.numeric(unlist(rnams)))))
                 out[match(names(y), names(out))] <- y
                 out
             })
@@ -74,9 +80,11 @@ function (x, which = NULL, type = c("ROC", "AUC"), ndt = "all", main = NULL, cap
         col. <- if (is.null(col)) rep(1:6, length.out = ncol(aucs)) else col
         ind.which <- if (is.numeric(which)) which else match(which, nams)
         nr <- nrow(aucs)
-        ind.time <- if (ndt == "all" || ndt > nr) 1:nr else round(seq(1, nr, length.out = ndt))
-        matplot(as.numeric(rownames(aucs))[ind.time], aucs[ind.time, ind.which, drop = FALSE], 
-            type = "l", lty = lty, col = col., xlab = xlab, ylab = ylab, ...)
+        ind.time <- if (ndt == "all" || ndt > nr) 1:nr else 
+            round(seq(1, nr, length.out = ndt))
+        matplot(as.numeric(rownames(aucs))[ind.time], 
+            aucs[ind.time, ind.which, drop = FALSE], type = "l", 
+            lty = lty, col = col., xlab = xlab, ylab = ylab, ...)
         if (legend)
             legend(lx, ly, main, lty = lty, col = col., bty = "n", ...)
     }

@@ -1,6 +1,6 @@
 print.summary.weibull.frailty <-
 function (x, digits = max(4, getOption("digits") - 4), ...) {
-    cat("\n\tWeibull Relative Risk Model with Gamma Frailty\n")
+    cat("\n\n\tWeibull Relative Risk Model with Gamma Frailty\n")
     cat("\nCall:\n", paste(deparse(x$call), sep = "\n", collapse = "\n"), "\n\n", sep = "")
     cat("Data Descriptives:\n")
     cat("Number of groups:", length(unique(x$id)), "\n")

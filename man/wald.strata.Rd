@@ -36,7 +36,7 @@ fitLME <- lme(log(serBilir) ~ drug * year - drug, random = ~ year | id,
     data = pbc2)
 fitSURV <- coxph(Surv(years, status2) ~ drug + strata(hepatomegaly), 
     data = pbc2.id, x = TRUE)
-fit.pbc <- jointModel(fitLME, fitSURV, timeVar = "year", method = "spline-PH-GH")
+fit.pbc <- jointModel(fitLME, fitSURV, timeVar = "year", method = "spline-PH-aGH")
 wald.strata(fit.pbc)
 }
 }

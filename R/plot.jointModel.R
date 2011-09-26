@@ -9,6 +9,12 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
     if (!is.numeric(which) || any(which < 1) || any(which > 10))
         stop("'which' must be in 1:10.\n")
     show <- rep(FALSE, 10)
+    if ((x$LongFormat || x$CompRisk) && any(which %in% c(3:5, 8:10))) {
+        warning("\n  the marginal and subject-specific survival and cumulative ", 
+            "hazard functions\n  are not currently implemented for joint models ", 
+            "with exogenous time-dependent\n  covariates or competing risks.")
+        which <- 1:2
+    }
     show[which] <- TRUE
     method <- x$method
     if (any(show[6], show[7]) && method != "Cox-PH-GH") {
@@ -17,7 +23,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
     }   
     if (any(show[c(3:5, 8:10)])) {
         if (is.null(ids))
-            ids <- seq_along(x$y$logT)
+            ids <- seq_len(x$n)
         if (is.null(survTimes) || !is.numeric(survTimes))
             survTimes <- seq(min(exp(x$y$logT)), max(exp(x$y$logT)), length.out = 31)
         log.survTimes <- log(survTimes)
@@ -42,7 +48,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                 ind.len <- sapply(times, length)
                 indT <- rep(1:nrow(x$data.id), ind.len)
                 data.id2 <- x$data.id[indT, ]
-                data.id2[x$timeVar] <- pmax(unlist(times, use.names = FALSE) - x$y$lag, 0)
+                data.id2[[x$timeVar]] <- pmax(unlist(times, use.names = FALSE) - x$y$lag, 0)
                 mfX <- model.frame(x$termsYx, data = data.id2)
                 mfZ <- model.frame(x$termsYz, data = data.id2)
                 Xtime2 <- model.matrix(x$formYx, mfX)
@@ -62,15 +68,15 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
             eta.tw <- as.vector(WW %*% gammas)
             sigma.t <- x$coefficients$sigma.t
             b <- x$EB$post.b
-            wk <- gaussKronrod()$wk
-            sk <- gaussKronrod()$sk
+            wk <- gaussKronrod(x$control$GKk)$wk
+            sk <- gaussKronrod(x$control$GKk)$sk
             id.GK <- rep(seq_len(n), each = x$control$GKk)
             Haz <- matrix(0, n, nt)
             for (i in 1:nt) {
                 P <- T.mat[, i] / 2
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
-                data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
+                data.id[[x$timeVar]] <- pmax(c(t(st)) - x$y$lag, 0)
                 if (parameterization %in% c("value", "both")) {
                     mfX <- model.frame(x$termsYx, data = data.id)
                     mfZ <- model.frame(x$termsYz, data = data.id)
@@ -107,15 +113,15 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
             eta.tw <- as.vector(WW %*% gammas)
             sigma.t <- x$coefficients$sigma.t
             b <- x$EB$post.b
-            wk <- gaussKronrod()$wk
-            sk <- gaussKronrod()$sk
+            wk <- gaussKronrod(x$control$GKk)$wk
+            sk <- gaussKronrod(x$control$GKk)$sk
             id.GK <- rep(seq_len(n), each = x$control$GKk)
             Haz <- matrix(0, n, nt)
             for (i in 1:nt) {
                 P <- T.mat[, i] / 2
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
-                data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
+                data.id[[x$timeVar]] <- pmax(c(t(st)) - x$y$lag, 0)
                 if (parameterization %in% c("value", "both")) {
                     mfX <- model.frame(x$termsYx, data = data.id)
                     mfZ <- model.frame(x$termsYz, data = data.id)
@@ -172,7 +178,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     st[ii, ] <- rep(P[ii, ], each = nk) * skQ + rep(P1[ii, ], each = nk)
                 }
                 data.id2 <- x$data.id[rep(1:n, each = nk*Q), ]
-                data.id2[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
+                data.id2[[x$timeVar]] <- pmax(c(t(st)) - x$y$lag, 0)
                 id.GK <- rep(1:n, rowSums(!is.na(st)))
                 if (parameterization %in% c("value", "both")) {
                     mfX <- model.frame(x$termsYx, data = data.id2)
@@ -211,15 +217,15 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
             eta.tw1 <- if (!is.null(W1)) as.vector(W1 %*% gammas) else 0
             gammas.bs <- x$coefficients$gammas.bs
             b <- x$EB$post.b
-            wk <- gaussKronrod()$wk
-            sk <- gaussKronrod()$sk
+            wk <- gaussKronrod(x$control$GKk)$wk
+            sk <- gaussKronrod(x$control$GKk)$sk
             id.GK <- rep(seq_len(n), each = x$control$GKk)
             Haz <- matrix(0, n, nt)
             for (i in 1:nt) {
                 P <- T.mat[, i] / 2
                 st <- outer(P, sk + 1)
                 data.id <- x$data.id[id.GK, ]
-                data.id[x$timeVar] <- pmax(c(t(st)) - x$y$lag, 0)
+                data.id[[x$timeVar]] <- pmax(c(t(st)) - x$y$lag, 0)
                 if (parameterization %in% c("value", "both")) {
                     mfX <- model.frame(x$termsYx, data = data.id)
                     mfZ <- model.frame(x$termsYz, data = data.id)
@@ -243,15 +249,15 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     else
                         c(x$x$WintF.sl[id.GK, , drop = FALSE] %*% Dalpha) * Ys.deriv
                 }
-                strt <- x$y$strata
-                split.Time <- split(c(t(st)), rep(strt, each = x$control$GKk))
+                strt.s <- rep(x$y$strata, each = x$control$GKk)
+                split.Time <- split(c(t(st)), strt.s)
                 W2s <- mapply(function (k, t) splineDesign(k, t, ord = x$control$ord, outer.ok = TRUE), 
                     x$control$knots, split.Time, SIMPLIFY = FALSE)
                 W2s <- mapply(function (w2s, ind) {
                     out <- matrix(0, n * x$control$GKk, ncol(w2s))
-                    out[strt == ind, ] <- w2s
+                    out[strt.s == ind, ] <- w2s
                     out
-                }, W2s, levels(strt), SIMPLIFY = FALSE)
+                }, W2s, levels(strt.s), SIMPLIFY = FALSE)
                 W2s <- do.call(cbind, W2s)
                 eta.ws <- c(W2s %*% gammas.bs)
                 Haz[, i] <- exp(eta.tw1) * P * rowsum(wk * exp(eta.ws + eta.s), id.GK, reorder = FALSE)

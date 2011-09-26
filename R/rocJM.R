@@ -1,9 +1,12 @@
 rocJM <-
-function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NULL,
-        diffType = c("absolute", "relative"), abs.diff = 0, rel.diff = 1, 
-        M = 300, burn.in = 100, scale = 1.6) {
+function (object, dt, data, idVar = "id", cc = NULL, 
+        min.cc = NULL, max.cc = NULL, diffType = c("absolute", "relative"), 
+        abs.diff = 0, rel.diff = 1, M = 300, burn.in = 100, scale = 1.6) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
+    if (object$CompRisk)
+        stop("rocJM() is not currently implemented for ",
+            "competing risks joint models.\n")
     if (!is.data.frame(data) || nrow(data) == 0)
         stop("'data' must be a data.frame with more than one rows.\n")
     if (is.null(data[[idVar]]))
@@ -25,11 +28,12 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     diffType <- match.arg(diffType)
     if (diffType == "absolute") {
         lag <- length(abs.diff)
-        cc <- matrix(cc, length(cc), lag) + rep(abs.diff, each = length(cc))
+        cc <- matrix(cc, length(cc), lag) + 
+            rep(abs.diff, each = length(cc))
     } else {
         lag <- length(rel.diff)
         vv <- if (directionSmaller)
-            -outer(cc, rel.diff - 1)
+            - outer(cc, rel.diff - 1)
         else
             outer(cc, rel.diff - 1)
         cc <- matrix(cc, length(cc), lag) + abs(vv)
@@ -40,6 +44,7 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     derivForm <- object$derivForm
     indFixed <- derivForm$indFixed
     indRandom <- derivForm$indRandom
+    LongFormat <- object$LongFormat
     id <- as.numeric(unclass(data[[idVar]]))
     id <- match(id, unique(id))
     TermsX <- delete.response(object$termsYx)
@@ -51,10 +56,13 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     X <- model.matrix(formYx, mfX)
     Z <- model.matrix(formYz, mfZ)
     TermsT <- object$termsT
-    data.id <- data[!duplicated(id), ]
+    data.id <- if (LongFormat) data else data[!duplicated(id), ]
     mfT <- model.frame(delete.response(TermsT), data = data.id)
     formT <- if (!is.null(kk <- attr(TermsT, "specials")$strata)) {
         strt <- eval(attr(TermsT, "variables"), data.id)[[kk]]
+        tt <- drop.terms(TermsT, kk - 1, keep.response = FALSE)
+        reformulate(attr(tt, "term.labels"))
+    } else if (!is.null(kk <- attr(TermsT, "specials")$cluster)) {
         tt <- drop.terms(TermsT, kk - 1, keep.response = FALSE)
         reformulate(attr(tt, "term.labels"))
     } else {
@@ -88,11 +96,13 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     sigma.t <- object$coefficients$sigma.t
     xi <- object$coefficients$xi
     gammas.bs <- object$coefficients$gammas.bs
-    list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
-            Dalpha = Dalpha, log.sigma.t = if (is.null(sigma.t)) NULL else log(sigma.t), 
-            log.xi = if (is.null(xi)) NULL else log(xi), gammas.bs = gammas.bs, 
-            D = if (diag.D) log(diag(D)) else chol.transf(D))
-    if (method %in% c("weibull-PH-GH", "weibull-AFT-GH") && !is.null(object$scaleWB)) {
+    list.thetas <- list(betas = betas, log.sigma = log(sigma), 
+        gammas = gammas, alpha = alpha, Dalpha = Dalpha, 
+        log.sigma.t = if (is.null(sigma.t)) NULL else log(sigma.t), 
+        log.xi = if (is.null(xi)) NULL else log(xi), gammas.bs = gammas.bs, 
+        D = if (diag.D) log(diag(D)) else chol.transf(D))
+    if (method %in% c("weibull-PH-GH", "weibull-AFT-GH") && 
+            !is.null(object$scaleWB)) {
         list.thetas$log.sigma.t <- NULL
     }
     if (method %in% c("piecewise-PH-GH", "spline-PH-GH")) {
@@ -106,13 +116,15 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
         Q <- object$x$Q
     }
     list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
-    if (!method %in% c("weibull-PH-GH", "weibull-AFT-GH", "piecewise-PH-GH", "spline-PH-GH")) {
+    if (!method %in% c("weibull-PH-GH", "weibull-AFT-GH", 
+            "piecewise-PH-GH", "spline-PH-GH")) {
         stop("\nrocJM() is not yet available for this type of joint model.")
     }
     list.thetas <- list.thetas[!sapply(list.thetas, is.null)]
     thetas <- unlist(as.relistable(list.thetas))
     Var.thetas <- vcov(object)
-    environment(log.posterior.b) <- environment(S.b) <- environment(ModelMats) <- environment()
+    environment(log.posterior.b) <- environment(S.b) <- environment()
+    environment(ModelMats) <- environment()
     # Simulate
     out <- vector("list", M)
     success.rate <- matrix(FALSE, M, n.tp)
@@ -124,8 +136,10 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     # construct model matrices to calculate the survival functions
     survMats <- survMats.last <- vector("list", n.tp)
     for (i in seq_len(n.tp)) {
-        survMats[[i]] <- lapply(tDt[[i]], ModelMats, ii = i)
-        survMats.last[[i]] <- ModelMats(last.time[i], ii = i)  
+        survMats[[i]] <- lapply(tDt[[i]], ModelMats, ii = i,
+            obs.times = obs.times, survTimes = survTimes)
+        survMats.last[[i]] <- ModelMats(last.time[i], ii = i,
+            obs.times = obs.times, survTimes = survTimes) 
     }
     for (m in 1:M) {
         # Step 1: simulate new parameter values
@@ -181,7 +195,8 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
                     S.pred[l] <- S.b(tDt[[i]][l], b.new[i, ], i, survMats[[i]][[l]])
                 pi.dt.t[[i]] <- S.pred / S.last
                 # Step 4b: compute Pr(y(t) <= c | b.new; theta.new)
-                mu.new <- as.vector(x.i %*% betas.new) + rowSums(z.i * rep(b.new[i, ], each = nrow(z.i)))                
+                mu.new <- as.vector(x.i %*% betas.new) + 
+                    rowSums(z.i * rep(b.new[i, ], each = nrow(z.i)))                
                 ccc <- cc[, seq(1, min(nrow(z.i), ncol(cc))), drop = FALSE]
                 ppp <- pnorm(ccc, mean = rep(tail(mu.new, lag), each = nrow(cc)), 
                     sd = sigma.new, log.p = TRUE, lower.tail = directionSmaller)
@@ -254,10 +269,15 @@ function (object, dt, data, idVar = "id", cc = NULL, min.cc = NULL, max.cc = NUL
     for (i in seq_along(times))
         if (all(times[[i]] == 0))
             optThr[[i]] <- optThr[[i]][, 1, drop = FALSE]
-    if (is.matrix(aucs)) colnames(aucs) <- unique(data[[idVar]]) else names(aucs) <- unique(data[[idVar]])
-    out <- c("MCresults" = res, list(AUCs = aucs, optThr = optThr, times = times, 
-        dt = dt, M = M, diffType = diffType, abs.diff = abs.diff, rel.diff = rel.diff, cc = cc, min.cc = min.cc, 
-        max.cc = max.cc, success.rate = success.rate))
+    if (is.matrix(aucs)) {
+        colnames(aucs) <- unique(data[[idVar]])
+    } else {
+        names(aucs) <- unique(data[[idVar]])
+    }
+    out <- c("MCresults" = res, list(AUCs = aucs, optThr = optThr, 
+        times = times, dt = dt, M = M, diffType = diffType, 
+        abs.diff = abs.diff, rel.diff = rel.diff, cc = cc, 
+        min.cc = min.cc, max.cc = max.cc, success.rate = success.rate))
     class(out) <- "rocJM"
     out
 }

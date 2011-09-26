@@ -42,6 +42,9 @@ function (object, process = c("Longitudinal", "Event"),
             names(resid.vals) <- names(y)
             resid.vals
         } else {
+            if (object$CompRisk)
+                stop("residuals() with 'MI = TRUE' is not currently implemented for ",
+                    "competing risks joint models.\n")
             logT <- object$y$logT
             d <- object$y$d
             Xtime <- object$x$Xtime
@@ -59,6 +62,9 @@ function (object, process = c("Longitudinal", "Event"),
             P <- object$x$P
             wk <- object$x$wk
             method <- object$method
+            parameterization <- object$parameterization
+            LongFormat <- object$LongFormat
+            idT <- object$x$idT
             W1 <- object$x$W
             WW <- if (method == "Cox-PH-GH") {
                 stop("multiple-imputation-based residuals are not available ", 

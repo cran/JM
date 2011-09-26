@@ -142,18 +142,23 @@ function (object, process = c("Longitudinal", "Event"),
             wk <- rep(object$x$wk, length(logT))
             id.GK <- rep(seq_along(logT), each = object$control$GKk)
             if (parameterization %in% c("value", "both")) {
-                Zsb <- if (type == "Marginal")
+                Zsb <- if (type == "Marginal") {
                     object$x$Zs %*% t(b)
-                else
-                    rowSums(object$x$Zs * object$EB$post.b[id.GK, ])
+                } else {
+                    bb <- object$EB$post.b[object$x$idT, , drop = FALSE]
+                    rowSums(object$x$Zs * bb[id.GK, ])
+                }
                 Ys <- c(object$x$Xs %*% object$coefficients$betas) + Zsb
                 eta.s <- c(object$x$Ws.intF.vl %*% object$coefficients$alpha) * Ys
             }
             if (parameterization %in% c("slope", "both")) {
-                Zsb <- if (type == "Marginal")
+                Zsb <- if (type == "Marginal") {
                     object$x$Zs.deriv %*% t(b[, object$derivForm$indRandom, drop = FALSE])
-                else
-                    rowSums(object$x$Zs.deriv * object$EB$post.b[id.GK, object$derivForm$indRandom, drop = FALSE])
+                } else {
+                    bb <- object$EB$post.b[object$x$idT, , drop = FALSE]
+                    rowSums(object$x$Zs.deriv * 
+                        bb[id.GK, object$derivForm$indRandom, drop = FALSE])
+                }
                 Ys <- c(object$x$Xs.deriv %*% 
                     object$coefficients$betas[object$derivForm$indFixed]) + Zsb
                 eta.s <- if (parameterization == "both")
@@ -166,7 +171,7 @@ function (object, process = c("Longitudinal", "Event"),
             switch(scale,
                 "survival" = exp(- Haz),
                 "cumulative-Hazard" = Haz,
-                "log-cumulative-Hazard" = log(Haz))            
+                "log-cumulative-Hazard" = log(Haz))
         } else if (method == "piecewise-PH-GH") {
             WW <- W1
             eta.tw <- if (!is.null(WW)) as.vector(WW %*% gammas) else 0

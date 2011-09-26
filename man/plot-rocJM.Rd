@@ -38,7 +38,7 @@
 
 \references{
 Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for 
-longitudinal and time-to-event data. \emph{Biometrics}, accepted.
+longitudinal and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
 
 More examples can be found at \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
 }
@@ -55,7 +55,7 @@ fitLME <- lme(sqrt(CD4) ~ obstime + obstime:(drug + AZT + prevOI + gender),
 fitSURV <- coxph(Surv(Time, death) ~ drug + AZT + prevOI + gender, 
     data = aids.id, x = TRUE)
 fit.aids <- jointModel(fitLME, fitSURV, timeVar = "obstime", 
-    method = "piecewise-PH-GH")
+    method = "piecewise-PH-aGH")
 
 ND <- aids[aids$patient == "7", ]
 roc <- rocJM(fit.aids, dt = c(2, 4, 8), ND, idVar = "patient")
