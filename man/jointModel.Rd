@@ -176,10 +176,10 @@ Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal 
 Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and longitudinal data: Likelihood 
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
-Rizopoulos, D. (2011a). Fast fitting of joint models for longitudinal and event time Data using a pseudo-adaptive 
+Rizopoulos, D. (2011a) Fast fitting of joint models for longitudinal and event time Data using a pseudo-adaptive 
 Gaussian quadrature rule. \emph{Computational Statistics and Data Analysis}, to appear.
 
-Rizopoulos, D. (2011b). Dynamic predictions and prospective accuracy in joint models for longitudinal 
+Rizopoulos, D. (2011b) Dynamic predictions and prospective accuracy in joint models for longitudinal 
 and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
 
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 

@@ -24,6 +24,12 @@ function (object, newdata, type = c("Marginal", "Subject"),
             names(se.fit) <- names(low) <- names(up) <- row.names(newdata)
             out <- list(pred = out, se.fit = se.fit, low = low, upp = up)
         }
+        if (returnData) {
+            out <- if (is.list(out)) 
+                cbind(newdata, do.call(cbind, out))
+            else
+                cbind(newdata, pred = out)
+        }
     } else {
         if (object$CompRisk)
             stop("predict() with type = 'Subject' is not currently ",
@@ -78,9 +84,13 @@ function (object, newdata, type = c("Marginal", "Subject"),
         times.to.pred <- if (is.null(FtTimes)) {
             lapply(last.time, 
                 function (t) seq(t, max(object$times) + 
-                    0.1 * mad(object$times), length = 26)[-1])
-        } else 
-            FtTimes
+                    0.1 * mad(object$times), length = 25))
+        } else {
+            if (!is.list(FtTimes) || length(FtTimes) != length(last.time))
+                rep(list(FtTimes), length(last.time))
+            else
+                FtTimes
+        }
         n <- object$n
         n.tp <- length(last.time)
         ncx <- ncol(X)
@@ -217,7 +227,8 @@ function (object, newdata, type = c("Marginal", "Subject"),
         for (i in seq_len(n.tp)) {
             oo[[i]] <- do.call(rbind, sapply(res, "[", i))
         }
-        out <- unlist(lapply(oo, colMeans))
+        out <- as.vector(c(Xpred %*% betas) + 
+            rowSums(Zpred * modes.b[id2, , drop = FALSE]))
         if (se.fit) {
             alpha <- 1 - level
             se.fit <- lapply(oo, sd)
@@ -228,18 +239,17 @@ function (object, newdata, type = c("Marginal", "Subject"),
             out <- list(pred = out, se.fit = unlist(se.fit), 
                 low = unlist(low), upp = unlist(up))
         }
-        if (!returnData)
+        if (returnData) {
+            newdata$pred <- c(X %*% betas) + rowSums(Z * modes.b[id, ])
+            out <- if (is.list(out)) {
+                newdata$upp <- newdata$low <- newdata$se.fit <- NA
+                rbind(newdata, cbind(data.id2, do.call(cbind, out)))
+            } else {
+                rbind(newdata, cbind(data.id2, pred = out))
+            }
+        } else
             attr(out, "time.to.pred") <- times.to.pred
-        else
-            newdata <- data.id2
     }
-    if (returnData) {
-        if (is.list(out)) 
-            cbind(newdata, do.call(cbind, out))
-        else
-            cbind(newdata, pred = out)
-    }
-    else
-        out
+    out
 }
 

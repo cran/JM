@@ -19,8 +19,8 @@ function (object, process = c("Longitudinal", "Event"),
             out <- - out
         jj <- grep("Assoct[!^\\.s]", names(out))
         ii <- setdiff(grep("Assoct", names(out)), jj)
-        nn <- names(object$coefficients$alpha)
         if (length(ii) > 1) {
+            nn <- names(object$coefficients$alpha)
             names(out)[ii] <- if (length(nn) == 1) "Assoct" else {
                 if (nn[1] == "") 
                     c("Assoct", paste("Assoct", nn[-1], sep = ":"))
@@ -29,6 +29,7 @@ function (object, process = c("Longitudinal", "Event"),
             }
         }
         if (length(jj) > 1) {
+            nn <- names(object$coefficients$Dalpha)
             names(out)[jj] <- if (length(nn) == 1) "Assoct.s" else {
                 if (nn[1] == "") 
                     c("Assoct.s", paste("Assoct.s", nn[-1], sep = ":"))

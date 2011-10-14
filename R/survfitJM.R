@@ -148,7 +148,8 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
             S.pred <- numeric(length(times.to.pred[[i]]))
             for (l in seq_along(S.pred))
                 S.pred[l] <- S.b(times.to.pred[[i]][l], modes.b[i, ], i, survMats[[i]][[l]])
-            res[[i]] <- cbind(time = times.to.pred[[i]], predSurv = S.pred / S.last)
+            res[[i]] <- cbind(times = times.to.pred[[i]], predSurv = S.pred / S.last)
+            rownames(res[[i]]) <- seq_along(S.pred) 
         }
     } else {
         out <- vector("list", M)
@@ -211,7 +212,18 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
         }
     }
     y <- split(y, id)
-    fitted.y <- split(c(X %*% betas) + rowSums(Z * modes.b[id, ]), id)
+    newdata. <- do.call(rbind, mapply(function (d, t) {
+        d. <- rbind(d, d[nrow(d), ])
+        d.[[timeVar]][nrow(d.)] <- t
+        d.
+    }, split(newdata, id), last.time, SIMPLIFY = FALSE))
+    id. <- as.numeric(unclass(newdata.[[idVar]]))
+    id. <- match(id., unique(id.))
+    mfX. <- model.frame(TermsX, data = newdata.)
+    mfZ. <- model.frame(TermsZ, data = newdata.)
+    X. <- model.matrix(formYx, mfX.)
+    Z. <- model.matrix(formYz, mfZ.)
+    fitted.y <- split(c(X. %*% betas) + rowSums(Z. * modes.b[id., , drop = FALSE]), id.)
     names(res) <- names(y) <- names(last.time) <- names(obs.times) <- unique(unclass(newdata[[idVar]]))
     res <- list(summaries = res, survTimes = survTimes, last.time = last.time, 
         obs.times = obs.times, y = y, fitted.y = fitted.y, ry = range(object$y$y, na.rm = TRUE))

@@ -52,8 +52,8 @@ function (object, ...) {
     }
     jj <- grep("Assoct[!^\\.s]", names(gammas))
     ii <- setdiff(grep("Assoct", names(gammas)), jj)
-    nn <- names(object$coefficients$alpha)
     if (length(ii) > 1) {
+        nn <- names(object$coefficients$alpha)
         names(gammas)[ii] <- if (length(nn) == 1) "Assoct" else {
             if (nn[1] == "") 
                 c("Assoct", paste("Assoct", nn[-1], sep = ":"))
@@ -62,6 +62,7 @@ function (object, ...) {
         }
     }
     if (length(jj) > 1) {
+        nn <- names(object$coefficients$Dalpha)
         names(gammas)[jj] <- if (length(nn) == 1) "Assoct.s" else {
             if (nn[1] == "") 
                 c("Assoct.s", paste("Assoct.s", nn[-1], sep = ":"))

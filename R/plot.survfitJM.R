@@ -81,7 +81,7 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
             rng <- range(x$obs.times[[ii]], x$survTimes)
             plot(x$obs.times[[ii]], x$y[[ii]], xlim = rng, ylim = x$ry,
                 xlab = xlab[i], ylab = ylab2, pch = pch, ...)
-            lines(x$obs.times[[ii]], x$fitted.y[[ii]], col = col, lwd = lwd)
+            lines(c(x$obs.times[[ii]], x$last.time[ii]), x$fitted.y[[ii]], col = col, lwd = lwd)
             abline(v = lt, lty = 3)
             par(new = TRUE)
             matplot(r.[, 1], r.[, -1, drop = FALSE], type = "l", col = col, lwd = lwd, 

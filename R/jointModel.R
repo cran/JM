@@ -78,6 +78,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
             if (!CompRisk) seq_along(Time)
             else rep(seq_len(length(Time)/nRisks), each = nRisks)
         }
+        idT <- match(idT, unique(idT))
     } else {
         W <- survObject$x[, -1, drop = FALSE]
         Time <- exp(survObject$y[, 1])
