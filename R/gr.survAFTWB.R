@@ -39,4 +39,3 @@ function (thetas) {
     } else NULL
     c(scgammas, scalpha, scalpha.D, scsigmat)
 }
-

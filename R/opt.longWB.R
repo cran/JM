@@ -28,4 +28,3 @@ function (betas) {
     p.bytn <- p.byt * (log.p.yb + log.p.tb)
     -sum(p.bytn %*% wGH, na.rm = TRUE)
 }
-

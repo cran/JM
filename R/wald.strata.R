@@ -28,4 +28,3 @@ function (fit) {
     structure(list(alternative = "spline coefficients for the baseline risk\n\tfunction are not equal among strata", 
         Result = mat), class  = "wald.strata")
 }
-

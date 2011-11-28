@@ -59,4 +59,3 @@ function (betas) {
     H2[lower.tri(H2)] <- t(H2)[lower.tri(H2)]
     H1 + H2
 }
-

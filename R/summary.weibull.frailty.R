@@ -30,4 +30,3 @@ function (object, sand.se = FALSE, ...) {
     class(out) <- "summary.weibull.frailty"
     out
 }
-

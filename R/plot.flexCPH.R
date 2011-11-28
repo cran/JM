@@ -31,4 +31,3 @@ function (x, scale = c("survival", "cumHazard", "log-cumHazard"), survTimes = NU
     }
     invisible(cbind(survTimes = exp(survTimes), fit = fit))
 }
-

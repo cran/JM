@@ -26,4 +26,3 @@ function (thetas) {
     p.bytn <- p.byt * log.p.tb
     -sum(p.bytn %*% wGH, na.rm = TRUE)
 }
-

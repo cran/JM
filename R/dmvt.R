@@ -20,4 +20,3 @@ function (x, mu, Sigma, df, log = FALSE) {
     else
         exp(fact) * ((1 + quad)^(- (df + p)/2))
 }
-

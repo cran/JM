@@ -46,4 +46,3 @@ function (thetas) {
     }
     c(scgammas, scalpha, scalpha.D, scxi)
 }
-

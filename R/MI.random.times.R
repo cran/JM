@@ -261,4 +261,3 @@ function (time.points) {
          "mean.resid.valsM" = NULL, "resid.valsM" = resid.valsM.lis, 
          "dataM" = NULL)
 }
-

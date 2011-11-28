@@ -12,4 +12,3 @@ function (data, statusVar, censLevel,
     dataOut[[nameStrata]] <- factor(dataOut[[nameStrata]])
     dataOut
 }
-

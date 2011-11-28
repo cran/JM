@@ -230,4 +230,3 @@ function (time.points) {
              "mean.resid.valsM" = mean.resid.valsM, "resid.valsM" = resid.valsM, 
              "dataM" = if (return.data) dataM else NULL)
 }
-

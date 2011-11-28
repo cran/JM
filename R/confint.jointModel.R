@@ -35,4 +35,3 @@ function (object, parm = c("all", "Longitudinal", "Event"), level = 0.95, ...) {
     ci[, 2] <- cf
     ci
 }
-

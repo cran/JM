@@ -6,4 +6,3 @@ function (object, ...) {
     class(out) <- "logLik"
     out    
 }
-

@@ -1,6 +1,7 @@
 log.posterior.b <-
 function (b, y, Mats, method, ii) {
     id.i <- id %in% ii
+    idT.i <- idT %in% ii
     X.i <- X[id.i, , drop = FALSE]
     Z.i <- Z[id.i, , drop = FALSE]
     mu.y <- as.vector(X.i %*% betas.new) + rowSums(Z.i * rep(b, each = nrow(Z.i)))
@@ -31,7 +32,7 @@ function (b, y, Mats, method, ii) {
         if (!LongFormat)
             as.vector(W[ii, , drop = FALSE] %*% gammas.new)
         else
-            as.vector(W[id.i, , drop = FALSE] %*% gammas.new)
+            as.vector(W[idT.i, , drop = FALSE] %*% gammas.new)
     } else 0
     log.survival <- if (method == "weibull-PH-GH") {
         Vi <- exp(log(sigma.t.new) + (sigma.t.new - 1) * log(st) + tt)
@@ -64,4 +65,3 @@ function (b, y, Mats, method, ii) {
     }
     log.p.yb + log.survival + log.p.b
 }
-

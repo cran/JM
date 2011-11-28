@@ -8,4 +8,3 @@ function (x, ...) {
     cat("alternative hypothesis:", x$alternative, "\n\n")
     invisible(x)
 }
-

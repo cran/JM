@@ -13,4 +13,3 @@ function (bb) {
     gr.bi <- if (diag.D) - bb / D else - solve(D, bb)
     - as.vector(gr.ybi + gr.tbi + gr.bi)
 }
-

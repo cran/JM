@@ -35,4 +35,3 @@ function (n) {
     }
     list(x = x, w = w)
 }
-

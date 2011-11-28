@@ -32,4 +32,3 @@ function (formula = formula(data), data = parent.frame(), subset, na.action, ini
     class(out) <- "flexCPH"
     out
 }
-

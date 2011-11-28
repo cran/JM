@@ -19,4 +19,3 @@ function (thetas) {
     sc.alpha <- - sum((p.byt * (d * Y - exp.eta.tw * S2)) %*% wGH, na.rm = TRUE)
     c(sc.gammas, sc.alpha)
 }
-

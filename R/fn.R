@@ -11,4 +11,3 @@ function (bb) {
     log.p.bi <- if (diag.D) - 0.5 * crossprod(bb, bb / D)[1, ] else - 0.5 * crossprod(bb, solve(D, bb))[1, ]
     - (log.p.ybi + log.p.tbi + log.p.bi)
 }
-

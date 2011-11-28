@@ -133,4 +133,3 @@ function (object, object2, test = TRUE,
     class(out) <- "aov.jointModel"
     out
 }
-

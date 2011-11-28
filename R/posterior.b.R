@@ -136,4 +136,3 @@ function (b) {
     }
     log.p.yb + log.p.tb + log.p.b
 }
-

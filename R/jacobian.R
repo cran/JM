@@ -8,4 +8,3 @@ function (theta) {
         mat[i:k, i] <- etheta[i]
     mat
 }
-

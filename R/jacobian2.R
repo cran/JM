@@ -28,4 +28,3 @@ function (L, ncz) {
     col.ind <- t(col.ind)
     out[, col.ind[upper.tri(col.ind, TRUE)]]
 }
-

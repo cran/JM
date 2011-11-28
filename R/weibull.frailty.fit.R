@@ -77,4 +77,3 @@ function (logT, d, X, id, init.thetas, control = list()) {
     list(coefficients = list(betas = betas, scale = scale, shape = shape, var.frailty = var.fr), hessian = H, 
          logLik = -opt[[2]], control = con)
 }
-

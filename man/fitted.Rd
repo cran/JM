@@ -10,7 +10,7 @@
 
 \usage{
 \method{fitted}{jointModel}(object, process = c("Longitudinal", "Event"), 
-type = c("Marginal", "Subject", "EventTime"), scale = c("survival", 
+type = c("Marginal", "Subject", "EventTime", "Slope"), scale = c("survival", 
 "cumulative-Hazard", "log-cumulative-Hazard"), M = 200, \dots)
 }
 
@@ -27,7 +27,9 @@ type = c("Marginal", "Subject", "EventTime"), scale = c("survival",
   For \code{process = "Longitudinal"}, let \eqn{X} denote the design matrix for the fixed effects \eqn{\beta}, and 
   \eqn{Z} the design matrix for the random effects \eqn{b}. Then for \code{type = "Marginal"} the fitted values are 
   \eqn{X \hat{\beta},} whereas for \code{type = "Subject"} they are \eqn{X \hat{\beta} + Z \hat{b}}. For \code{type = "EventTime"} 
-  is the same as \code{type = "Subject"} but evaluated at the observed event times.
+  is the same as \code{type = "Subject"} but evaluated at the observed event times. Finally, \code{type == "Slope"}
+  returns \eqn{Xs \hat{\beta} + Zs \hat{b}} where \eqn{Xs} and \eqn{Zs} denote the fixed- and random-effects design
+  matrices corresponding to the slope term which is specified in the \code{derivForm} argument of \code{\link{jointModel}}.
   
   For \code{process = "Event"} and \code{type = "Subject"} the linear predictor conditional on the random effects 
   estimates is calculated for each sample unit. Depending on the value of the \code{scale} argument the fitted survival 

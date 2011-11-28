@@ -12,4 +12,3 @@ function (D) {
         mat
     },  ind = ind[, 2:1])
 }
-

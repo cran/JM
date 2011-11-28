@@ -13,4 +13,3 @@ function (x, f, ..., eps = 1e-05) {
     }
     0.5 * (res + t(res))
 }
-

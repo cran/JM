@@ -32,4 +32,3 @@ function (x, mu, Sigma, log = FALSE) {
         }
     }
 }
-

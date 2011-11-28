@@ -191,4 +191,3 @@ function (Time, d, W, WintF.vl, WintF.sl, id, times, method,
     }
     out
 }
-

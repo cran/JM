@@ -60,4 +60,3 @@ function (thetas) {
     } else NULL
     c(scgammas1, scalpha, scalpha.D, scgammas2)
 }
-

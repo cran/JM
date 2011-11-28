@@ -152,4 +152,3 @@ function (object) {
     names(hessians) <- rownames(modes)
     list(modes = modes, vars = hessians)
 }
-

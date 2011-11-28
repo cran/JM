@@ -14,4 +14,3 @@ function (x, ...) {
     print(mapply(f, x$summaries, x$last.time, SIMPLIFY = FALSE))
     invisible(x)
 }
-

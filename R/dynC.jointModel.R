@@ -91,4 +91,3 @@ function (object, dt, data, idVar = "id", times = NULL, nt = 10,
     class(out) <- "dynC"
     out
 }
-

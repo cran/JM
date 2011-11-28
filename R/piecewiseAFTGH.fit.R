@@ -256,4 +256,3 @@ function (x, y, id, initial.values, control) {
         D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, Zb = Zb, 
         Ztimeb = rowSums(Ztime * post.b)), iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
 }
-

@@ -71,4 +71,3 @@ function (method, y, X, Xtime, Z, Ztime, betas, sigma, Time, W1, gammas, alpha, 
     attr(out, "WW") <- WW
     out
 }
-

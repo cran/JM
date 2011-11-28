@@ -21,4 +21,3 @@ function (betas) {
     }
     c(sc1 + sc2)
 }
-

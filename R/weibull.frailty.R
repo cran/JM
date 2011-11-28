@@ -43,4 +43,3 @@ function (formula = formula(data), data = parent.frame(), id = "id", subset, na.
     class(out) <- "weibull.frailty"
     out
 }
-

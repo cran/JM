@@ -59,4 +59,3 @@ function (b, betas, sigma, gammas, gammas.bs, alpha, D) {
     attr(res, "hes.b") <- hes.b
     res
 }
-

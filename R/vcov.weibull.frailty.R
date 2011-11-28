@@ -49,4 +49,3 @@ function (object, sand.se = FALSE, ...) {
     dimnames(out) <- list(nams, nams)
     out
 }
-

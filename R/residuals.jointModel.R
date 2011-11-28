@@ -109,27 +109,31 @@ function (object, process = c("Longitudinal", "Event"),
             }
         }
     } else {
-        fits <- fitted(object, process = "Event", type = "Subject", scale = "cumulative-Hazard")
+        #fits <- fitted(object, process = "Event", type = "Subject", scale = "cumulative-Hazard")
+        #events <- object$y$d
+        fits <- cumHaz(object)
+        ni <- tapply(object$id, object$id, length)
+        events <- rep(object$y$d, ni)
+        events <- ave(events, object$id, FUN = function (x) c(rep(0, length(x)-1), x[1]))
         if (type == "AFT") {
             if (object$method == "weibull-AFT-GH") {
-                log(fits)
+                fitted(object, process = "Event", type = "Subject", scale = "log-cumulative-Hazard")
             } else {
                 warning("AFT residuals are only calculated for the Weibull AFT model; ",
                     "martingale residuals are calculated instead.\n")
-                object$y$d - fits
+                events - fits
             }
         } else if (type == "CoxSnell") {
             if (object$method %in% c("weibull-PH-GH", "weibull-AFT-GH", 
                 "piecewise-PH-GH", "spline-PH-GH", "ch-Laplace")) {
-                fits
+                fitted(object, process = "Event", type = "Subject", scale = "cumulative-Hazard")
             } else {
                 warning("CoxSnell residuals are only calculated for the parametric survival ",
                     "models; martingale residuals are calculated instead.\n")
-                object$y$d - fits                
+                events - fits                
             }
         } else {
-            object$y$d - fits
+            events - fits
         }
     }
 }
-

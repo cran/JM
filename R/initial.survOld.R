@@ -115,4 +115,3 @@ function (logT, d, X, parameterization, method, control, extra = NULL) {
             alpha = coefs[nk + nx])
     }
 }
-

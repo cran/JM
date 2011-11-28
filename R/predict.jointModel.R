@@ -1,12 +1,13 @@
 predict.jointModel <-
 function (object, newdata, type = c("Marginal", "Subject"),
-    idVar = "id", FtTimes = NULL, se.fit = FALSE, M = 300, level = 0.95, 
-    returnData = FALSE, scale = 1.6, ...) {
+    interval = c("none", "confidence", "prediction"), level = 0.95, idVar = "id", 
+    FtTimes = NULL, M = 300, returnData = FALSE, scale = 1.6, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
     if (!is.data.frame(newdata) || nrow(newdata) == 0)
         stop("'newdata' must be a data.frame with more than one rows.\n")
     type <- match.arg(type)
+    interval <- match.arg(interval)
     if (type == "Marginal") {
         TermsX <- delete.response(object$termsYx)
         mf <- model.frame(TermsX, data = newdata)
@@ -14,7 +15,11 @@ function (object, newdata, type = c("Marginal", "Subject"),
         X <- model.matrix(form, data = mf)
         out <- c(X %*% object$coefficients$betas)
         names(out) <- row.names(newdata)
-        if (se.fit) {
+        if (interval == "prediction") {
+            warning("\nfor type = 'Marginal' only confidence intervals are calculated.")
+            interval <- "confidence"
+        }
+        if (interval == "confidence") {
             V <- vcov(object)
             ind <- head(grep("Y.", colnames(V), fixed = TRUE), -1)
             se.fit <- sqrt(diag(X %*% tcrossprod(V[ind, ind], X)))
@@ -43,8 +48,8 @@ function (object, newdata, type = c("Marginal", "Subject"),
         derivForm <- object$derivForm
         indFixed <- derivForm$indFixed
         indRandom <- derivForm$indRandom
-        id <- as.numeric(unclass(newdata[[idVar]]))
-        id <- match(id, unique(id))
+        #id <- as.numeric(unclass(newdata[[idVar]]))
+        #id <- match(id, unique(id))
         LongFormat <- object$LongFormat
         TermsX <- object$termsYx
         TermsZ <- object$termsYz
@@ -54,11 +59,27 @@ function (object, newdata, type = c("Marginal", "Subject"),
         mfZ <- model.frame(TermsZ, data = newdata)
         formYx <- reformulate(attr(delete.response(TermsX), "term.labels"))
         formYz <- object$formYz
+        na.ind <- as.vector(attr(mfX, "na.action"))
+        na.ind <- if (is.null(na.ind)) {
+            rep(TRUE, nrow(newdata))
+        } else {
+        !seq_len(nrow(newdata)) %in% na.ind
+        }
+        id <- as.numeric(unclass(newdata[[idVar]]))
+        id <- id. <- match(id, unique(id))
+        id <- id[na.ind]
         y <- model.response(mfX)
         X <- model.matrix(formYx, mfX)
-        Z <- model.matrix(formYz, mfZ)
+        Z <- model.matrix(formYz, mfZ)[na.ind, , drop = FALSE]
         TermsT <- object$termsT
-        data.id <- if (LongFormat) newdata else newdata[!duplicated(id), ]
+        #data.id <- if (LongFormat) newdata else newdata[!duplicated(id), ]
+        data.id <- if (LongFormat) {
+            nams.ind <- all.vars(delete.response(TermsT))
+            ind <- !duplicated(newdata[nams.ind])
+            newdata[ind, ]
+        } else newdata[!duplicated(id), ]
+        idT <- data.id[[idVar]]
+        idT <- match(idT, unique(idT))
         mfT <- model.frame(delete.response(TermsT), data = data.id)
         formT <- if (!is.null(kk <- attr(TermsT, "specials")$strata)) {
             strt <- eval(attr(TermsT, "variables"), data.id)[[kk]]
@@ -79,8 +100,8 @@ function (object, newdata, type = c("Marginal", "Subject"),
             if (!is.null(interFact$slope))
                 WintF.sl <- model.matrix(interFact$slope, data = data.id)
         }
-        obs.times <- split(newdata[[timeVar]], id)
-        last.time <- tapply(newdata[[timeVar]], id, tail, n = 1)
+        obs.times <- split(newdata[[timeVar]], id.)
+        last.time <- tapply(newdata[[timeVar]], id., tail, n = 1)
         times.to.pred <- if (is.null(FtTimes)) {
             lapply(last.time, 
                 function (t) seq(t, max(object$times) + 
@@ -138,10 +159,11 @@ function (object, newdata, type = c("Marginal", "Subject"),
         Var.thetas <- vcov(object)
         environment(log.posterior.b) <- environment(ModelMats) <- environment()
         # construct model matrices to calculate the survival functions
+        obs.times.surv <- split(data.id[[timeVar]], idT)
         survMats.last <- vector("list", n.tp)
         for (i in seq_len(n.tp)) {
             survMats.last[[i]] <- ModelMats(last.time[i], ii = i,
-                obs.times = obs.times, 
+                obs.times = obs.times.surv, 
                 survTimes = unlist(times.to.pred, use.names = FALSE))
         }
         data.id2 <- newdata[!duplicated(id), ]
@@ -217,8 +239,10 @@ function (object, newdata, type = c("Marginal", "Subject"),
                 # Step 3: compute future Ys
                 Xpred.i <- Xpred[id2 == i, , drop = FALSE]
                 Zpred.i <- Zpred[id2 == i, , drop = FALSE]
-                y.new[[i]] <- as.vector(c(Xpred.i %*% betas.new) + 
+                mu.i <- as.vector(c(Xpred.i %*% betas.new) + 
                     rowSums(Zpred.i * rep(b.new[i, ], each = nrow(Zpred.i))))
+                y.new[[i]] <- if (interval == "confidence") mu.i else 
+                    if (interval == "prediction") rnorm(length(mu.i), mu.i, sigma.new)
             }
             b.old <- b.new
             res[[m]] <- y.new
@@ -229,7 +253,7 @@ function (object, newdata, type = c("Marginal", "Subject"),
         }
         out <- as.vector(c(Xpred %*% betas) + 
             rowSums(Zpred * modes.b[id2, , drop = FALSE]))
-        if (se.fit) {
+        if (interval %in% c("confidence", "prediction")) {
             alpha <- 1 - level
             se.fit <- lapply(oo, sd)
             f1 <- function (mat) apply(mat, 2, quantile, probs = alpha/2)
@@ -252,4 +276,3 @@ function (object, newdata, type = c("Marginal", "Subject"),
     }
     out
 }
-

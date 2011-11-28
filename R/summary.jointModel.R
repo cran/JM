@@ -98,4 +98,3 @@ function (object, ...) {
     class(out) <- "summary.jointModel"
     out
 }
-

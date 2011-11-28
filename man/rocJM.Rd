@@ -9,9 +9,10 @@
 }
 
 \usage{
-rocJM(object, dt, data, idVar = "id", cc = NULL, min.cc = NULL,
-  max.cc = NULL, diffType = c("absolute", "relative"), 
-  abs.diff = 0, rel.diff = 1, M = 300, burn.in = 100, scale = 1.6)
+rocJM(object, dt, data, idVar = "id", directionSmaller = NULL, cc = NULL, min.cc = NULL,
+  max.cc = NULL, optThr = c("sens*spec", "youden"), 
+  diffType = c("absolute", "relative"), abs.diff = 0, rel.diff = 1, 
+  M = 300, burn.in = 100, scale = 1.6)
 }
 
 \arguments{
@@ -23,12 +24,17 @@ rocJM(object, dt, data, idVar = "id", cc = NULL, min.cc = NULL,
         which longitudinal measurements are assumed to be taken (this should have the same name as in the argument
         \code{timeVar} of \code{\link{jointModel}}).}
   \item{idVar}{the name of the variable in \code{data} that identifies the different generic subjects to be considered.}
+  \item{directionSmaller}{logical; if \code{TRUE}, then smaller values for the longitudinal outcome are associated 
+		with higher risk for an event.}
   \item{cc}{a numeric vector of threshold values for the longitudinal marker; if \code{NULL}, this is computed using 
         a regular sequence based on percentiles of the observed marker values.}
   \item{min.cc}{the start of the regular sequence for the threshold values for the longitudinal marker; 
         see argument \code{cc} above.}
   \item{max.cc}{the end of the regular sequence for the threshold values for the longitudinal marker; 
         see argument \code{cc} above.}
+  \item{optThr}{character string defining how the optimal threshold is to be computed. The default chooses the
+	cut-point for the marker that maximizes the product of sensitivity and specificity. Option \code{"youden"}
+	chooses the cut-point that maximizes Youden's index that equals sensitivity + specificity - 1.}
   \item{diffType}{character string defining the type of prediction rule. See \bold{Details}.}
   \item{abs.diff}{a numeric vector of absolute differences in the definition of composite prediction rules.}
   \item{rel.diff}{a numeric vector of relative differences in the definition of composite prediction rules.}
@@ -88,9 +94,8 @@ More details can be found in Rizopoulos (2011).
         All these four components are matrices with rows corresponding to the different \code{dt} values and
         columns corresponding to the different \code{cc} values.}
   \item{AUCs}{a numeric vector of estimated areas under the ROC curves for the different values of \code{dt}.}
-  \item{optThr}{a numeric vector of matrix with the optimal threshold values for the markers for the different
-        \code{dt}. These are defined as the values that maximize the product of sensitivity and specificity (a
-        simple but not always optimal rule!).}
+  \item{optThr}{a numeric vector with the optimal threshold values for the markers for the different
+        \code{dt} under the choice made in argument \code{optThr}.}
   \item{times}{a list of length the number of distinct cases in \code{data} with components numeric vectors
         of the time points at which longitudinal measurements are supposed to be taken.}
   \item{dt}{a copy of the \code{dt} argument.}

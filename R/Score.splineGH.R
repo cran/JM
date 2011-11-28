@@ -175,4 +175,3 @@ function (thetas) {
     }
     c(score.y, score.t, score.b)
 }
-

@@ -12,4 +12,3 @@ function (x, ...) {
     cat("\n\n")
     invisible(x)
 }
-

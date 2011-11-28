@@ -16,4 +16,3 @@ function (X, Xtime, Xtime2, ew) {
     diag(H2) <- diag(H2) / 2
     -(H1 + H2)
 }
-

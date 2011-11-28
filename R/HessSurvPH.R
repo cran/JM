@@ -22,4 +22,3 @@ function (WW, Y, Y2, ew) {
     diag(H) <- diag(H) / 2
     -H
 }
-

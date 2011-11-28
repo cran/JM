@@ -1,6 +1,6 @@
 fitted.jointModel <-
 function (object, process = c("Longitudinal", "Event"), 
-        type = c("Marginal", "Subject", "EventTime"), scale = c("survival", 
+        type = c("Marginal", "Subject", "EventTime", "Slope"), scale = c("survival", 
         "cumulative-Hazard", "log-cumulative-Hazard"), M = 200, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
@@ -11,7 +11,8 @@ function (object, process = c("Longitudinal", "Event"),
     if (process == "Longitudinal") {
         fitY <- c(object$x$X %*% object$coefficients$betas)
         names(fitY) <- names(object$y$y)
-        if (type == "Marginal") fitY else if (type == "Subject") fitY + object$EB$Zb else {
+        if (type == "Marginal") fitY else if (type == "Subject") fitY + object$EB$Zb 
+        else if (type == "EvenTime") {
             fitYEvent <- if (method == "Cox-PH-GH") {
                 c(object$x$Xtime2 %*% object$coefficients$betas + object$EB$Ztime2b)
             } else {
@@ -19,6 +20,23 @@ function (object, process = c("Longitudinal", "Event"),
             }
             names(fitYEvent) <- names(object$y$logT)
             fitYEvent
+        } else if (type == "Slope") {
+            derivForm <- object$derivForm
+            indFixed <- derivForm$indFixed
+            indRandom <- derivForm$indRandom
+            TermsX.deriv <- object$termsYx.deriv
+            TermsZ.deriv <- object$termsYz.deriv
+            mfX.deriv <- model.frame(TermsX.deriv, data = object$data)
+            mfZ.deriv <- model.frame(TermsZ.deriv, data = object$data)
+            X.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
+            Z.deriv <- model.matrix(derivForm$random, mfZ.deriv)
+            betas <- object$coefficients$betas
+            b <- ranef(object)
+            id <- object$id
+            ff <- c(X.deriv %*% betas[indFixed] + 
+                rowSums(Z.deriv * b[id, indRandom, drop = FALSE]))
+            names(ff) <- names(object$y$y)
+            ff
         }
     } else {
         W1 <- object$x$W
@@ -221,4 +239,3 @@ function (object, process = c("Longitudinal", "Event"),
         fitT
     }
 }
-

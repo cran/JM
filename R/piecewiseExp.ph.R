@@ -17,4 +17,3 @@ function (coxObject, knots) {
     glm(D ~ . + offset(log(Time)) - Time - 1,
         family = poisson, data = ND)
 }
-

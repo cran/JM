@@ -74,4 +74,3 @@ function (logT, d, X, init.thetas = NULL, control) {
     list(coefficients = list(gammas = gamas, betas = betas), Hessian = H, logLik = -opt$value, logT = logT, 
          d = d, X = X, knots = kn, survival = surv, cumHazard = CH, "log.cumHazard" = logCH)
 }
-

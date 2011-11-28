@@ -12,7 +12,8 @@
 \method{plot}{rocJM}(x, which = NULL, type = c("ROC", "AUC"), 
   ndt = "all", main = NULL, caption = NULL, xlab = NULL, 
   ylab = NULL, ask = NULL, legend = FALSE, lx = NULL, ly = NULL, 
-  lty = NULL, col = NULL, cex.caption = 0.8, \dots)
+  lty = NULL, col = NULL, cex.caption = 0.8, cex.axis = NULL, 
+  cex.lab = NULL, cex.main = NULL, \dots)
 }
 
 \arguments{
@@ -33,6 +34,7 @@
   \item{lty}{what types of lines to use.}
   \item{col}{which colors to use.}
   \item{cex.caption}{font size for the caption.}
+  \item{cex.axis, cex.lab, cex.main}{graphical parameters; see \code{par} for more info.}
   \item{\dots}{extra graphical parameters passed to \code{plot()}.}
 }
 

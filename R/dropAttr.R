@@ -5,4 +5,3 @@ function (mat) {
     dim(mat) <- d
     mat
 }
-

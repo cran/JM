@@ -254,6 +254,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
                 } else {
                     con$knots
                 }
+                kk <- kk[kk < max(Time)]
                 rr <- rep(list(sort(c(rep(range(Time, st), con$ord), kk))), nstrt)
                 names(rr) <- names(split.Time)
                 rr
@@ -272,6 +273,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
                     } else {
                         con$knots
                     }
+                    kk <- kk[kk < max(t)]
                     sort(c(rep(range(Time, st), con$ord), kk))
                 })
             }
@@ -479,4 +481,3 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     class(out) <- "jointModel"
     out
 }
-

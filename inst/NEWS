@@ -1,3 +1,17 @@
+Changes in version: JM_0.9-2
+
+  * prediction.jointModel() can also compute now prediction intervals.
+
+  * rocJM() has a new logical argument 'directionSmaller' denoting whether smaller
+    values for the longitudinal outcome are associated with higher risk for an event.
+  
+  * fitted.jointModel() has the new option 'Slope' for the 'type' argument that returns
+    the fitted values corresponding to the slope term when 
+    parameterization %in% c('slope', 'both') in jointModel().
+  
+
+==============================
+
 Changes in version: JM_0.9-1
 
   * minor bug fixes.

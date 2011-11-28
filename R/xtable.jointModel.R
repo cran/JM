@@ -124,4 +124,3 @@ function (x, caption = NULL, label = NULL, align = NULL, digits = NULL,
         sanitize.text.function = function (x) x, include.rownames = FALSE,
         add.to.row = lis, hline.after = hline.after, ...)
 }
-

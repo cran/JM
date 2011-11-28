@@ -161,4 +161,3 @@ function (nsim, nsub, thetas, times, formulas, Data = NULL, method = c("weibull-
     attr(val, "seed") <- RNGstate
     val
 }
-

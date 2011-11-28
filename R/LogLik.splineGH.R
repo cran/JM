@@ -53,4 +53,3 @@ function (thetas) {
     log.p.yt <- log(p.yt)
     - sum(log.p.yt[is.finite(log.p.yt)], na.rm = TRUE)
 }
-

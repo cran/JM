@@ -5,4 +5,3 @@ function (x, digits = max(4, getOption("digits") - 4), ...) {
    cat("\nlog-Lik:", x$logLik, "\n\n")
    invisible(x)
 }
-

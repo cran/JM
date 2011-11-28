@@ -17,7 +17,7 @@ function (x, ...) {
     aucs <- x$AUCs
     for (i in seq_along(times)) {
         cat("Case:", names(times)[i], "\n")
-        cat("Recorded times:", paste(round(x$times[[i]], 2), 
+        cat("Recorded time(s):", paste(round(x$times[[i]], 2), 
             collapse = ", "), "\n")
         ac <- if (is.matrix(aucs)) round(aucs[, i], 4) else 
             round(aucs[[i]], 4)
@@ -36,4 +36,3 @@ function (x, ...) {
     }
     invisible(x)
 }
-

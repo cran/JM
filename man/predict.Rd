@@ -10,8 +10,8 @@
 
 \usage{
 \method{predict}{jointModel}(object, newdata, type = c("Marginal", "Subject"),
-    idVar = "id", FtTimes = NULL, se.fit = FALSE, M = 300, level = 0.95,
-    returnData = FALSE, scale = 1.6, \dots)
+    interval = c("none", "confidence", "prediction"), level = 0.95, idVar = "id", 
+    FtTimes = NULL, M = 300, returnData = FALSE, scale = 1.6, \dots)
 }
 
 \arguments{
@@ -19,6 +19,8 @@
   \item{newdata}{a data frame in which to look for variables with which to predict.}
   \item{type}{a character string indicating the type of predictions to compute,
         marginal or subject-specific. See \bold{Details}.}
+  \item{interval}{a character string indicating what type of intervals should be computed.}
+  \item{level}{a numeric scalar denoting the tolerance/confidence level.}
   \item{idVar}{a character string indicating the name of the variable in 
         \code{newdata} that corresponds to the subject identifier; required 
         when \code{type = "Subject"}.}
@@ -29,11 +31,8 @@
         from the last available measurement to the maximum follow-up time of all 
         subjects (plus a small quantity). This argument is only used when 
         \code{type = "Subject"}.}
-  \item{se.fit}{logical if \code{TRUE} the standard error of the predicted
-        values along with a \code{level} confidence interval are returned.}
   \item{M}{numeric scalar denoting the number of Monte Carlo samples. 
         See \bold{Details}.}
-  \item{level}{a numeric scalar denoting the tolerance/confidence level.}
   \item{returnData}{logical; if \code{TRUE} the data frame supplied in
         \code{newdata} is returned augmented with the outputs of the function.}
   \item{scale}{a numeric value setting the scaling of the covariance matrix
@@ -47,7 +46,7 @@
   fixed-effects part of the longitudinal submodel. In particular,
   let \eqn{X} denote the fixed-effects design matrix calculated using
   \code{newdata}. The \code{predict()} calculates \eqn{\hat{y} = X \hat{\beta}},
-  and if \code{se.fit = TRUE}, \eqn{var(\hat{y}) = X V X^t}, with \eqn{V}
+  and if \code{interval = "confidence"}, \eqn{var(\hat{y}) = X V X^t}, with \eqn{V}
   denoting the covariance matrix of \eqn{\hat{\beta}}. The confidence interval
   is based on a normal approximation. Confidence intervals are constructed under 
   the normal approximation.
@@ -56,11 +55,13 @@
   predictions for the longitudinal outcome based on the joint model. 
   This accomplished with a Monte Carlo simulation scheme, similar to the one
   described in \code{\link{survfitJM}}. The only difference is in Step 3, where
-  \eqn{y_i^* = X_i \beta^* + Z_i b_i^*} is calculated instead. Based on this 
-  Monte Carlo simulation scheme we take as estimate of \eqn{\hat{y}_i} the average 
-  of the \code{M} estimates \eqn{y_i^*} from each Monte Carlo sample. Confidence 
-  intervals are constructed using the percentiles of \eqn{y_i^*} from the Monte 
-  Carlo samples.
+  for \code{interval = "confidence"} \eqn{y_i^* = X_i \beta^* + Z_i b_i^*}, whereas
+  for \code{interval = "prediction"} \eqn{y_i^*} is a random vector from a normal 
+  distribution with mean \eqn{X_i \beta^* + Z_i b_i^*} and standard deviation 
+  \eqn{\sigma^*}. Based on this Monte Carlo simulation scheme we take as 
+  estimate of \eqn{\hat{y}_i} the average of the \code{M} estimates \eqn{y_i^*} 
+  from each Monte Carlo sample. Confidence intervals are constructed using the 
+  percentiles of \eqn{y_i^*} from the Monte Carlo samples.
 }
 
 \value{
@@ -89,7 +90,7 @@ fitJOINT <- jointModel(fitLME, fitSURV, timeVar = "year")
 
 DF <- with(pbc2, expand.grid(drug = levels(drug),
     year = seq(min(year), max(year), len = 100)))
-Ps <- predict(fitJOINT, DF, se.fit = TRUE, return = TRUE)
+Ps <- predict(fitJOINT, DF, interval = "confidence", return = TRUE)
 require(lattice)
 xyplot(pred + low + upp ~ year | drug, data = Ps,
     type = "l", col = c(2,1,1), lty = c(1,2,2), lwd = 2,
@@ -98,7 +99,8 @@ xyplot(pred + low + upp ~ year | drug, data = Ps,
 
 # Subject-specific predictions
 ND <- pbc2[pbc2$id == 2, ]
-Ps.ss <- predict(fitJOINT, ND, type = "Subject", se.fit = TRUE, return = TRUE)
+Ps.ss <- predict(fitJOINT, ND, type = "Subject",
+  interval = "confidence", return = TRUE)
 require(lattice)
 xyplot(pred + low + upp ~ year | id, data = Ps.ss,
     type = "l", col = c(2,1,1), lty = c(1,2,2), lwd = 2,

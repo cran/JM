@@ -28,4 +28,3 @@ function (object, type = c("mean", "mode"), postVar = FALSE, ...) {
     }
     out
 }
-

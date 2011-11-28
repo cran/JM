@@ -50,4 +50,3 @@ function (object, process = c("Longitudinal", "Event"), include.splineCoefs = FA
         out
     }
 }
-

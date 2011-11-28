@@ -20,8 +20,6 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     derivForm <- object$derivForm
     indFixed <- derivForm$indFixed
     indRandom <- derivForm$indRandom
-    id <- as.numeric(unclass(newdata[[idVar]]))
-    id <- match(id, unique(id))
     LongFormat <- object$LongFormat
     TermsX <- object$termsYx
     TermsZ <- object$termsYz
@@ -31,11 +29,26 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     mfZ <- model.frame(TermsZ, data = newdata)
     formYx <- reformulate(attr(delete.response(TermsX), "term.labels"))
     formYz <- object$formYz
+    na.ind <- as.vector(attr(mfX, "na.action"))
+    na.ind <- if (is.null(na.ind)) {
+        rep(TRUE, nrow(newdata))
+    } else {
+        !seq_len(nrow(newdata)) %in% na.ind
+    }
+    id <- as.numeric(unclass(newdata[[idVar]]))
+    id <- id. <- match(id, unique(id))
+    id <- id[na.ind]
     y <- model.response(mfX)
     X <- model.matrix(formYx, mfX)
-    Z <- model.matrix(formYz, mfZ)
+    Z <- model.matrix(formYz, mfZ)[na.ind, , drop = FALSE]
     TermsT <- object$termsT
-    data.id <- if (LongFormat) newdata else newdata[!duplicated(id), ]
+    data.id <- if (LongFormat) {
+        nams.ind <- all.vars(delete.response(TermsT))
+        ind <- !duplicated(newdata[nams.ind])
+        newdata[ind, ]
+    } else newdata[!duplicated(id), ]
+    idT <- data.id[[idVar]]
+    idT <- match(idT, unique(idT))
     mfT <- model.frame(delete.response(TermsT), data = data.id)
     formT <- if (!is.null(kk <- attr(TermsT, "specials")$strata)) {
         strt <- eval(attr(TermsT, "variables"), data.id)[[kk]]
@@ -56,11 +69,11 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
         if (!is.null(interFact$slope))
             WintF.sl <- model.matrix(interFact$slope, data = data.id)
     }
-    obs.times <- split(newdata[[timeVar]], id)
+    obs.times <- split(newdata[[timeVar]][na.ind], id)
     last.time <- if (is.null(last.time)) {
-        tapply(newdata[[timeVar]], id, tail, n = 1)
+        tapply(newdata[[timeVar]], id., tail, n = 1)
     } else if (is.character(last.time) && length(last.time) == 1) {
-        tapply(newdata[[last.time]], id, tail, n = 1)
+        tapply(newdata[[last.time]], id., tail, n = 1)
     } else if (is.numeric(last.time) && length(last.time) == nrow(data.id)) {
         last.time
     } else {
@@ -110,12 +123,13 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     Var.thetas <- vcov(object)
     environment(log.posterior.b) <- environment(S.b) <- environment(ModelMats) <- environment()
     # construct model matrices to calculate the survival functions
+    obs.times.surv <- split(data.id[[timeVar]], idT)
     survMats <- survMats.last <- vector("list", n.tp)
     for (i in seq_len(n.tp)) {
         survMats[[i]] <- lapply(times.to.pred[[i]], ModelMats, ii = i,
-            obs.times = obs.times, survTimes = survTimes)
+            obs.times = obs.times.surv, survTimes = survTimes)
         survMats.last[[i]] <- ModelMats(last.time[i], ii = i, 
-            obs.times = obs.times, survTimes = survTimes)
+            obs.times = obs.times.surv, survTimes = survTimes)
     }
     # calculate the Empirical Bayes estimates and their (scaled) variance
     modes.b <- matrix(0, n.tp, ncz)
@@ -216,17 +230,19 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
         d. <- rbind(d, d[nrow(d), ])
         d.[[timeVar]][nrow(d.)] <- t
         d.
-    }, split(newdata, id), last.time, SIMPLIFY = FALSE))
+    }, split(newdata, id.), last.time, SIMPLIFY = FALSE))
     id. <- as.numeric(unclass(newdata.[[idVar]]))
     id. <- match(id., unique(id.))
-    mfX. <- model.frame(TermsX, data = newdata.)
+    mfX. <- model.frame(delete.response(TermsX), data = newdata.)
     mfZ. <- model.frame(TermsZ, data = newdata.)
     X. <- model.matrix(formYx, mfX.)
     Z. <- model.matrix(formYz, mfZ.)
     fitted.y <- split(c(X. %*% betas) + rowSums(Z. * modes.b[id., , drop = FALSE]), id.)
     names(res) <- names(y) <- names(last.time) <- names(obs.times) <- unique(unclass(newdata[[idVar]]))
     res <- list(summaries = res, survTimes = survTimes, last.time = last.time, 
-        obs.times = obs.times, y = y, fitted.y = fitted.y, ry = range(object$y$y, na.rm = TRUE))
+        obs.times = obs.times, y = y, 
+        fitted.times = split(newdata.[[timeVar]], factor(newdata.[[idVar]])), 
+        fitted.y = fitted.y, ry = range(object$y$y, na.rm = TRUE))
     if (simulate) {
         res$full.results <- out
         res$success.rate <- success.rate
@@ -234,4 +250,3 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     class(res) <- "survfitJM"
     res
 }
-

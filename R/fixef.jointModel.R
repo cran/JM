@@ -44,4 +44,3 @@ function (object, process = c("Longitudinal", "Event"),
         out
     }
 }
-

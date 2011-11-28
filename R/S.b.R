@@ -2,6 +2,7 @@ S.b <-
 function (t, b, ii, Mats) {
     if (t == 0)
         return(1)
+    idT.i <- idT %in% ii
     st <- Mats$st
     wk <- Mats$wk
     P <- Mats$P
@@ -26,7 +27,7 @@ function (t, b, ii, Mats) {
         if (!LongFormat)
             as.vector(W[ii, , drop = FALSE] %*% gammas.new)
         else
-            as.vector(W[id %in% ii, , drop = FALSE] %*% gammas.new)
+            as.vector(W[idT.i %in% ii, , drop = FALSE] %*% gammas.new)
     } else 0
     log.survival <- if (method == "weibull-PH-GH") {
         Vi <- exp(log(sigma.t.new) + (sigma.t.new - 1) * log(st) + tt)
@@ -57,4 +58,3 @@ function (t, b, ii, Mats) {
     }
     exp(log.survival)
 }
-

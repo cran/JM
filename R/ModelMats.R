@@ -5,7 +5,7 @@ function (time, ii, obs.times, survTimes) {
         id.GK <- if (!LongFormat) {
             rep(ii, each = object$control$GKk)
         } else {
-            rep(which(id == ii), each = object$control$GKk)
+            rep(which(idT == ii), each = object$control$GKk)
         }
         wk <- gaussKronrod(object$control$GKk)$wk
         sk <- gaussKronrod(object$control$GKk)$sk
@@ -24,7 +24,7 @@ function (time, ii, obs.times, survTimes) {
         data.id2[[timeVar]] <- pmax(st - lag, 0)
         out <- list(st = st, wk = rep(wk, length(P)), P = P)
         if (parameterization %in% c("value", "both")) {
-            mfX <- model.frame(TermsX, data = data.id2)
+            mfX <- model.frame(delete.response(TermsX), data = data.id2)
             mfZ <- model.frame(TermsZ, data = data.id2)
             out$Xs <- model.matrix(formYx, mfX)
             out$Zs <- model.matrix(formYz, mfZ)
@@ -76,4 +76,3 @@ function (time, ii, obs.times, survTimes) {
     }
     out
 }
-

@@ -361,4 +361,3 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
     else 
         invisible()
 }
-

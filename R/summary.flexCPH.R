@@ -15,4 +15,3 @@ function (object, ...) {
     class(out) <- "summary.flexCPH"
     out
 }
-

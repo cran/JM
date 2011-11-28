@@ -19,4 +19,3 @@ function (object, nsim, seed = NULL, times = NULL, Data = NULL, ...) {
         formulas = formulas, Data = Data, method = method, lag = lag, 
         seed = seed, ...)
 }
-

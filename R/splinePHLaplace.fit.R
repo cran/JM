@@ -314,4 +314,3 @@ function (x, y, id, initial.values, initial.EB = NULL, control) {
         Ztimeb = rowSums(Ztime * b.hat)), knots = kn, iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, 
         id = id)
 }
-

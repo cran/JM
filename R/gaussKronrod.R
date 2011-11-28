@@ -15,4 +15,3 @@ function (k = 15) {
     else
         list(sk = sk, wk = wk15)
 }
-

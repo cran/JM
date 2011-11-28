@@ -274,4 +274,3 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
         Ztimeb = rowSums(Ztime * post.b), Ztime2b = rowSums(Ztime2 * post.b[indT, ])), indexes = list(indT = indT, ind.L1 = ind.L1), 
         iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
 }
-

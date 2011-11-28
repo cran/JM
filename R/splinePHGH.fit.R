@@ -425,4 +425,3 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
             } else rep(0, nrow(Ztime.deriv))
         } else NULL), iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
 }
-

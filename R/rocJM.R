@@ -1,6 +1,7 @@
 rocJM <-
-function (object, dt, data, idVar = "id", cc = NULL, 
-        min.cc = NULL, max.cc = NULL, diffType = c("absolute", "relative"), 
+function (object, dt, data, idVar = "id", directionSmaller = NULL, cc = NULL, 
+        min.cc = NULL, max.cc = NULL, optThr = c("sens*spec", "youden"), 
+        diffType = c("absolute", "relative"), 
         abs.diff = 0, rel.diff = 1, M = 300, burn.in = 100, scale = 1.6) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
@@ -11,12 +12,16 @@ function (object, dt, data, idVar = "id", cc = NULL,
         stop("'data' must be a data.frame with more than one rows.\n")
     if (is.null(data[[idVar]]))
         stop("'idVar' not in 'data.\n'")
+    optThr  <- match.arg(optThr)
     method <- object$method
-    directionSmaller <- as.logical(if (method == "weibull-AFT-GH") {
-        object$coefficients$alpha > 0 
-    } else { 
-        object$coefficients$alpha < 0
-    })
+    if (is.null(directionSmaller)) {
+        directionSmaller <- as.logical(if (method == "weibull-AFT-GH")
+            object$coefficients$alpha > 0 else object$coefficients$alpha < 0)
+    }
+    if (!length(directionSmaller)) {
+        stop("you need to define the 'directionSmaller' argument; ", 
+            "see the online help file for more details.\n")
+    }
     if (is.null(cc) || !is.numeric(cc)) {
         pc <- quantile(object$y$y, c(0.05, 0.95), names = FALSE)
         if (is.null(min.cc) || !is.numeric(min.cc))
@@ -36,7 +41,8 @@ function (object, dt, data, idVar = "id", cc = NULL,
             - outer(cc, rel.diff - 1)
         else
             outer(cc, rel.diff - 1)
-        cc <- matrix(cc, length(cc), lag) + abs(vv)
+        #cc <- matrix(cc, length(cc), lag) + abs(vv)
+        cc <- matrix(cc, length(cc), lag) * rep(rel.diff, each = length(cc))
     }
     timeVar <- object$timeVar
     interFact <- object$interFact
@@ -49,6 +55,8 @@ function (object, dt, data, idVar = "id", cc = NULL,
     id <- match(id, unique(id))
     TermsX <- delete.response(object$termsYx)
     TermsZ <- object$termsYz
+    TermsX.deriv <- object$termsYx.deriv
+    TermsZ.deriv <- object$termsYz.deriv
     mfX <- model.frame(TermsX, data = data)
     mfZ <- model.frame(TermsZ, data = data)
     formYx <- reformulate(attr(TermsX, "term.labels"))
@@ -57,6 +65,13 @@ function (object, dt, data, idVar = "id", cc = NULL,
     Z <- model.matrix(formYz, mfZ)
     TermsT <- object$termsT
     data.id <- if (LongFormat) data else data[!duplicated(id), ]
+    data.id <- if (LongFormat) {
+        nams.ind <- all.vars(delete.response(TermsT))
+        ind <- !duplicated(data[nams.ind])
+        data[ind, ]
+    } else data[!duplicated(id), ]
+    idT <- data.id[[idVar]]
+    idT <- match(idT, unique(idT))
     mfT <- model.frame(delete.response(TermsT), data = data.id)
     formT <- if (!is.null(kk <- attr(TermsT, "specials")$strata)) {
         strt <- eval(attr(TermsT, "variables"), data.id)[[kk]]
@@ -217,7 +232,7 @@ function (object, dt, data, idVar = "id", cc = NULL,
         ff <- sapply(out, function (x) x[[2]][i, ])[, -seq_len(burn.in)]
         M <- ncol(ff)
         p1 <- rowMeans(pp, na.rm = TRUE)
-        v1 <- sd(t(pp), na.rm = TRUE)^2 / M
+        v1 <- apply(t(pp), 2, sd, na.rm = TRUE)^2 / M
         rr2 <- vector("list", M)
         for (m in seq_len(M))
             rr2[[m]] <- outer(1 - pp[, m], ff[, m])
@@ -259,7 +274,7 @@ function (object, dt, data, idVar = "id", cc = NULL,
         rr
     })
     optThr <- lapply(res, function (x) {
-        thr <- t(x$Sen) * t(x$Spec)
+        thr <- if (optThr == "sens*spec") t(x$Sen) * t(x$Spec) else t(x$Sen) + t(x$Spec) - 1
         ind <- apply(thr, 2, which.max)
         rr <- cc[ind, , drop = FALSE]
         rownames(rr) <- tail(sprintf("%.1f", dt), length(rr))
@@ -281,4 +296,3 @@ function (object, dt, data, idVar = "id", cc = NULL,
     class(out) <- "rocJM"
     out
 }
-
