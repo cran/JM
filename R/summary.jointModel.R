@@ -17,13 +17,13 @@ function (object, ...) {
         gammas <- c(object$coefficients$gammas, 
             "Assoct" = as.vector(object$coefficients$alpha),
             "Assoct.s" = as.vector(object$coefficients$Dalpha), 
-            "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
+            "log(shape)" = log(as.vector(object$coefficients$sigma.t)))
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else if (object$method == "weibull-AFT-GH") {
         gammas <- c(object$coefficients$gammas, 
             "Assoct" = as.vector(object$coefficients$alpha),
             "Assoct.s" = as.vector(object$coefficients$Dalpha), 
-            "log(scale)" = log(as.vector(object$coefficients$sigma.t)))
+            "log(shape)" = log(as.vector(object$coefficients$sigma.t)))
         gammas[seq(1, length(gammas) - 1)] <- - gammas[seq(1, length(gammas) - 1)]
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else if (object$method == "piecewise-PH-GH") {

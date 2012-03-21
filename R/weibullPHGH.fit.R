@@ -358,6 +358,8 @@ function (x, y, id, initial.values, scaleWB, parameterization, derivForm, contro
             Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
         }
     }
+    # calculate Score vector
+    Score <- Score.weibullGH(unlist(thetas))
     # calculate Hessian matrix
     Hessian <- if (control$numeriDeriv == "fd") {
         fd.vec(unlist(thetas), Score.weibullGH, eps = control$eps.Hes)
@@ -396,7 +398,7 @@ function (x, y, id, initial.values, scaleWB, parameterization, derivForm, contro
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
     list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, Dalpha = Dalpha, sigma.t = sigma.t, 
-        D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
+        D = as.matrix(D)), Score = Score, Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
         Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb, 
         Ztimeb = if (parameterization %in% c("value", "both")) rowSums(Ztime * post.b) else NULL, 
         Ztimeb.deriv = if (parameterization %in% c("slope", "both")) {

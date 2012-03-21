@@ -11,6 +11,7 @@
 \usage{
 \method{plot}{survfitJM}(x, estimator = c("both", "mean", "median"), 
     which = NULL, fun = NULL, conf.int = FALSE, 
+    fill.area = FALSE, col.area = "grey",
     add.last.time.axis.tick = FALSE, include.y = FALSE, main = NULL, 
     xlab = NULL, ylab = NULL, ylab2 = NULL, lty = NULL, col = NULL, 
     lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, \dots,
@@ -27,6 +28,8 @@
   \item{fun}{a vectorized function defining a transformation of the survival curve. For example with \code{fun=log} the log-survival curve 
     is drawn.}
   \item{conf.int}{logical; if \code{TRUE}, then a pointwise confidence interval is included in the plot.}
+  \item{fill.area}{logical; if \code{TRUE} the area defined by the confidence interval of the survival function is put in color.}
+  \item{col.area}{the color of the area defined by the confidence interval of the survival function.}
   \item{add.last.time.axis.tick}{logical; if \code{TRUE}, a tick is added in the x-axis for the last available time point for which a
     longitudinal measurement was available.}
   \item{include.y}{logical; if \code{TRUE}, two plots are produced per subject, i.e., the plot of conditional probabilities of survival 

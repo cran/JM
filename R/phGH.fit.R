@@ -254,6 +254,8 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     }
     thetas <- c(betas, log(sigma), gammas, alpha, if (diag.D) log(D) else chol.transf(D))
     lgLik <- lgLik[it]
+    # calculate Score vector
+    Score <- Score.phGH(thetas)
     # calculate Hessian matrix
     if (control$verbose) cat("\ncalculating Hessian...\n")
     Hessian <- if (control$numeriDeriv == "fd") {
@@ -269,8 +271,10 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
     list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, 
-        lambda0 = cbind("basehaz" = lambda0, "time" = unqT), D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, 
-        EB = list(post.b = post.b, post.vb = post.vb, Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb, 
-        Ztimeb = rowSums(Ztime * post.b), Ztime2b = rowSums(Ztime2 * post.b[indT, ])), indexes = list(indT = indT, ind.L1 = ind.L1), 
-        iters = it, convergence = conv, n = n, N = N, ni = ni, d = d, id = id)
+        lambda0 = cbind("basehaz" = lambda0, "time" = unqT), D = as.matrix(D)), Score = Score, Hessian = Hessian, 
+        logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
+                                  Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb, 
+        Ztimeb = rowSums(Ztime * post.b), Ztime2b = rowSums(Ztime2 * post.b[indT, ])), 
+        indexes = list(indT = indT, ind.L1 = ind.L1), iters = it, convergence = conv, 
+        n = n, N = N, ni = ni, d = d, id = id)
 }

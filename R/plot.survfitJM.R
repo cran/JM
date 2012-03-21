@@ -1,5 +1,6 @@
 plot.survfitJM <-
 function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, conf.int = FALSE,
+        fill.area = FALSE, col.area = "grey",
         add.last.time.axis.tick = FALSE, include.y = FALSE, main = NULL, xlab = NULL, ylab = NULL, ylab2 = NULL,
         lty = NULL, col = NULL, lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, ..., cex.axis.z = 1, 
         cex.lab.z = 1) {
@@ -73,6 +74,13 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
         if (!include.y) {
             matplot(r[, 1], r[, -1, drop = FALSE], type = "l", col = col, lwd = lwd, lty = lty, ylim = ylim, 
                 main = main[ii], xlab = xlab[i], ylab = ylab[i], ...)
+            if (fill.area) {
+                polygon(c(r[, 1], rev(r[, 1])), 
+                    c(r[, ncol(r) - 1], rev(r[, ncol(r)])), 
+                        col = col.area, border = "transparent")
+                matlines(r[, 1], r[, -1, drop = FALSE], type = "l", col = col, 
+                    lwd = lwd, lty = lty)                
+            }
         } else {
             oldmar <- par("mar")
             par(mar = c(5,4,5,4))
@@ -88,6 +96,13 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
                 lty = lty, ylim = ylim, main = main[ii], xlim = rng,
                 ylab = "", xlab = "", axes = FALSE, yaxs = "i", ...)
             axis(4, las = 2, cex.axis = cex.axis.z)
+            if (fill.area) {
+                polygon(c(r.[, 1], rev(r.[, 1])), 
+                    c(r.[, ncol(r.) - 1], rev(r.[, ncol(r.)])), 
+                        col = col.area, border = "transparent")
+                matlines(r.[, 1], r.[, -1, drop = FALSE], type = "l", col = col, 
+                    lwd = lwd, lty = lty)
+            }
             mtext(ylab[i], 4, 2, cex = cex.lab.z)
             par(mar = oldmar, new = FALSE)
         }

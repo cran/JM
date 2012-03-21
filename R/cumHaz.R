@@ -1,5 +1,5 @@
 cumHaz <-
-function (object) {
+function (object, alpha.null = FALSE) {
     method <- object$method
     timeVar <- object$timeVar
     interFact <- object$interFact
@@ -39,6 +39,9 @@ function (object) {
     gammas <- object$coefficients$gammas
     alpha <- object$coefficients$alpha
     Dalpha <- object$coefficients$Dalpha
+    if (alpha.null) {
+        alpha <- Dalpha <- 0
+    }
     b <- ranef(object)
     if (parameterization %in% c("value", "both")) {
         mfX <- model.frame(delete.response(TermsX), data = data2)

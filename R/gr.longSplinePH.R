@@ -31,7 +31,7 @@ function (betas) {
                     Ws.intF.sl.alph * if (is.na(ii)) 0 else Xs.deriv[, ii]), 
                         id.GK, reorder = FALSE)}
         )
-        ki <- rowsum(ki, idT, reorder = FALSE)
+        ki <- c(rowsum(ki, idT, reorder = FALSE))
         kii <- c((p.byt * ki) %*% wGH)
         sc2[i] <- switch(parameterization,
             "value" = {

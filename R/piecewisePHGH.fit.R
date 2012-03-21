@@ -357,6 +357,8 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
             Zb <- if (ncz == 1) post.b[id] else rowSums(Z * post.b[id, ], na.rm = TRUE)
         }
     }
+    # calculate score vector
+    Score <- Score.piecewiseGH(unlist(thetas))
     # calculate Hessian matrix
     if (control$verbose) cat("\ncalculating Hessian...\n")
     Hessian <- if (control$numeriDeriv == "fd") {
@@ -397,7 +399,7 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
     list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, Dalpha = Dalpha, xi = xi, 
-        D = as.matrix(D)), Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
+        D = as.matrix(D)), Score = Score, Hessian = Hessian, logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
         Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb, 
         Ztimeb = if (parameterization %in% c("value", "both")) rowSums(Ztime * post.b) else NULL,
         Ztimeb.deriv = if (parameterization %in% c("slope", "both")) {

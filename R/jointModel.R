@@ -177,7 +177,8 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         iter.qN = 350, optimizer = "optim", tol1 = 1e-03, tol2 = 1e-04, 
         tol3 = if (!CompRisk) sqrt(.Machine$double.eps) else 1e-09, numeriDeriv = "fd", eps.Hes = 1e-06, 
         parscale = NULL, step.max = 0.1, backtrackSteps = 2, 
-        knots = NULL, lng.in.kn = if (method == "piecewise-PH-GH") 6 else 5, ord = 4, 
+        knots = NULL, ObsTimes.knots = TRUE,
+        lng.in.kn = if (method == "piecewise-PH-GH") 6 else 5, ord = 4, 
         equal.strata.knots = TRUE, typeGH = if (ind.noadapt) "simple" else "adaptive", 
         GHk = if (ncol(Z) < 3 && nrow(Z) < 2000) 15 else 9, 
         GKk = if (method == "piecewise-PH-GH" || length(Time) > nRisks*nT) 7 else 15, verbose = FALSE)
@@ -311,8 +312,13 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         nk <- length(sk)
         if (is.null(con$knots) || !is.numeric(con$knots)) {
             Q <- con$lng.in.kn + 1
-            qs <- unique(quantile(Time, seq(0, 1, len = Q + 1), 
-                names = FALSE)[-c(1, Q + 1)])
+            qs <- if (con$ObsTimes.knots) {
+                unique(quantile(Time, seq(0, 1, len = Q + 1), 
+                    names = FALSE)[-c(1, Q + 1)])
+            } else {
+                unique(quantile(Time[d == 1], seq(0, 1, len = Q - 1), 
+                    names = FALSE))                
+            }
             qs <- qs + 1e-06
             if (max(qs) > max(Time))
                 qs[which.max(qs)] <- max(Time) - 1e-06
@@ -452,6 +458,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
         if (!all(ev >= -1e-06 * abs(ev[1]))) 
             warning("Hessian matrix at convergence is not positive definite.\n")
     }
+    out$coefficients <- out$coefficients[!sapply(out$coefficients, is.null)]
     out$x <- x
     out$y <- y
     out$times <- data[[timeVar]]

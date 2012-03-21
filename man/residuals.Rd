@@ -11,7 +11,7 @@
 \usage{
 \method{residuals}{jointModel}(object, process = c("Longitudinal", "Event"), 
   type = c("Marginal", "Subject", "stand-Marginal", 
-  "stand-Subject", "Martingale", "CoxSnell", "AFT"), 
+  "stand-Subject", "Martingale", "nullMartingale", "CoxSnell", "AFT"), 
   MI = FALSE, M = 50, time.points = NULL, return.data = FALSE, 
   \dots)
 }
@@ -46,8 +46,10 @@
   
   When \code{process = "Event"}, residuals are calculated for the survival outcome. Martingale residuals are available 
   for all options for the survival submodel (for the different options of survival submodel, check the \code{method} 
-  argument of \code{\link{jointModel}}). Cox-Snell residuals (Cox and Snell, 1968) are available for the Weibull model 
-  and the additive log cumulative hazard model. AFT residuals are only available for the Weibull model.
+  argument of \code{\link{jointModel}}). when option \code{type = "nullMartingale"} is invoked, the martingale residuals
+  are calculated with the coefficient(s) that correspond to the marker set to zero. Cox-Snell residuals (Cox and Snell, 
+  1968) are available for the Weibull model and the additive log cumulative hazard model. AFT residuals are only 
+  available for the Weibull model.
 }
 
 \note{

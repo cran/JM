@@ -255,7 +255,12 @@ function (object, newdata, type = c("Marginal", "Subject"),
             rowSums(Zpred * modes.b[id2, , drop = FALSE]))
         if (interval %in% c("confidence", "prediction")) {
             alpha <- 1 - level
-            se.fit <- lapply(oo, sd)
+            se.fit <- lapply(oo, function (m) {
+                if (is.matrix(m)) 
+                    apply(m, 2, sd)
+                else 
+                    sd(m)
+            })
             f1 <- function (mat) apply(mat, 2, quantile, probs = alpha/2)
             f2 <- function (mat) apply(mat, 2, quantile, probs = 1 - alpha/2)
             low <- lapply(oo, f1) 

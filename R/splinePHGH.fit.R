@@ -371,6 +371,8 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
                 cat("\n\ncalculating Hessian...\n")
         }
     }
+    # calculate Score vector
+    Score <- Score.splineGH(unlist(thetas))
     # calculate Hessian matrix
     Hessian <- if (control$numeriDeriv == "fd") {
         fd.vec(unlist(thetas), Score.splineGH, eps = control$eps.Hes)
@@ -413,7 +415,7 @@ function (x, y, id, initial.values, parameterization, derivForm, control) {
     dimnames(Hessian) <- list(nams, nams)
     colnames(post.b) <- colnames(x$Z)
     list(coefficients = list(betas = betas, sigma = sigma, gammas = gammas, alpha = alpha, 
-        Dalpha = Dalpha, gammas.bs = gammas.bs, D = as.matrix(D)), Hessian = Hessian, 
+        Dalpha = Dalpha, gammas.bs = gammas.bs, D = as.matrix(D)), Score = Score, Hessian = Hessian, 
         logLik = lgLik, EB = list(post.b = post.b, post.vb = post.vb, 
         Zb = if (iter == 0) rowSums(Z * post.b[id, ], na.rm = TRUE) else Zb,
         Ztimeb = if (parameterization %in% c("value", "both")) {

@@ -1,6 +1,7 @@
 residuals.jointModel <-
 function (object, process = c("Longitudinal", "Event"), 
-    type = c("Marginal", "Subject", "stand-Marginal", "stand-Subject", "Martingale", "CoxSnell", "AFT"), MI = FALSE, 
+    type = c("Marginal", "Subject", "stand-Marginal", "stand-Subject", 
+        "Martingale", "nullMartingale", "CoxSnell", "AFT"), MI = FALSE, 
     M = 50, time.points = NULL, return.data = FALSE, ...) {
     if (!inherits(object, "jointModel"))
         stop("Use only with 'jointModel' objects.\n")
@@ -111,7 +112,7 @@ function (object, process = c("Longitudinal", "Event"),
     } else {
         #fits <- fitted(object, process = "Event", type = "Subject", scale = "cumulative-Hazard")
         #events <- object$y$d
-        fits <- cumHaz(object)
+        fits <- cumHaz(object, type == "nullMartingale")
         ni <- tapply(object$id, object$id, length)
         events <- rep(object$y$d, ni)
         events <- ave(events, object$id, FUN = function (x) c(rep(0, length(x)-1), x[1]))

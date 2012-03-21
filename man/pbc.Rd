@@ -37,8 +37,8 @@ Followup of 312 randomised patients with primary biliary cirrhosis, a rare autoi
     \item{\code{platelets}}{platelets per cubic ml / 1000.}
     \item{\code{prothrombin}}{prothrombin time in seconds.}
     \item{\code{histologic}}{histologic stage of disease.}
-    \item{\code{status2}}{a numeric vector with the value 1 denoting if the patient was transplanted or dead,
-        and 0 if the patient was alive.}
+    \item{\code{status2}}{a numeric vector with the value 1 denoting if the patient was dead,
+        and 0 if the patient was alive or transplanted.}
   }
 }
 

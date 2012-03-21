@@ -12,13 +12,23 @@ function (object, process = c("Longitudinal", "Event"),
         fitY <- c(object$x$X %*% object$coefficients$betas)
         names(fitY) <- names(object$y$y)
         if (type == "Marginal") fitY else if (type == "Subject") fitY + object$EB$Zb 
-        else if (type == "EvenTime") {
+        else if (type == "EventTime") {
+            fitY <- c(object$x$X %*% object$coefficients$betas) + object$EB$Zb
             fitYEvent <- if (method == "Cox-PH-GH") {
                 c(object$x$Xtime2 %*% object$coefficients$betas + object$EB$Ztime2b)
             } else {
                 c(object$x$Xtime %*% object$coefficients$betas + object$EB$Ztimeb)
             }
-            names(fitYEvent) <- names(object$y$logT)
+            id <- object$id
+            idT <- object$x$idT
+            fitYEvent <- unlist(mapply("c", split(fitY, id), split(fitYEvent, idT)), 
+                use.name = FALSE)
+            times <- object$times
+            Time <- exp(object$y$logT)
+            ind <- unlist(mapply("c", split(times, id), split(Time, idT)), 
+                use.name = FALSE)
+            fitYEvent <- fitYEvent[ind != 0]
+            names(fitYEvent) <- seq_along(fitYEvent)
             fitYEvent
         } else if (type == "Slope") {
             derivForm <- object$derivForm
@@ -36,7 +46,21 @@ function (object, process = c("Longitudinal", "Event"),
             ff <- c(X.deriv %*% betas[indFixed] + 
                 rowSums(Z.deriv * b[id, indRandom, drop = FALSE]))
             names(ff) <- names(object$y$y)
-            ff
+            Xtime.deriv <- object$x$Xtime.deriv
+            Ztime.derivc <- object$x$Ztime.deriv
+            ffEvent <- c(Xtime.deriv %*% betas[indFixed] + 
+                rowSums(Ztime.deriv * b[, indRandom, drop = FALSE]))
+            id <- object$id
+            idT <- object$x$idT
+            ffEvent <- unlist(mapply("c", split(ff, id), split(ffEvent, idT)), 
+                use.name = FALSE)
+            times <- object$times
+            Time <- exp(object$y$logT)
+            ind <- unlist(mapply("c", split(times, id), split(Time, idT)), 
+                use.name = FALSE)
+            ffEvent <- ffEvent[ind != 0]
+            names(ffEvent) <- seq_along(ffEvent)
+            ffEvent
         }
     } else {
         W1 <- object$x$W

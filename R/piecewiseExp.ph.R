@@ -1,8 +1,15 @@
 piecewiseExp.ph <-
-function (coxObject, knots) {
+function (coxObject, knots = NULL, length.knots = 6) {
     Time <- coxObject$y[, 1]
     d <- coxObject$y[, 2]
     n <- length(Time)
+    if (is.null(knots)) {
+        Q <- length.knots + 1
+        knots <- unique(quantile(Time, seq(0, 1, len = Q + 1), names = FALSE)[-c(1, Q + 1)])
+        knots <- knots + 1e-06
+        if (max(knots) > max(Time))
+            knots[which.max(knots)] <- max(Time) - 1e-06
+    }
     knots <- c(0, sort(knots), max(Time) + 1)
     Q <- length(knots) - 1
     ind <- findInterval(Time, knots, rightmost.closed = TRUE)

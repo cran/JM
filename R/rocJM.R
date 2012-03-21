@@ -37,12 +37,14 @@ function (object, dt, data, idVar = "id", directionSmaller = NULL, cc = NULL,
             rep(abs.diff, each = length(cc))
     } else {
         lag <- length(rel.diff)
-        vv <- if (directionSmaller)
-            - outer(cc, rel.diff - 1)
-        else
-            outer(cc, rel.diff - 1)
-        #cc <- matrix(cc, length(cc), lag) + abs(vv)
-        cc <- matrix(cc, length(cc), lag) * rep(rel.diff, each = length(cc))
+        vv <- outer(cc, rel.diff - 1)
+        #if (directionSmaller) {
+        #    outer(cc, rel.diff - 1)
+        #} else {
+        #    outer(cc, rel.diff - 1)
+        #}
+        cc <- matrix(cc, length(cc), lag) + sign(cc) * vv
+        #cc <- matrix(cc, length(cc), lag) * rep(rel.diff, each = length(cc))
     }
     timeVar <- object$timeVar
     interFact <- object$interFact
