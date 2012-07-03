@@ -49,6 +49,14 @@
 
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
+\references{
+Rizopoulos, D. (2012) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
+
+Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
+\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
+}
+
 \seealso{\code{\link{jointModel}}}
 
 \examples{

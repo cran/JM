@@ -39,6 +39,9 @@
 }
 
 \references{
+Rizopoulos, D. (2012) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
+
 Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for 
 longitudinal and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
 

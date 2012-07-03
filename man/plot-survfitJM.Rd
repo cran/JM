@@ -11,7 +11,7 @@
 \usage{
 \method{plot}{survfitJM}(x, estimator = c("both", "mean", "median"), 
     which = NULL, fun = NULL, conf.int = FALSE, 
-    fill.area = FALSE, col.area = "grey",
+    fill.area = FALSE, col.area = "grey", col.abline = "black", col.points = "black",
     add.last.time.axis.tick = FALSE, include.y = FALSE, main = NULL, 
     xlab = NULL, ylab = NULL, ylab2 = NULL, lty = NULL, col = NULL, 
     lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, \dots,
@@ -30,7 +30,8 @@
   \item{conf.int}{logical; if \code{TRUE}, then a pointwise confidence interval is included in the plot.}
   \item{fill.area}{logical; if \code{TRUE} the area defined by the confidence interval of the survival function is put in color.}
   \item{col.area}{the color of the area defined by the confidence interval of the survival function.}
-  \item{add.last.time.axis.tick}{logical; if \code{TRUE}, a tick is added in the x-axis for the last available time point for which a
+ \item{col.abline,col.points}{the color for the vertical line and the points when \code{include.y} is \code{TRUE}.} 
+\item{add.last.time.axis.tick}{logical; if \code{TRUE}, a tick is added in the x-axis for the last available time point for which a
     longitudinal measurement was available.}
   \item{include.y}{logical; if \code{TRUE}, two plots are produced per subject, i.e., the plot of conditional probabilities of survival 
     and a scatterplot of his longitudinal measurements.}
@@ -49,11 +50,14 @@
 }
 
 \references{
-Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
-\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
+Rizopoulos, D. (2012) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
 
 Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for longitudinal and time-to-event data. 
 \emph{Biometrics} \bold{67}, 819--829.
+
+Rizopoulos, D. (2010) JM: An R Package for the Joint Modelling of Longitudinal and Time-to-Event Data. 
+\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
 }
 
 

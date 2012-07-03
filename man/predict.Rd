@@ -75,6 +75,11 @@
 
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
+\references{
+Rizopoulos, D. (2012) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
+}
+
 \seealso{\code{\link{jointModel}}}
 
 \examples{

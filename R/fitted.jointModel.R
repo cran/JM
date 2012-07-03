@@ -22,11 +22,11 @@ function (object, process = c("Longitudinal", "Event"),
             id <- object$id
             idT <- object$x$idT
             fitYEvent <- unlist(mapply("c", split(fitY, id), split(fitYEvent, idT)), 
-                use.name = FALSE)
+                use.names = FALSE)
             times <- object$times
             Time <- exp(object$y$logT)
             ind <- unlist(mapply("c", split(times, id), split(Time, idT)), 
-                use.name = FALSE)
+                use.names = FALSE)
             fitYEvent <- fitYEvent[ind != 0]
             names(fitYEvent) <- seq_along(fitYEvent)
             fitYEvent
@@ -53,11 +53,11 @@ function (object, process = c("Longitudinal", "Event"),
             id <- object$id
             idT <- object$x$idT
             ffEvent <- unlist(mapply("c", split(ff, id), split(ffEvent, idT)), 
-                use.name = FALSE)
+                use.names = FALSE)
             times <- object$times
             Time <- exp(object$y$logT)
             ind <- unlist(mapply("c", split(times, id), split(Time, idT)), 
-                use.name = FALSE)
+                use.names = FALSE)
             ffEvent <- ffEvent[ind != 0]
             names(ffEvent) <- seq_along(ffEvent)
             ffEvent

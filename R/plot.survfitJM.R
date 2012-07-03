@@ -1,6 +1,6 @@
 plot.survfitJM <-
 function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, conf.int = FALSE,
-        fill.area = FALSE, col.area = "grey",
+        fill.area = FALSE, col.area = "grey", col.abline = "black", col.points = "black", 
         add.last.time.axis.tick = FALSE, include.y = FALSE, main = NULL, xlab = NULL, ylab = NULL, ylab2 = NULL,
         lty = NULL, col = NULL, lwd = NULL, pch = NULL, ask = NULL, legend = FALSE, ..., cex.axis.z = 1, 
         cex.lab.z = 1) {
@@ -88,9 +88,9 @@ function (x, estimator = c("both", "mean", "median"), which = NULL, fun = NULL, 
             r. <- r[r[, 1] >= lt, ]
             rng <- range(x$obs.times[[ii]], x$survTimes)
             plot(x$obs.times[[ii]], x$y[[ii]], xlim = rng, ylim = x$ry,
-                xlab = xlab[i], ylab = ylab2, pch = pch, ...)
+                xlab = xlab[i], ylab = ylab2, pch = pch, col = col.points, ...)
             lines(x$fitted.times[[ii]], x$fitted.y[[ii]], col = col, lwd = lwd)
-            abline(v = lt, lty = 3)
+            abline(v = lt, lty = 3, col = col.abline)
             par(new = TRUE)
             matplot(r.[, 1], r.[, -1, drop = FALSE], type = "l", col = col, lwd = lwd, 
                 lty = lty, ylim = ylim, main = main[ii], xlim = rng,

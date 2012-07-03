@@ -8,6 +8,7 @@ function (object, alpha.null = FALSE) {
     indFixed <- derivForm$indFixed
     indRandom <- derivForm$indRandom
     LongFormat <- object$LongFormat
+    CompRisk <- object$CompRisk
     lag <- object$y$lag
     TermsX <- object$termsYx
     TermsZ <- object$termsYz
@@ -16,6 +17,7 @@ function (object, alpha.null = FALSE) {
     formYx <- reformulate(attr(delete.response(TermsX), "term.labels"))
     formYz <- object$formYz
     id <- object$id
+    idT <- object$x$idT
     W <- object$x$W
     WintF.vl <- object$x$WintF.vl
     WintF.sl <- object$x$WintF.sl
@@ -23,9 +25,15 @@ function (object, alpha.null = FALSE) {
     sk <- gaussKronrod(object$control$GKk)$sk
     Time0 <- object$times
     last.t <- if (LongFormat) tapply(exp(object$y$logT), object$x$idT, tail, 1) else exp(object$y$logT)
-    tt <- mapply(function (x, y) if (!x[1]) c(x[-1], y) else c(x, y),
-        split(Time0, id), last.t)
-    id <- rep(seq_along(tt), sapply(tt, length))
+    tt <- if (!CompRisk) {
+        mapply(function (x, y) if (!x[1]) c(x[-1], y) else c(x, y),
+            split(Time0, id), last.t)
+    } else {
+        mapply(function (x, y) if (!x[1]) c(x[-1], y) else c(x, y),
+            split(Time0, id)[idT], last.t)
+    }
+    ni <- sapply(tt, length)
+    id <- rep(seq_along(tt), ni)
     Time1 <- unlist(tt, use.names = FALSE)
     P <- Time1 / 2
     P1 <- Time1 / 2
@@ -57,6 +65,8 @@ function (object, alpha.null = FALSE) {
         Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
         Ws.intF.sl <- WintF.sl[id.T, , drop = FALSE]
     }
+    if (CompRisk)
+        id.T <- rep(ceiling(id/object$x$nRisks), each = object$control$GKk)
     if (parameterization %in% c("value", "both"))
         Ys <- as.vector(Xs %*% betas + rowSums(Zs * b[id.T, , drop = FALSE]))
     if (parameterization %in% c("slope", "both"))
@@ -85,20 +95,26 @@ function (object, alpha.null = FALSE) {
                 ord = object$control$ord, outer.ok = TRUE)
         } else {
             strt <- object$y$strata
-            strt.s <- rep(strt[id], each = object$control$GKk)
-            split.Time <- split(c(t(st)), strt.s)
-            w2s <- mapply(function (k, t) splineDesign(k, t, 
-                ord = object$control$ord, outer.ok = TRUE), 
-                kn, split.Time, SIMPLIFY = FALSE)
+            strt.id <- if (!CompRisk) strt[id] else rep(strt[id], each = object$control$GKk)
+            kn <- object$control$knots
+            w2s <- lapply(kn, function (kn) 
+                splineDesign(kn, c(t(st)), ord = object$control$ord, 
+                    outer.ok = TRUE))
             w2s <- mapply(function (w2s, ind) {
-                out <- matrix(0, length(st), ncol(w2s))
-                out[strt.s == ind, ] <- w2s
-                out
+                w2s[strt.id == ind, ] <- 0
+                w2s
             }, w2s, levels(strt), SIMPLIFY = FALSE)
             do.call(cbind, w2s)
-        }        
+        }
         Vi <- exp(c(W2s %*% gammas.bs) + tt)
-        exp(eta.tw) * P * tapply(wk * Vi, id.GK, sum)# <-----------
+        if (!CompRisk) {
+            exp(eta.tw) * P * tapply(wk * Vi, id.GK, sum)
+        } else {
+            ind.CR <- unlist(mapply(function (id, ni) paste(id, seq(1, ni), sep = "."), idT, ni), 
+                use.names = FALSE)
+            ind.CR <- factor(ind.CR, levels = unique(ind.CR))
+            tapply(exp(eta.tw) * P * tapply(wk * Vi, id.GK, sum), ind.CR, sum)
+        }
     } else if (method == "piecewise-PH-GH") {
         xi <- object$coefficients$xi
         qs <- c(0, object$control$knots, max(exp(object$y$logT)) + 1)

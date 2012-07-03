@@ -34,6 +34,9 @@ crLong(data, statusVar, censLevel,
 }
 
 \references{
+Rizopoulos, D. (2012) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
+
 Putter, H., Fiocco, M., and Geskus, R. (2007). Tutorial in biostatistics:
 Competing risks and multi-state models. \emph{Statistics in Medicine} \bold{26},
 2389--2430.

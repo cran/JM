@@ -28,6 +28,11 @@ wald.strata(fit)
 This test is valid when the same knots have been used across strata.
 }
 
+\references{
+Rizopoulos, D. (2012) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
+}
+
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \examples{

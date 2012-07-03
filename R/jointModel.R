@@ -119,6 +119,7 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
             "maybe you forgot the cluster() argument.\n")
     TermsX <- lmeObject$terms
     data <- lmeObject$data[all.vars(TermsX)]
+    data <- data[complete.cases(data), ]
     formYx <- formula(lmeObject)
     mfX <- model.frame(TermsX, data = data)
     X <- model.matrix(formYx, mfX)
@@ -131,6 +132,14 @@ function (lmeObject, survObject, timeVar, parameterization = c("value", "slope",
     data.id <- data.id[idT, ]
     if (!timeVar %in% names(data))
         stop("\n'timeVar' does not correspond to one of the columns in the model.frame of 'lmeObject'.")
+    # check if there are any longitudinal measurements after the event times
+    max.timeY <- tapply(data[[timeVar]], id, max)
+    max.timeT <- tapply(Time, idT, max)
+    if (!all(max.timeT >= max.timeY)) {
+        idnams <- factor(lmeObject$groups[[1]])
+        stop("\nit seems that there are longitudinal measurements taken after the event times for some subjects ",
+            "(i.e., check subject(s): ", paste(levels(idnams)[(max.timeT < max.timeY)], collapse = ", "), ").")
+    }
     # extra design matrices for the longitudinal part
     data.id[[timeVar]] <- pmax(Time - lag, 0)
     if (parameterization %in% c("value", "both")) {

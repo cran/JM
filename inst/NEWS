@@ -1,3 +1,17 @@
+Changes in version: JM_1.0-0
+
+  * This is the version of the package related to the book: Rizopoulos, D. (2012). Joint 
+    Models for Longitudinal and Time-to-Event Data: with Applications in R. 
+    Boca Raton: Chapman & Hall/CRC.
+
+  * functions dns(), dbs(), ins() and ibs() calculate numerically derivative and integrals for functions
+    ns() and bs(), respectively.
+
+  * a coef() method has been added for objects of class 'summary.jointModel'.
+   
+
+==============================
+
 Changes in version: JM_0.9-2
 
   * prediction.jointModel() can also compute now prediction intervals.

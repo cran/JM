@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 0.9-3\cr
-Date: \tab 2011-12-15\cr
+Version: \tab 1.0-0\cr
+Date: \tab 2012-07-03\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -46,7 +46,7 @@ integration technique; available options are:
         required integrals (Rizopoulos et al., 2009).}
 }
 For all the above mentioned options (except the last one), a pseudo-adaptive Gauss-Hermite integration rule is also available
-(Rizopoulos, 2011b). This is much faster than the classical Gauss-Hermite rule, and in several simulations it has been 
+(Rizopoulos, 2012b). This is much faster than the classical Gauss-Hermite rule, and in several simulations it has been 
 shown to perform equally well (though its performance is still under investigation).
 
 The package also offers several utility functions that can extract useful information from fitted joint models. The most
@@ -63,11 +63,14 @@ Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal measurements 
 and event time data. \emph{Biostatistics} \bold{1}, 465--480.
 
-Rizopoulos, D. (2011a) Dynamic predictions and prospective accuracy in joint models for longitudinal 
-and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
+Rizopoulos, D. (2012a) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
 
-Rizopoulos, D. (2011b) Fast fitting of joint models for longitudinal and event time Data using a 
-pseudo-adaptive Gaussian quadrature rule. \emph{Computational Statistics and Data Analysis}, to appear.
+Rizopoulos, D. (2012b) Fast fitting of joint models for longitudinal and event time data using a 
+pseudo-adaptive Gaussian quadrature rule. \emph{Computational Statistics and Data Analysis} \bold{56}, 491--501.
+
+Rizopoulos, D. (2011) Dynamic predictions and prospective accuracy in joint models for longitudinal 
+and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
 
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
 \emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}

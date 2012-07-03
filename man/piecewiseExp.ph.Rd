@@ -24,6 +24,11 @@ piecewiseExp.ph(coxObject, knots = NULL, length.knots = 6)
   an object of class \code{glm}.
 }
 
+\references{
+Rizopoulos, D. (2012) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
+}
+
 \author{Dimitris Rizopoulos \email{d.rizopoulos@erasmusmc.nl}}
 
 \examples{

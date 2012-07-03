@@ -1,18 +1,20 @@
 # Exported functions
-export(anova.jointModel, coef.jointModel, crLong, dynC, fitted.jointModel, fixef.jointModel, jointModel, piecewiseExp.ph,
-	plot.jointModel, plot.survfitJM, predict.jointModel, ranef.jointModel, residuals.jointModel, rocJM, simulateJM, 
-	 simulate.jointModel, survfitJM, wald.strata, weibull.frailty, xtable.jointModel)
+export(anova.jointModel, coef.jointModel, crLong, dbs, dns, dynC, fitted.jointModel, fixef.jointModel, jointModel, 
+	ibs, ins, piecewiseExp.ph, plot.jointModel, plot.survfitJM, predict.jointModel, ranef.jointModel, 
+	residuals.jointModel, rocJM, simulateJM, simulate.jointModel, survfitJM, wald.strata, weibull.frailty, 
+	xtable.jointModel)
 
 # Imported functions
 importFrom(nlme, fixed.effects)
 importFrom(nlme, fixef)
 importFrom(nlme, random.effects)
 importFrom(nlme, ranef)
-importFrom(stats, simulate)
+importFrom(stats, simulate, makepredictcall)
 
 # S3 methods
 S3method(anova, jointModel)
 S3method(coef, jointModel)
+S3method(coef, summary.jointModel)
 S3method(coef, weibull.frailty)
 S3method(confint, jointModel)
 S3method(dynC, jointModel)
@@ -20,6 +22,10 @@ S3method(fitted, jointModel)
 S3method(fixef, jointModel)
 S3method(logLik, jointModel)
 S3method(logLik, weibull.frailty)
+S3method(makepredictcall, dbs)
+S3method(makepredictcall, dns)
+S3method(makepredictcall, ibs)
+S3method(makepredictcall, ins)
 S3method(plot, jointModel)
 S3method(plot, rocJM)
 S3method(plot, survfitJM)

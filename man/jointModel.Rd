@@ -44,7 +44,7 @@ jointModel(lmeObject, survObject, timeVar,
     \code{method = "weibull-AFT-GH"} or \code{method = "weibull-PH-GH"}. The default \code{NULL} means that the scale 
     parameter is estimated.}
   \item{CompRisk}{logical; should a competing risks joint model be fitted.}
-  \item{init}{a list of user-specified initial values. The initial values list must have the following components:
+  \item{init}{a named list of user-specified initial values:
     \describe{
         \item{betas}{the vector of fixed effects for the linear mixed effects model.}
         \item{sigma}{the measurement error standard deviation for the linear mixed effects model.}
@@ -61,7 +61,7 @@ jointModel(lmeObject, survObject, timeVar,
         \item{lambda0}{a vector of the baseline hazard values at the sorted unique event times; specified only when 
             \code{method = "Cox-PH-GH"}.}
     }
-    If the user-specified list of initial values does not contain some of these components or contains components 
+    When this list of initial values does not contain some of these components or contains components 
     not of the appropriate length, then the default initial values are used instead.
   }
   \item{control}{a list of control values with components:
@@ -95,11 +95,13 @@ jointModel(lmeObject, survObject, timeVar,
             is relevant only when \code{method = "piecewise-PH-GH"}, \code{method = "spline-PH-GH"} or \code{method = "ch-Laplace"}. 
             The default is to place equally-spaced \code{lng.in.kn} knots in the quantiles of the observed event times. For stratified models
             fitted with \code{method = "spline-PH-GH"} this should be a list with elements numeric vectors of knots positions for each strata.}
-        \item{lng.in.kn}{the number of internal knots; relevant only when when \code{method = "piecewise-PH-GH"} where it 
+	\item{ObsTimes.knots}{logical; if \code{TRUE} (default) the positions of the knots are specified based in the observed event times, 
+	     otherwise the positions of the knots are specified using only the true event times.}
+	\item{lng.in.kn}{the number of internal knots; relevant only when when \code{method = "piecewise-PH-GH"} where it 
             denotes the number of internal knots for the piecewise constant baseline risk function or when \code{method = "spline-PH-GH"} 
             or \code{method = "ch-Laplace"} where it denotes the number of internal knots for B-splines approximation of the log 
             baseline hazard. Default is 6 when \code{method = "piecewise-PH-GH"} and 5 otherwise.}
-        \item{equal.strata.knots}{logical; if \code{TRUE} (the default), then the same knots are used in the approximation of the 
+ 	\item{equal.strata.knots}{logical; if \code{TRUE} (the default), then the same knots are used in the approximation of the 
             baseline risk function in different strata when \code{method = "spline-PH-GH"}.}
         \item{ord}{a positive integer denoting the order of the B-splines used to approximate the log cumulative hazard
             (default is 4); relevant only when \code{method = "spline-PH-GH"} or \code{method = "ch-Laplace"}.}
@@ -176,10 +178,13 @@ Henderson, R., Diggle, P. and Dobson, A. (2000) Joint modelling of longitudinal 
 Hsieh, F., Tseng, Y.-K. and Wang, J.-L. (2006) Joint modeling of survival and longitudinal data: Likelihood 
 approach revisited. \emph{Biometrics} \bold{62}, 1037--1043.
 
-Rizopoulos, D. (2011a) Fast fitting of joint models for longitudinal and event time Data using a pseudo-adaptive 
-Gaussian quadrature rule. \emph{Computational Statistics and Data Analysis}, to appear.
+Rizopoulos, D. (2012a) \emph{Joint Models for Longitudinal and Time-to-Event Data: with 
+Applications in R}. Boca Raton: Chapman and Hall/CRC.
 
-Rizopoulos, D. (2011b) Dynamic predictions and prospective accuracy in joint models for longitudinal 
+Rizopoulos, D. (2012b) Fast fitting of joint models for longitudinal and event time data using a 
+pseudo-adaptive Gaussian quadrature rule. \emph{Computational Statistics and Data Analysis} \bold{56}, 491--501.
+
+Rizopoulos, D. (2011) Dynamic predictions and prospective accuracy in joint models for longitudinal 
 and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
 
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
