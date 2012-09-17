@@ -1,4 +1,4 @@
-b65d60fe2c0010454617f73b85f94edb *DESCRIPTION
+18c6daa379ab15b7c0197b1b8efcdb53 *DESCRIPTION
 c880159b47d29c11c6b8fe64a44907c8 *NAMESPACE
 d6926b9eb6dbfa560c8d36a864049c33 *R/H.longAFTWB.R
 d6c3051b1dbe83b5156431a7e82e2444 *R/H.longPC.R
@@ -48,6 +48,7 @@ b815e5d303e982dc6e5154fc68cf8a3b *R/fitted.jointModel.R
 68e5bb985c10a7b3da74d86666c81730 *R/fn.R
 e8ccf8dfe5c050b865359b5225f12cc7 *R/gauher.R
 96af64cfd3068cc77425bbf00162628e *R/gaussKronrod.R
+43ad212c5cefcf95538a761fe12879eb *R/globals.R
 621210755c1db9387fde1ad2603136e8 *R/gr.R
 5350d158c8bba9ece8922f9925358157 *R/gr.longAFTWB.R
 a21edfef654d399e49215fe6a0046de4 *R/gr.longPC.R
@@ -66,7 +67,7 @@ d63b16d1a0b62d15a6d47aa631ce8329 *R/ibs.R
 c6e0e50fd82c80d29ed73f13fb349117 *R/jacobian.R
 0188ccda479c187c7837a990e8c09825 *R/jacobian2.R
 84095cc36ee96f1ae1abba4f0a002b48 *R/jointModel.R
-06f7278af478c36cd81a58c4bfbbf140 *R/log.posterior.b.R
+dfcd3d7026781cf7cc55d6e079340d00 *R/log.posterior.b.R
 cac38261b4d0370c5d5a06e151bb872c *R/log.posterior.b2.R
 a0cfe19f4b972219215cc5fe0d3cc974 *R/logLik.flexCPH.R
 7f68502298b3836a2d7c4a66b0bb1ea5 *R/logLik.jointModel.R
@@ -91,7 +92,7 @@ a0d986a277a142ab8b31e26e613a7546 *R/opt.survSplinePH.R
 a34bf0d3510c5c611bd1e12512d2ce39 *R/piecewiseExp.ph.R
 de47ea69b6ec0c1916b7baf350daa90a *R/piecewisePHGH.fit.R
 6f88c2ac9828bc87d9718916535c753f *R/plot.flexCPH.R
-ec4fc5e8cce89cb006dc59ebb6f6ea22 *R/plot.jointModel.R
+1d8f8ac003e3879ebe33757f095cc2fe *R/plot.jointModel.R
 b0b7971797a4d8c826c42aa3a3bf6a5e *R/plot.rocJM.R
 3ce26243841feb3b3b85431d7bd80a76 *R/plot.survfitJM.R
 ea95a5e5730b6c4629197b6806cca3ae *R/posterior.b.R
@@ -129,7 +130,7 @@ effa25e221b384caa1f2794696bdea38 *R/weibull.frailty.R
 619f628e2e9487fffd009fc53f69d1db *R/weibull.frailty.fit.R
 dd0158de59a51dba8e82e67ba9b2e72c *R/weibullAFTGH.fit.R
 c00fcb00b384d9c6ccde38e911ea0769 *R/weibullPHGH.fit.R
-c3d70dc07832dcfe375a2f8fb2b58d68 *R/xtable.jointModel.R
+c339cdd3fec14f394053132aa640f32e *R/xtable.jointModel.R
 cd7949680831cf2ddf3e388685b21b9c *data/aids.id.rda
 95a6b295e4b54d87a7ad0df96e3d4280 *data/aids.rda
 fd124eafd19a13985f40c56ca060297d *data/pbc2.id.rda
@@ -137,9 +138,9 @@ fd124eafd19a13985f40c56ca060297d *data/pbc2.id.rda
 0fc64eb8557069917bff4b4e7888b336 *data/prothro.rda
 5531579cdc76b021f960668301a4b359 *data/prothros.rda
 c862f0580176eb31f26f04ddf2befe24 *inst/CITATION
-7f25949f3db901df6267c3d1190d6ae1 *inst/NEWS
+4961980246a2172942aa23985a1a5a08 *inst/NEWS
 a4db323c7bb11eec729797d31119bdf6 *man/DerivIntSplines.Rd
-7add880cad0fc2fa6cc3eae93ab9c0a7 *man/JM.Rd
+ab43ba8a9f8473f87343ff8ce0dfde34 *man/JM.Rd
 a8d601aee1a4beb0c3fd47e4a9e68ee0 *man/aids.Rd
 4ea59c22d4e99654146708a0ae9b0fce *man/anova.Rd
 d8a7f99ee6b08f40ab527784356b2ad6 *man/coef.Rd

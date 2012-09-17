@@ -17,7 +17,7 @@ function (b, y, Mats, method, ii) {
     Zs.deriv <- Mats[[ii]]$Zs.deriv
     Ws.intF.vl <- Mats[[ii]]$Ws.intF.vl
     Ws.intF.sl <- Mats[[ii]]$Ws.intF.sl
-    ind <- Mats[[i]]$ind
+    ind <- Mats[[ii]]$ind
     if (parameterization %in% c("value", "both"))
         Ys <- as.vector(Xs %*% betas.new + rowSums(Zs * rep(b, each = nrow(Zs))))
     if (parameterization %in% c("slope", "both"))

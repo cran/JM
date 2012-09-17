@@ -6,11 +6,11 @@
 \docType{package}
 
 \title{
-Joint Modelling of Longitudinal and Time-to-Event Data in R
+Joint Modeling of Longitudinal and Time-to-Event Data in R
 }
 
 \description{
-This package fits shared parameter models for the joint modelling of normal longitudinal responses and event times 
+This package fits shared parameter models for the joint modeling of normal longitudinal responses and event times 
 under a maximum likelihood approach. Various options for the survival model and optimization/integration algorithms are 
 provided.
 }
@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 1.0-0\cr
-Date: \tab 2012-07-03\cr
+Version: \tab 1.0-1\cr
+Date: \tab 2012-09-17\cr
 License: \tab \acronym{GPL} \cr
 }
 
