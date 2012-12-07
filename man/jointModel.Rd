@@ -250,6 +250,7 @@ Gauss-Hermite quadrature points.
 }
 
 \examples{
+\dontrun{
 # linear mixed model fit (random intercepts)
 fitLME <- lme(log(serBilir) ~ drug * year, random = ~ 1 | id, data = pbc2)
 # survival regression fit
@@ -259,7 +260,6 @@ fitJOINT <- jointModel(fitLME, fitSURV, timeVar = "year")
 fitJOINT
 summary(fitJOINT)
 
-\dontrun{
 # linear mixed model fit (random intercepts + random slopes)
 fitLME <- lme(log(serBilir) ~ drug * year, random = ~ year | id, data = pbc2)
 # survival regression fit
@@ -320,7 +320,6 @@ jmCRFit.pbc <- jointModel(lmeFit.pbc, coxCRFit.pbc, timeVar = "year",
     interFact = list(value = ~ strata, data = pbc2.idCR), 
     CompRisk = TRUE)
 summary(jmCRFit.pbc)
-}
 
 # linear mixed model fit
 fitLME <- lme(sqrt(CD4) ~ obstime * drug - drug, 
@@ -332,6 +331,7 @@ fitJOINT <- jointModel(fitLME, fitCOX,
     timeVar = "obstime", method = "spline-PH-aGH")
 fitJOINT
 summary(fitJOINT)
+}
 }
 
 \keyword{multivariate}

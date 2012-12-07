@@ -1,3 +1,11 @@
+Changes in version: JM_1.1-0
+
+  * a small bug has been corrected in the plot() method for 'jointModel' objects, when
+    method = "piecewise-PH-aGH" or method "piecewise-PH-GH" was used.
+   
+
+==============================
+
 Changes in version: JM_1.0-1
 
   * use of globalVariables() in source code.

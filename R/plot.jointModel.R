@@ -185,7 +185,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     mfZ <- model.frame(x$termsYz, data = data.id2)
                     Xs <- model.matrix(x$formYx, mfX)
                     Zs <- model.matrix(x$formYz, mfZ)
-                    Zs <- Zs[!is.na(data.id2[[x$timeVar]]), ]
+                    #Zs <- Zs[!is.na(data.id2[[x$timeVar]]), ]
                     Ys <- c(Xs %*% x$coefficients$betas) + rowSums(Zs * b[id.GK, , drop = FALSE])
                     eta.s <- c(x$x$WintF.vl[id.GK, , drop = FALSE] %*% alpha) * Ys
                 }
@@ -194,7 +194,7 @@ function (x, which = 1:4, caption = c("Residuals vs Fitted", "Normal Q-Q", "Marg
                     mfZ.deriv <- model.frame(x$termsYz.deriv, data = data.id2)
                     Xs.deriv <- model.matrix(derivForm$fixed, mfX.deriv)
                     Zs.deriv <- model.matrix(derivForm$random, mfZ.deriv)
-                    Zs.deriv <- Zs.deriv[!is.na(data.id2[[x$timeVar]]), ]
+                    #Zs.deriv <- Zs.deriv[!is.na(data.id2[[x$timeVar]]), ]
                     Ys.deriv <- c(Xs.deriv %*% x$coefficients$betas[indFixed]) +
                         if (length(indRandom) > 1 || indRandom) 
                             rowSums(Zs.deriv * b[id.GK, indRandom, drop = FALSE])
