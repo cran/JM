@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 1.1-0\cr
-Date: \tab 2012-12-07\cr
+Version: \tab 1.2-0\cr
+Date: \tab 2013-06-06\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -93,7 +93,9 @@ Wulfsohn, M. and Tsiatis, A. (1997) A joint model for survival and longitudinal 
     \code{\link{jointModel}},
     \code{\link{survfitJM}},
     \code{\link{rocJM}},
-    \code{\link{dynC}},
+    \code{\link{aucJM}},
+    \code{\link{dynCJM}},
+    \code{\link{prederrJM}},
     \code{\link{predict}}
 }
 

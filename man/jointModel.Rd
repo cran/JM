@@ -246,7 +246,9 @@ Gauss-Hermite quadrature points.
     \code{\link{plot.jointModel}},
     \code{\link{survfitJM}},
     \code{\link{rocJM}},
-    \code{\link{dynC}}
+    \code{\link{dynCJM}},
+    \code{\link{aucJM}},
+    \code{\link{prederrJM}}
 }
 
 \examples{

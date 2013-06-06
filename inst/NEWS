@@ -1,3 +1,20 @@
+Changes in version: JM_1.2-0
+
+
+  * the new generic function aucJM() calculates time-dependent AUCs for joint models.
+
+  * an updated version of function dynCJM() calculates a dynamic discrimination index 
+    (weighted average of time-dependent AUCs) for joint models.
+
+  * the new generic function prederrJM() calculates prediction errors for joint models.
+
+  * survfitJM() is now a generic function with a method for 'jointModel' objects.
+
+  * new versions of functions ins() and ibs() with updated 'weight.fun' argument, and makepredictcall() methods.
+   
+
+==============================
+
 Changes in version: JM_1.1-0
 
   * a small bug has been corrected in the plot() method for 'jointModel' objects, when

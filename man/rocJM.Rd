@@ -133,7 +133,9 @@ Zheng, Y. and Heagerty, P. (2007). Prospective accuracy for longitudinal markers
 \seealso{
     \code{\link{plot.rocJM}},
     \code{\link{survfitJM}},
-    \code{\link{dynC}},
+    \code{\link{dynCJM}},
+    \code{\link{aucJM}},
+    \code{\link{prederrJM}},
     \code{\link{jointModel}}
     
 }

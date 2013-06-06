@@ -1,6 +1,7 @@
 \name{survfitJM}
 
 \alias{survfitJM}
+\alias{survfitJM.jointModel}
 
 \title{Prediction in Joint Models}
 
@@ -10,8 +11,10 @@
 }
 
 \usage{
-survfitJM(object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL, 
-	last.time = NULL, M = 200, CI.levels = c(0.025, 0.975), scale = 1.6)
+survfitJM(object, newdata, \dots)
+
+\method{survfitJM}{jointModel}(object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL, 
+	last.time = NULL, M = 200, CI.levels = c(0.025, 0.975), scale = 1.6, \dots)
 }
 
 \arguments{
@@ -33,6 +36,7 @@ survfitJM(object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
   \item{CI.levels}{a numeric vector of length two that specifies which quantiles to use for the calculation of confidence interval for the 
     predicted probabilities -- see \bold{Details}.}
   \item{scale}{a numeric scalar that controls the acceptance rate of the Metropolis-Hastings algorithm -- see \bold{Details}.}
+   \item{\dots}{additional arguments; currently none is used.}
 }
 
 \details{
