@@ -16,7 +16,7 @@ function (object, parm = c("all", "Longitudinal", "Event"), level = 0.95, ...) {
     pnames <- names(cf)
     a <- (1 - level)/2
     a <- c(a, 1 - a)
-    pct <- stats:::format.perc(a, 3)
+    pct <- format.perc2(a, 3)
     fac <- qnorm(a)
     ci <- array(NA, dim = c(length(cf), 3L), dimnames = list(names(cf), 
             c(pct[1], "est.", pct[2])))

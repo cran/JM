@@ -19,7 +19,7 @@ function (x, caption = NULL, label = NULL, align = NULL, digits = NULL,
         L <- t(L)[lower.tri(L, TRUE)]
         ii <- grep("B.", colnames(V), fixed = TRUE)
         V.re <- V[ii, ii]
-        J <- JM:::jacobian2(L, ncolZ)
+        J <- jacobian2(L, ncolZ)
         se.D <- sqrt(diag(J %*% tcrossprod(V.re, J)))
     } else {
         V <- vcov(x)
