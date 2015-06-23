@@ -64,6 +64,14 @@ function (object, process = c("Longitudinal", "Event"),
         }
     } else {
         W1 <- object$x$W
+        if (is.null(object$x[["Xtime"]])) {
+            object$x[["Xtime"]] <- model.matrix(object$formYx, 
+                                                model.frame(object$termsYx, data = object$data.id))
+            object$x[["Ztime"]] <- model.matrix(object$formYz, 
+                                                model.frame(object$termsYz, data = object$data.id))
+            object$EB[["Ztimeb"]] <- rowSums(object$x[["Ztime"]] * ranef(object))
+            
+        }
         Y <- if (type == "Marginal") {
             D <- object$coefficients$D
             diag.D <- ncol(D) == 1 & (ncz <- nrow(D)) > 1
@@ -131,7 +139,7 @@ function (object, process = c("Longitudinal", "Event"),
                     object$x$Zs.deriv %*% t(b[, object$derivForm$indRandom, drop = FALSE])
                 else
                     rowSums(object$x$Zs.deriv * object$EB$post.b[id.GK, object$derivForm$indRandom, drop = FALSE])
-                Ys <- c(object$x$Xs.deriv %*% 
+                Ys.deriv <- c(object$x$Xs.deriv %*% 
                     object$coefficients$betas[object$derivForm$indFixed]) + Zsb
                 eta.s <- if (parameterization == "both")
                     eta.s + c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv 
@@ -165,7 +173,7 @@ function (object, process = c("Longitudinal", "Event"),
                     object$x$Zs.deriv %*% t(b[, object$derivForm$indRandom, drop = FALSE])
                 else
                     rowSums(object$x$Zs.deriv * object$EB$post.b[id.GK, object$derivForm$indRandom, drop = FALSE])
-                Ys <- c(object$x$Xs.deriv %*% 
+                Ys.deriv <- c(object$x$Xs.deriv %*% 
                     object$coefficients$betas[object$derivForm$indFixed]) + Zsb
                 eta.s <- if (parameterization == "both")
                     eta.s + c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv 
@@ -201,7 +209,7 @@ function (object, process = c("Longitudinal", "Event"),
                     rowSums(object$x$Zs.deriv * 
                         bb[id.GK, object$derivForm$indRandom, drop = FALSE])
                 }
-                Ys <- c(object$x$Xs.deriv %*% 
+                Ys.deriv <- c(object$x$Xs.deriv %*% 
                     object$coefficients$betas[object$derivForm$indFixed]) + Zsb
                 eta.s <- if (parameterization == "both")
                     eta.s + c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv 
@@ -237,7 +245,7 @@ function (object, process = c("Longitudinal", "Event"),
                     object$x$Zs.deriv %*% t(b[, object$derivForm$indRandom, drop = FALSE])
                 else
                     rowSums(object$x$Zs.deriv * object$EB$post.b[id.GK, object$derivForm$indRandom, drop = FALSE])
-                Ys <- c(object$x$Xs.deriv %*% 
+                Ys.deriv <- c(object$x$Xs.deriv %*% 
                     object$coefficients$betas[object$derivForm$indFixed]) + Zsb
                 eta.s <- if (parameterization == "both")
                     eta.s + c(object$x$Ws.intF.sl %*% object$coefficients$Dalpha) * Ys.deriv 

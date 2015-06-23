@@ -35,10 +35,10 @@ function (object, ...) {
         names(gammas)[ss] <- paste("log(xi.", seq_len(object$x$Q), ")", sep = "")
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else if (object$method == "spline-PH-GH") {
-        gammas <- c(object$coefficients$gammas, 
+        gammas <- c(object$coefficients[['gammas']], 
             "Assoct" = as.vector(object$coefficients$alpha),
             "Assoct.s" = as.vector(object$coefficients$Dalpha), 
-            object$coefficients$gammas.bs)
+            object$coefficients[['gammas.bs']])
         indT <- grep("T.", colnames(VarCov), fixed = TRUE)
     } else {
         gms <- object$coefficients$gammas

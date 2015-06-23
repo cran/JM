@@ -46,7 +46,7 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
         nams.ind <- all.vars(delete.response(TermsT))
         ind <- !duplicated(newdata[nams.ind])
         newdata[ind, ]
-    } else newdata[!duplicated(id), ]
+    } else newdata[tapply(row.names(newdata), id, tail, n = 1L),]
     idT <- data.id[[idVar]]
     idT <- match(idT, unique(idT))
     mfT <- model.frame(delete.response(TermsT), data = data.id)
@@ -86,17 +86,17 @@ function (object, newdata, idVar = "id", simulate = TRUE, survTimes = NULL,
     ncz <- ncol(Z)
     ncww <- ncol(W)
     lag <- object$y$lag
-    betas <- object$coefficients$betas
-    sigma <- object$coefficients$sigma
-    D <- object$coefficients$D
+    betas <- object$coefficients[['betas']]
+    sigma <- object$coefficients[['sigma']]
+    D <- object$coefficients[['D']]
     diag.D <- ncol(D) == 1 & nrow(D) > 1
     D <- if (diag.D) diag(c(D)) else D
-    gammas <- object$coefficients$gammas
-    alpha <- object$coefficients$alpha
-    Dalpha <- object$coefficients$Dalpha
-    sigma.t <- object$coefficients$sigma.t
-    xi <- object$coefficients$xi
-    gammas.bs <- object$coefficients$gammas.bs
+    gammas <- object$coefficients[['gammas']]
+    alpha <- object$coefficients[['alpha']]
+    Dalpha <- object$coefficients[['Dalpha']]
+    sigma.t <- object$coefficients[['sigma.t']]
+    xi <- object$coefficients[['xi']]
+    gammas.bs <- object$coefficients[['gammas.bs']]
     list.thetas <- list(betas = betas, log.sigma = log(sigma), gammas = gammas, alpha = alpha, 
             Dalpha = Dalpha, log.sigma.t = if (is.null(sigma.t)) NULL else log(sigma.t), 
             log.xi = if (is.null(xi)) NULL else log(xi), gammas.bs = gammas.bs, 

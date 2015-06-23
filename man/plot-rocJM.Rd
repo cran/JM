@@ -44,8 +44,6 @@ Applications in R}. Boca Raton: Chapman and Hall/CRC.
 
 Rizopoulos, D. (2011). Dynamic predictions and prospective accuracy in joint models for 
 longitudinal and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
-
-More examples can be found at \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
 }
 
 

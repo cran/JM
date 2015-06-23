@@ -232,7 +232,7 @@ hazard). Hsieh et al. (2006) have noted that these standard errors are underesti
 difficult datasets) to check the stability of the maximum likelihood estimates with an increasing number of 
 Gauss-Hermite quadrature points.
 
-7. For more examples and additional material check \url{http://rwiki.sciviews.org/doku.php?id=packages:cran:jm}.
+7. It is assumed that the scale of the time variable (e.g., days, months years) is the same in both \code{lmeObject} and \code{survObject}.
 }
 
 \seealso{

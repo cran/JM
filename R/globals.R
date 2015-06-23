@@ -9,4 +9,4 @@ if (getRversion() >= '2.15.1') globalVariables(c('X', 'Xtime', 'WW', 'gammas', '
 'eta.wsi', 'yi.eta.yxi', 'Zb', 'Y', 'Y.deriv', 'Ys', 'Y2', 'chLaplace.fit', 'sigma.new', 'D.new', 'eta.tw2', 'eta.yx', 'Z.missO', 'id3.miss', 'y.missO', 'id.miss', 'n.missO',
 'Xtime.missO', 'Ztime.missO', 'WintF.vl.missO', 'Xs.missO', 'Zs.missO', 'Ws.intF.vl.missO', 'Xtime.deriv.missO', 'Ztime.deriv.missO', 'WintF.sl.missO', 'Xs.deriv.missO',
 'Zs.deriv.missO', 'Ws.intF.sl.missO', 'logT.missO', 'log.st.missO', 'P.missO', 'd.missO', 'W2.missO', 'idT.missO', 'W2s.missO', 'ind.D.missO', 'ind.K.missO', 'wkP.missO',
-'max.time', 'SclongCH', 'ScsurvCH', 'update.bCH', 'LogLik.chLaplace', 'Score.chLaplace', 'kn', 'new.b', 'cons.logLik', 'xtable'))
+'max.time', 'SclongCH', 'ScsurvCH', 'update.bCH', 'LogLik.chLaplace', 'Score.chLaplace', 'kn', 'new.b', 'cons.logLik', 'xtable', 'pdMatrix'))

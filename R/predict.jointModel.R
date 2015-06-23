@@ -118,17 +118,17 @@ function (object, newdata, type = c("Marginal", "Subject"),
         ncz <- ncol(Z)
         ncww <- ncol(W)
         lag <- object$y$lag
-        betas <- object$coefficients$betas
-        sigma <- object$coefficients$sigma
-        D <- object$coefficients$D
+        betas <- object$coefficients[['betas']]
+        sigma <- object$coefficients[['sigma']]
+        D <- object$coefficients[['D']]
         diag.D <- ncol(D) == 1 & nrow(D) > 1
         D <- if (diag.D) diag(c(D)) else D
-        gammas <- object$coefficients$gammas
-        alpha <- object$coefficients$alpha
-        Dalpha <- object$coefficients$Dalpha
-        sigma.t <- object$coefficients$sigma.t
-        xi <- object$coefficients$xi
-        gammas.bs <- object$coefficients$gammas.bs
+        gammas <- object$coefficients[['gammas']]
+        alpha <- object$coefficients[['alpha']]
+        Dalpha <- object$coefficients[['Dalpha']]
+        sigma.t <- object$coefficients[['sigma.t']]
+        xi <- object$coefficients[['xi']]
+        gammas.bs <- object$coefficients[['gammas.bs']]
         list.thetas <- list(betas = betas, log.sigma = log(sigma), 
             gammas = gammas, alpha = alpha, 
             Dalpha = Dalpha, 

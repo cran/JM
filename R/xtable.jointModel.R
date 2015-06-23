@@ -119,7 +119,7 @@ function (x, caption = NULL, label = NULL, align = NULL, digits = NULL,
         hline.after <- c(-1, 0, nrow(Dat.surv))
         Dat.surv
     }  
-    if (!require("xtable")) 
+    if (!requireNamespace("xtable", quietly = TRUE)) 
         stop("'xtable' is required.\n")
     print(xtable(Dat, caption = caption, label = label, 
         align = align, digits = digits, display = display), 
