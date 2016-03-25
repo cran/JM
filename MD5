@@ -1,4 +1,4 @@
-1656a48262189244b4f8b5cbf1ed61a0 *DESCRIPTION
+77cb6139b249af6ff31fa865dad9abcd *DESCRIPTION
 e9e8805afc5faea652dbd8c28014ef7a *NAMESPACE
 d6926b9eb6dbfa560c8d36a864049c33 *R/H.longAFTWB.R
 d6c3051b1dbe83b5156431a7e82e2444 *R/H.longPC.R
@@ -33,7 +33,7 @@ e704973ad8b38b9e6533424dd426974f *R/coef.summary.jointModel.R
 9978a61503fbc70d88fb138934e228be *R/coef.weibull.frailty.R
 9eb8be8c47fc266cfba350124aef215a *R/confint.jointModel.R
 cb091a3e5af3b85e8a2b1f37a44603f5 *R/crLong.R
-72a8ffae97b2405fc0be9cb4100b8e4c *R/cumHaz.R
+11c37c0922ea69b7f772ba452b258f3a *R/cumHaz.R
 93946a719364cc42162bd816d9ad1e42 *R/dataLM.R
 1b1f76dfecbcc612cbb7ed378d1c3f7c *R/dbs.R
 33c8a58011fd085e91250fdd520f9417 *R/deriv.D.R
@@ -73,7 +73,7 @@ c6e0e50fd82c80d29ed73f13fb349117 *R/jacobian.R
 0188ccda479c187c7837a990e8c09825 *R/jacobian2.R
 bb96dba9cb5c08ba999418461799ecb6 *R/jointModel.R
 dfcd3d7026781cf7cc55d6e079340d00 *R/log.posterior.b.R
-cac38261b4d0370c5d5a06e151bb872c *R/log.posterior.b2.R
+7031315490de8bc5970f212bcac18a14 *R/log.posterior.b2.R
 a0cfe19f4b972219215cc5fe0d3cc974 *R/logLik.flexCPH.R
 7f68502298b3836a2d7c4a66b0bb1ea5 *R/logLik.jointModel.R
 c176a3f6ce2a19bba1314deca6a0b4e3 *R/logLik.weibull.frailty.R
@@ -92,7 +92,7 @@ d25a7720fc44557d4c574fb81026314c *R/opt.longWB.R
 7a112fc47a4cddd9900eaa2b4d5a3166 *R/opt.survPH.R
 a0d986a277a142ab8b31e26e613a7546 *R/opt.survSplinePH.R
 4cf3c2f813e0dce6fb7f7898353ed50e *R/opt.survWB.R
-05fd8d2009cb4f11fc93414570512053 *R/phGH.fit.R
+3c6ee90c87b5ee29a458b9bb09995c4d *R/phGH.fit.R
 5749de57f4bd5c9f3d212c17e1603706 *R/piecewiseAFTGH.fit.R
 a34bf0d3510c5c611bd1e12512d2ce39 *R/piecewiseExp.ph.R
 de47ea69b6ec0c1916b7baf350daa90a *R/piecewisePHGH.fit.R
@@ -149,9 +149,9 @@ b029c468978a4f5ba719cb92b47fda8b *data/pbc2.rda
 f7c8fef1286b366a987a3a00006dd24e *data/prothro.rda
 951c92660aa1ebb23b8b81849b040fa0 *data/prothros.rda
 c862f0580176eb31f26f04ddf2befe24 *inst/CITATION
-098cb3525cbd49874a6116a86028b45a *inst/NEWS
+753ebd9c3aae6a00c7ea0978b2b3a869 *inst/NEWS
 a4db323c7bb11eec729797d31119bdf6 *man/DerivIntSplines.Rd
-a68c2fc1344fd6791077b3e294d8d397 *man/JM.Rd
+42123ebf90cd48a953c4675804aa141e *man/JM.Rd
 a8d601aee1a4beb0c3fd47e4a9e68ee0 *man/aids.Rd
 4ea59c22d4e99654146708a0ae9b0fce *man/anova.Rd
 e26ea75baae9ef70e471c80bd4ab1a1a *man/aucJM.Rd
@@ -161,7 +161,7 @@ da0cfa7c57792ce95de5151fa3917d6d *man/crLong.Rd
 2131971a7acd9e4a4cb278d1ded49081 *man/fitted.Rd
 4c56dfef314f60c14e5099e0c9ad0c82 *man/jointModel.Rd
 56e4e511e1a6857414bd419155a660c6 *man/jointModelObject.Rd
-e7e3bffa1f4c89ad37091cb7c4af9f57 *man/pbc.Rd
+e8974afafd109e02a44430fdbee24f92 *man/pbc.Rd
 d4ef1c20fbb7e6dfcaba1a1202092ff6 *man/piecewiseExp.ph.Rd
 32ee5c23db470337589edc6323b3b0e7 *man/plot-rocJM.Rd
 1ed7be96f48d6e30691091e94cf5d531 *man/plot-survfitJM.Rd
