@@ -1,4 +1,4 @@
-d8c701b9ae131a8db3da92345f584add *DESCRIPTION
+d84340cb6e180a28f1b4c846cbb543d3 *DESCRIPTION
 e9e8805afc5faea652dbd8c28014ef7a *NAMESPACE
 d6926b9eb6dbfa560c8d36a864049c33 *R/H.longAFTWB.R
 d6c3051b1dbe83b5156431a7e82e2444 *R/H.longPC.R
@@ -71,7 +71,7 @@ f3a478300a53147c4bad86170cdbb32d *R/gr.survPC.R
 1e0fdd67a2861f880379e2c5881ce855 *R/ins.R
 c6e0e50fd82c80d29ed73f13fb349117 *R/jacobian.R
 0188ccda479c187c7837a990e8c09825 *R/jacobian2.R
-e49cb81a59b17a05092590c09548ee95 *R/jointModel.R
+21c3c3889d1d943a3a3b1dcae278d6d3 *R/jointModel.R
 dfcd3d7026781cf7cc55d6e079340d00 *R/log.posterior.b.R
 7031315490de8bc5970f212bcac18a14 *R/log.posterior.b2.R
 a0cfe19f4b972219215cc5fe0d3cc974 *R/logLik.flexCPH.R
@@ -99,13 +99,13 @@ de47ea69b6ec0c1916b7baf350daa90a *R/piecewisePHGH.fit.R
 6f88c2ac9828bc87d9718916535c753f *R/plot.flexCPH.R
 20f0757489c445b91194e05775282216 *R/plot.jointModel.R
 b0b7971797a4d8c826c42aa3a3bf6a5e *R/plot.rocJM.R
-3ce26243841feb3b3b85431d7bd80a76 *R/plot.survfitJM.R
+1c5055fa95f34e76e25e2550e0a097b8 *R/plot.survfitJM.R
 ea95a5e5730b6c4629197b6806cca3ae *R/posterior.b.R
 7dfb47273da4f597e351dded97f83db4 *R/prederrJM.R
 91177baab201630047b6fa476e858612 *R/prederrJM.coxph.R
 8ba37c58724f74af7955b99c6e45e3b0 *R/prederrJM.jointModel.R
 d64ddae10d18e3893f62fc34f3ccd579 *R/predict.b.R
-6871545981270d0e99d1b28d48d2cb4f *R/predict.jointModel.R
+acf1faf1c35fd5f1ae22ae25e66eabbd *R/predict.jointModel.R
 425bcb183809d8e34d94b967fd14ef04 *R/print.aov.jointModel.R
 35d6deae482410678b621f28bd909f05 *R/print.aucJM.R
 ec79261cd95e7160df1af7e153b0abf3 *R/print.dynCJM.R
@@ -116,7 +116,7 @@ da694fd66e1a44c9ddb0895e7bf076ad *R/print.rocJM.R
 51d7326ea8ad904c1a2083a3c24acff1 *R/print.summary.flexCPH.R
 77d3c8e422c7ec41cedf4d20518e5d4c *R/print.summary.jointModel.R
 01126bb04312b1319d4467710d8528fb *R/print.summary.weibull.frailty.R
-d2d64754303678ba1f50dfcf0395a326 *R/print.survfitJM.R
+39b476f474a9877924183e3fd785caa0 *R/print.survfitJM.R
 674aee3cdf4ec87180507d5706f9ac55 *R/print.wald.strata.R
 6d93dfb11024e17da94305b349dffd90 *R/print.weibull.frailty.R
 65827b9814166e7f5ab7c31cdb331e05 *R/ranef.jointModel.R
@@ -142,6 +142,7 @@ effa25e221b384caa1f2794696bdea38 *R/weibull.frailty.R
 dd0158de59a51dba8e82e67ba9b2e72c *R/weibullAFTGH.fit.R
 c00fcb00b384d9c6ccde38e911ea0769 *R/weibullPHGH.fit.R
 51ff7167eadb3bef105fd976e75187b6 *R/xtable.jointModel.R
+5433e4fe3f37781ae6aefedf7c42ab34 *README.md
 588a3a19bfd432291cf5055298857216 *data/aids.id.rda
 4107b3274b78cf0f85272e43987c68ac *data/aids.rda
 6e0cb47a61d002890cdd2df486337cc1 *data/pbc2.id.rda
@@ -151,7 +152,7 @@ f7c8fef1286b366a987a3a00006dd24e *data/prothro.rda
 c862f0580176eb31f26f04ddf2befe24 *inst/CITATION
 b8fc78dd21cc6e9fec3cc56370ad80d8 *inst/NEWS
 a4db323c7bb11eec729797d31119bdf6 *man/DerivIntSplines.Rd
-bc06eeaf8c341cca12e0f5631f99daed *man/JM.Rd
+2f7bdaf78f19beaacd63b02107f8dbd6 *man/JM.Rd
 a8d601aee1a4beb0c3fd47e4a9e68ee0 *man/aids.Rd
 4ea59c22d4e99654146708a0ae9b0fce *man/anova.Rd
 e26ea75baae9ef70e471c80bd4ab1a1a *man/aucJM.Rd
@@ -167,7 +168,7 @@ d4ef1c20fbb7e6dfcaba1a1202092ff6 *man/piecewiseExp.ph.Rd
 1ed7be96f48d6e30691091e94cf5d531 *man/plot-survfitJM.Rd
 e4182fd32e2680eb1283a1a1850e8d86 *man/plot.Rd
 8078f4db8586a0ff298b0053bc41d2dc *man/prederrJM.Rd
-4f375304a83a12ec413a4ae71f390d8a *man/predict.Rd
+e51b14cd21fd4739d40ae9bba4d92f05 *man/predict.Rd
 fc08671715beac9808c4fd8ed275e057 *man/prothro.Rd
 2c25dcbbc162b9b0cec4f5ee569c9c3f *man/ranef.Rd
 3f0e28c22e2d39d40fafd5a0c974657c *man/residuals.Rd
