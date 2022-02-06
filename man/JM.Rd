@@ -19,8 +19,8 @@ provided.
 \tabular{ll}{
 Package: \tab JM\cr
 Type: \tab Package\cr
-Version: \tab 1.4-8\cr
-Date: \tab 2018-04-16\cr
+Version: \tab 1.5-1\cr
+Date: \tab 2022-02-07\cr
 License: \tab \acronym{GPL} \cr
 }
 
@@ -73,7 +73,7 @@ Rizopoulos, D. (2011) Dynamic predictions and prospective accuracy in joint mode
 and time-to-event data. \emph{Biometrics} \bold{67}, 819--829.
 
 Rizopoulos, D. (2010) JM: An R package for the joint modelling of longitudinal and time-to-event data. 
-\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \url{http://www.jstatsoft.org/v35/i09/}
+\emph{Journal of Statistical Software} \bold{35} (9), 1--33. \doi{10.18637/jss.v035.i09}
 
 Rizopoulos, D., Verbeke, G. and Lesaffre, E. (2009) Fully exponential Laplace approximation for the joint
 modelling of survival and longitudinal data. \emph{Journal of the Royal Statistical Society, Series B} 
