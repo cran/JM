@@ -1,7 +1,7 @@
 Package: JM
 Title: Joint Modeling of Longitudinal and Survival Data
-Version: 1.5-1
-Date: 2022-02-07
+Version: 1.5-2
+Date: 2022-08-08
 Author: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 Maintainer: Dimitris Rizopoulos <d.rizopoulos@erasmusmc.nl>
 Description: Shared parameter models for the joint modeling of longitudinal and time-to-event data. 
@@ -12,6 +12,6 @@ LazyData: yes
 License: GPL (>= 2)
 URL: http://jmr.r-forge.r-project.org/
 NeedsCompilation: no
-Packaged: 2022-02-06 19:38:01 UTC; drizo
+Packaged: 2022-08-08 12:58:55 UTC; drizo
 Repository: CRAN
-Date/Publication: 2022-02-06 20:00:05 UTC
+Date/Publication: 2022-08-08 13:40:29 UTC
